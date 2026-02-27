@@ -24,7 +24,7 @@ export default function MytraineesPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    if (user?.profile?.role === 'trainee') {
+    if (user?.profile?.role === 'instructor' || user?.profile?.role === 'admin' || user?.profile?.role === 'developer') {
       fetchMytrainees()
     }
   }, [user])
@@ -33,23 +33,23 @@ export default function MytraineesPage() {
     try {
       setLoading(true)
 
-      // Get courses taught by this trainee
-      const { data: traineeCourses, error: coursesError } = await supabase
+      // Get courses taught by this instructor
+      const { data: instructorCourses, error: coursesError } = await supabase
         .from('courses')
         .select('id, title')
-        .eq('trainee_id', user?.id)
+        .eq('instructor_id', user?.id)
 
       if (coursesError) {
-        console.error('Error fetching trainee courses:', coursesError)
+        console.error('Error fetching instructor courses:', coursesError)
         return
       }
 
-      if (!traineeCourses || traineeCourses.length === 0) {
+      if (!instructorCourses || instructorCourses.length === 0) {
         settrainees([])
         return
       }
 
-      const courseIds = traineeCourses.map((course: Pick<Course, 'id' | 'title'>) => course.id)
+      const courseIds = instructorCourses.map((course: Pick<Course, 'id' | 'title'>) => course.id)
 
       // Get trainees enrolled in these courses
       const { data: enrollments, error: enrollmentsError } = await supabase
