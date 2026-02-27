@@ -16,7 +16,7 @@ interface Course {
   course_group?: string
   course_type: 'academic' | 'tesda' | 'upskill'
   status: 'active' | 'inactive' | 'draft'
-  enrollment_type: 'student' | 'tesda_scholar' | 'both'
+  enrollment_type: 'trainee' | 'tesda_scholar' | 'both'
   subjects?: Subject[]
   created_at: string
   total_enrollments?: number
@@ -36,7 +36,7 @@ interface CourseColor {
 interface Subject {
   id: string
   title: string
-  instructor_id?: string
+  trainee_id?: string
   modules?: Module[]
 }
 
@@ -60,8 +60,8 @@ interface DashboardStats {
 }
 
 interface UserStats {
-  totalStudents: number
-  totalInstructors: number
+  totaltrainees: number
+  totaltrainees: number
   totalAdmins: number
 }
 
@@ -470,20 +470,20 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false)
   const [showChangelogModal, setShowChangelogModal] = useState(false)
   const [userStats, setUserStats] = useState<UserStats>({
-    totalStudents: 0,
-    totalInstructors: 0,
+    totaltrainees: 0,
+    totaltrainees: 0,
     totalAdmins: 0
   })
   const [pendingTasks, setPendingTasks] = useState<{
-    unenrolledStudents: number
-    unassignedInstructors: number
+    unenrolledtrainees: number
+    unassignedtrainees: number
     pendingFeatureRequests: number
     ongoingFeatureRequests: number
     passwordResets: number
     bugReports: number
   }>({
-    unenrolledStudents: 0,
-    unassignedInstructors: 0,
+    unenrolledtrainees: 0,
+    unassignedtrainees: 0,
     pendingFeatureRequests: 0,
     ongoingFeatureRequests: 0,
     passwordResets: 0,
@@ -717,7 +717,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
       )
       .subscribe()
 
-    // Set up real-time subscriptions for profiles (for instructor count)
+    // Set up real-time subscriptions for profiles (for trainee count)
     const profilesSubscription = supabase
       .channel('profiles-changes')
       .on('postgres_changes',
@@ -762,7 +762,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
     try {
       setLoading(true)
 
-      const userRole = user?.profile?.role || 'student'
+      const userRole = user?.profile?.role || 'trainee'
       
       // Fetch courses with subjects/modules
       let coursesQuery = supabase
@@ -777,52 +777,52 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
         .order('created_at', { ascending: false })
         .limit(6)
 
-      // Filter courses for students - only show courses they're enrolled in
-      if (userRole === 'student') {
-        // First, get all course IDs where this student is enrolled
-        const { data: studentEnrollments, error: enrollmentsError } = await supabase
+      // Filter courses for trainees - only show courses they're enrolled in
+      if (userRole === 'trainee') {
+        // First, get all course IDs where this trainee is enrolled
+        const { data: traineeEnrollments, error: enrollmentsError } = await supabase
           .from('course_enrollments')
           .select('course_id')
-          .eq('student_id', user?.id)
+          .eq('trainee_id', user?.id)
           .eq('status', 'active')
 
         if (enrollmentsError) {
-          console.error('Error fetching student enrollments:', enrollmentsError)
+          console.error('Error fetching trainee enrollments:', enrollmentsError)
         } else {
           // Get unique course IDs
-          const courseIds = studentEnrollments?.map((e: { course_id: string }) => e.course_id) || []
+          const courseIds = traineeEnrollments?.map((e: { course_id: string }) => e.course_id) || []
           
           if (courseIds.length > 0) {
-            // Filter courses by the student's enrolled course IDs
+            // Filter courses by the trainee's enrolled course IDs
             coursesQuery = coursesQuery.in('id', courseIds)
           } else {
-            // Student has no enrolled courses - set empty array and skip query
+            // trainee has no enrolled courses - set empty array and skip query
             setCourses([])
             setLoading(false)
             return
           }
         }
       }
-      // Filter courses for instructors - only show courses they're assigned to
-      else if (userRole === 'instructor') {
-        // First, get all course IDs where this instructor is assigned to subjects
-        const { data: instructorSubjects, error: subjectsError } = await supabase
+      // Filter courses for trainees - only show courses they're assigned to
+      else if (userRole === 'trainee') {
+        // First, get all course IDs where this trainee is assigned to subjects
+        const { data: traineeSubjects, error: subjectsError } = await supabase
           .from('subjects')
           .select('course_id')
-          .eq('instructor_id', user?.id)
+          .eq('trainee_id', user?.id)
 
         if (subjectsError) {
-          console.error('Error fetching instructor subjects:', subjectsError)
+          console.error('Error fetching trainee subjects:', subjectsError)
         } else {
           // Get unique course IDs
-          const courseIdsSet = new Set(instructorSubjects?.map((s: { course_id: string }) => s.course_id) || [])
+          const courseIdsSet = new Set(traineeSubjects?.map((s: { course_id: string }) => s.course_id) || [])
           const courseIds = Array.from(courseIdsSet)
           
           if (courseIds.length > 0) {
-            // Filter courses by the instructor's assigned course IDs
+            // Filter courses by the trainee's assigned course IDs
             coursesQuery = coursesQuery.in('id', courseIds)
           } else {
-            // Instructor has no assigned courses - set empty array and skip query
+            // trainee has no assigned courses - set empty array and skip query
             setCourses([])
             setLoading(false)
             return
@@ -851,13 +851,13 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
             // Check if current user is enrolled in this course
             let isUserEnrolled = false
-            if (user?.id && user?.profile?.role === 'student') {
+            if (user?.id && user?.profile?.role === 'trainee') {
               try {
                 const { data: userEnrollment, error: enrollmentError } = await supabase
                   .from('course_enrollments')
                   .select('id')
                   .eq('course_id', course.id)
-                  .eq('student_id', user.id)
+                  .eq('trainee_id', user.id)
                   .eq('status', 'active')
                   .limit(1)
                 
@@ -882,9 +882,9 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
           })
         )
         
-        // Sort courses: enrolled courses first for Students
+        // Sort courses: enrolled courses first for trainees
         const sortedCourses = coursesWithEnrollments.sort((a, b) => {
-          if (user?.profile?.role === 'student') {
+          if (user?.profile?.role === 'trainee') {
             // Enrolled courses come first
             if (a.is_user_enrolled && !b.is_user_enrolled) return -1
             if (!a.is_user_enrolled && b.is_user_enrolled) return 1
@@ -968,50 +968,50 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
       // Fetch user statistics by role
       const [
-        { count: totalStudents },
-        { count: totalInstructors },
+        { count: totaltrainees },
+        { count: totaltrainees },
         { count: totalAdmins }
       ] = await Promise.all([
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'student'),
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'instructor'),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'trainee'),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'trainee'),
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'admin')
       ])
 
       setUserStats({
-        totalStudents: totalStudents || 0,
-        totalInstructors: totalInstructors || 0,
+        totaltrainees: totaltrainees || 0,
+        totaltrainees: totaltrainees || 0,
         totalAdmins: totalAdmins || 0
       })
 
       // Fetch pending tasks for admin and developer
       if (userRole === 'admin' || userRole === 'developer') {
-        // Get students not enrolled in any course
-        const { data: allStudents } = await supabase
+        // Get trainees not enrolled in any course
+        const { data: alltrainees } = await supabase
           .from('profiles')
           .select('id')
-          .eq('role', 'student')
+          .eq('role', 'trainee')
 
-        const { data: enrolledStudents } = await supabase
+        const { data: enrolledtrainees } = await supabase
           .from('course_enrollments')
-          .select('student_id')
+          .select('trainee_id')
           .eq('status', 'active')
 
-        const enrolledStudentIds = new Set(enrolledStudents?.map((e: { student_id: string }) => e.student_id) || [])
-        const unenrolledCount = (allStudents || []).filter((s: { id: string }) => !enrolledStudentIds.has(s.id)).length
+        const enrolledtraineeIds = new Set(enrolledtrainees?.map((e: { trainee_id: string }) => e.trainee_id) || [])
+        const unenrolledCount = (alltrainees || []).filter((s: { id: string }) => !enrolledtraineeIds.has(s.id)).length
 
-        // Get instructors not assigned to any subject
-        const { data: allInstructors } = await supabase
+        // Get trainees not assigned to any subject
+        const { data: alltrainees } = await supabase
           .from('profiles')
           .select('id')
-          .eq('role', 'instructor')
+          .eq('role', 'trainee')
 
-        const { data: assignedInstructors } = await supabase
+        const { data: assignedtrainees } = await supabase
           .from('subjects')
-          .select('instructor_id')
-          .not('instructor_id', 'is', null)
+          .select('trainee_id')
+          .not('trainee_id', 'is', null)
 
-        const assignedInstructorIds = new Set(assignedInstructors?.map((s: { instructor_id: string }) => s.instructor_id) || [])
-        const unassignedCount = (allInstructors || []).filter((i: { id: string }) => !assignedInstructorIds.has(i.id)).length
+        const assignedtraineeIds = new Set(assignedtrainees?.map((s: { trainee_id: string }) => s.trainee_id) || [])
+        const unassignedCount = (alltrainees || []).filter((i: { id: string }) => !assignedtraineeIds.has(i.id)).length
 
         // Get pending and ongoing feature requests (for developers only)
         let pendingRequests = 0
@@ -1055,8 +1055,8 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
         }
 
         setPendingTasks({
-          unenrolledStudents: unenrolledCount,
-          unassignedInstructors: unassignedCount,
+          unenrolledtrainees: unenrolledCount,
+          unassignedtrainees: unassignedCount,
           pendingFeatureRequests: pendingRequests,
           ongoingFeatureRequests: ongoingRequests,
           passwordResets: passwordResetsCount,
@@ -1094,8 +1094,8 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
   // Helper function to get enrollment type display
   const getEnrollmentTypeDisplay = (enrollmentType: string) => {
     const badges = []
-    if (enrollmentType === 'student' || enrollmentType === 'both') {
-      badges.push({ text: 'Students', color: 'bg-blue-100 text-blue-800' })
+    if (enrollmentType === 'trainee' || enrollmentType === 'both') {
+      badges.push({ text: 'trainees', color: 'bg-blue-100 text-blue-800' })
     }
     if (enrollmentType === 'tesda_scholar' || enrollmentType === 'both') {
       badges.push({ text: 'TESDA Scholars', color: 'bg-purple-100 text-purple-800' })
@@ -1113,7 +1113,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
     )
   }
 
-  const userRole = user?.profile?.role || 'student'
+  const userRole = user?.profile?.role || 'trainee'
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#f3f4f6', paddingLeft: '50px', paddingRight: '25px', paddingTop: '24px', paddingBottom: '48px' }}>
@@ -1129,10 +1129,10 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                     Welcome back, {displayUser.profile?.first_name || displayUser?.email?.split('@')[0] || 'User'}!
                   </h2>
                   <p className="text-gray-600">
-                    {userRole === 'student' 
+                    {userRole === 'trainee' 
                       ? 'Ready to continue your learning journey? Check out your courses below.'
-                      : userRole === 'instructor'
-                      ? 'Your students are waiting. Let\'s make today productive!'
+                      : userRole === 'trainee'
+                      ? 'Your trainees are waiting. Let\'s make today productive!'
                       : 'Manage your platform and keep everything running smoothly.'}
                   </p>
                 </div>
@@ -1175,8 +1175,8 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                     </button>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {pendingTasks.unenrolledStudents === 0 && 
-                     pendingTasks.unassignedInstructors === 0 && 
+                    {pendingTasks.unenrolledtrainees === 0 && 
+                     pendingTasks.unassignedtrainees === 0 && 
                      pendingTasks.pendingFeatureRequests === 0 && 
                      pendingTasks.ongoingFeatureRequests === 0 &&
                      pendingTasks.passwordResets === 0 &&
@@ -1238,8 +1238,8 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                           </div>
                         )}
 
-                        {/* Row 1, Col 3 (wraps to new row on mobile): Unenrolled Students */}
-                        {pendingTasks.unenrolledStudents > 0 && (
+                        {/* Row 1, Col 3 (wraps to new row on mobile): Unenrolled trainees */}
+                        {pendingTasks.unenrolledtrainees > 0 && (
                           <div 
                             onClick={() => onNavigate('tasks')}
                             className="flex items-start space-x-2 p-3 bg-white rounded-xl border border-orange-200 hover:shadow-sm transition-all cursor-pointer"
@@ -1250,12 +1250,12 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                               </svg>
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="text-sm font-semibold text-black">{pendingTasks.unenrolledStudents} Unenrolled Student{pendingTasks.unenrolledStudents > 1 ? 's' : ''}</div>
+                              <div className="text-sm font-semibold text-black">{pendingTasks.unenrolledtrainees} Unenrolled trainee{pendingTasks.unenrolledtrainees > 1 ? 's' : ''}</div>
                               <div className="text-xs text-gray-500 mt-0.5">Not enrolled in any course</div>
                             </div>
                             <div className="flex-shrink-0">
                               <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-orange-600 bg-orange-100 rounded-full">
-                                {pendingTasks.unenrolledStudents}
+                                {pendingTasks.unenrolledtrainees}
                               </span>
                             </div>
                           </div>
@@ -1307,8 +1307,8 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                           </div>
                         )}
 
-                        {/* Row 2, Col 3 (wraps to new row on mobile): Unassigned Instructors */}
-                        {pendingTasks.unassignedInstructors > 0 && (
+                        {/* Row 2, Col 3 (wraps to new row on mobile): Unassigned trainees */}
+                        {pendingTasks.unassignedtrainees > 0 && (
                           <div 
                             onClick={() => onNavigate('tasks')}
                             className="flex items-start space-x-2 p-3 bg-white rounded-xl border border-blue-200 hover:shadow-sm transition-all cursor-pointer"
@@ -1319,12 +1319,12 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                               </svg>
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="text-sm font-semibold text-black">{pendingTasks.unassignedInstructors} Unassigned Instructor{pendingTasks.unassignedInstructors > 1 ? 's' : ''}</div>
+                              <div className="text-sm font-semibold text-black">{pendingTasks.unassignedtrainees} Unassigned trainee{pendingTasks.unassignedtrainees > 1 ? 's' : ''}</div>
                               <div className="text-xs text-gray-500 mt-0.5">Not assigned to any course</div>
                             </div>
                             <div className="flex-shrink-0">
                               <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-blue-600 bg-blue-100 rounded-full">
-                                {pendingTasks.unassignedInstructors}
+                                {pendingTasks.unassignedtrainees}
                               </span>
                             </div>
                           </div>
@@ -1393,7 +1393,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
         <div>
           <div className="flex items-center justify-between mb-4 md:mb-6">
             <h2 className="text-lg md:text-xl font-bold text-black">
-              {userRole === 'student' ? (
+              {userRole === 'trainee' ? (
                 <>
                   My Courses
                   {courses.filter(c => c.is_user_enrolled).length > 0 && (
@@ -1402,7 +1402,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                     </span>
                   )}
                 </>
-              ) : userRole === 'instructor' ? (
+              ) : userRole === 'trainee' ? (
                 <>
                   My Courses
                   {courses.length > 0 && (
@@ -1431,15 +1431,15 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                       })
                       const enrollmentTypeBadges = getEnrollmentTypeDisplay(course.enrollment_type)
                       
-                      const isStudentOrStudent = userRole === 'student'
-                      const isLocked = isStudentOrStudent && !course.is_user_enrolled
+                      const istraineeOrtrainee = userRole === 'trainee'
+                      const isLocked = istraineeOrtrainee && !course.is_user_enrolled
                       
                       return (
                         <div 
                           key={course.id} 
                           className={`group relative bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col ${isLocked ? 'opacity-60' : ''}`}
                         >
-                          {/* Locked Badge for Students who are NOT enrolled */}
+                          {/* Locked Badge for trainees who are NOT enrolled */}
                           {isLocked && (
                             <div className="absolute top-2 left-2 z-10">
                               <div className="bg-gray-900/80 backdrop-blur-sm text-white px-3 py-1.5 rounded-full flex items-center space-x-2">
@@ -1451,8 +1451,8 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                             </div>
                           )}
 
-                          {/* Enrolled Badge for Students who ARE enrolled */}
-                          {isStudentOrStudent && course.is_user_enrolled && (
+                          {/* Enrolled Badge for trainees who ARE enrolled */}
+                          {istraineeOrtrainee && course.is_user_enrolled && (
                             <div className="absolute top-2 left-2 z-10">
                               <div className="bg-green-500/90 backdrop-blur-sm text-white px-3 py-1.5 rounded-full flex items-center space-x-2">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1514,7 +1514,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                                   </svg>
                                   <span>Contact Admin</span>
                                 </button>
-                              ) : isStudentOrStudent && course.is_user_enrolled ? (
+                              ) : istraineeOrtrainee && course.is_user_enrolled ? (
                                 <button 
                                   onClick={() => onNavigate('my-courses')}
                                   className="w-full px-4 py-3 text-white rounded-xl font-semibold text-sm transition-colors duration-200 flex items-center justify-center space-x-2"
@@ -1527,7 +1527,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                   </svg>
                                 </button>
-                              ) : userRole === 'instructor' ? (
+                              ) : userRole === 'trainee' ? (
                                 <button 
                                   onClick={() => onNavigate('courses')}
                                   className="w-full px-4 py-3 text-white rounded-xl font-semibold text-sm transition-colors duration-200 flex items-center justify-center space-x-2"
@@ -1647,7 +1647,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {/* Students Card */}
+                    {/* trainees Card */}
                     <div className="bg-white rounded-xl p-4 border border-gray-200">
                       <div className="flex items-center space-x-3 mb-3">
                         <div className="p-2 bg-blue-500 rounded-lg">
@@ -1655,12 +1655,12 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
                           </svg>
                         </div>
-                        <div className="text-2xl font-bold text-black">{userStats.totalStudents}</div>
+                        <div className="text-2xl font-bold text-black">{userStats.totaltrainees}</div>
                       </div>
-                      <div className="text-sm text-gray-600 font-medium">Students</div>
+                      <div className="text-sm text-gray-600 font-medium">trainees</div>
                     </div>
 
-                    {/* Students Card */}
+                    {/* trainees Card */}
                     <div className="bg-white rounded-xl p-4 border border-gray-200">
                       <div className="flex items-center space-x-3 mb-3">
                         <div className="p-2 bg-yellow-500 rounded-lg">
@@ -1668,12 +1668,12 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                           </svg>
                         </div>
-                        <div className="text-2xl font-bold text-black">{userStats.totalStudents}</div>
+                        <div className="text-2xl font-bold text-black">{userStats.totaltrainees}</div>
                       </div>
-                      <div className="text-sm text-gray-600 font-medium">Students</div>
+                      <div className="text-sm text-gray-600 font-medium">trainees</div>
                     </div>
 
-                    {/* Instructors Card */}
+                    {/* trainees Card */}
                     <div className="bg-white rounded-xl p-4 border border-gray-200">
                       <div className="flex items-center space-x-3 mb-3">
                         <div className="p-2 bg-purple-500 rounded-lg">
@@ -1681,9 +1681,9 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                           </svg>
                         </div>
-                        <div className="text-2xl font-bold text-black">{userStats.totalInstructors}</div>
+                        <div className="text-2xl font-bold text-black">{userStats.totaltrainees}</div>
                       </div>
-                      <div className="text-sm text-gray-600 font-medium">Instructors</div>
+                      <div className="text-sm text-gray-600 font-medium">trainees</div>
                     </div>
                   </div>
 
@@ -1759,8 +1759,8 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             </div>
             )}
 
-            {/* My Learning - For Students and Students */}
-            {userRole === 'student' && (
+            {/* My Learning - For trainees and trainees */}
+            {userRole === 'trainee' && (
             <div>
               <div className="flex items-center justify-between mb-4 md:mb-6">
                 <h2 className="text-lg md:text-xl font-bold text-black">My Learning Progress</h2>
@@ -1810,8 +1810,8 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             </div>
             )}
 
-            {/* My Classes - For Instructors */}
-            {userRole === 'instructor' && (
+            {/* My Classes - For trainees */}
+            {userRole === 'trainee' && (
             <div>
               <div className="flex items-center justify-between mb-4 md:mb-6">
                 <h2 className="text-lg md:text-xl font-bold text-black">My Teaching Overview</h2>
@@ -1831,7 +1831,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                   <div className="text-sm text-gray-600 font-medium">My Courses</div>
                 </div>
 
-                {/* Total Students */}
+                {/* Total trainees */}
                 <div className="bg-white rounded-xl p-6 border border-gray-200">
                   <div className="flex items-center space-x-3 mb-3">
                     <div className="p-3 bg-black rounded-lg">
@@ -1839,9 +1839,9 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
                       </svg>
                     </div>
-                    <div className="text-3xl font-bold text-black">{userStats.totalStudents + userStats.totalStudents}</div>
+                    <div className="text-3xl font-bold text-black">{userStats.totaltrainees + userStats.totaltrainees}</div>
                   </div>
-                  <div className="text-sm text-gray-600 font-medium">Total Students</div>
+                  <div className="text-sm text-gray-600 font-medium">Total trainees</div>
                 </div>
 
                 {/* Active Subjects */}

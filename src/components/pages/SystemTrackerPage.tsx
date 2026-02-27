@@ -204,8 +204,8 @@ export default function SystemTrackerPage() {
   // Predefined user types for the filter
   const userTypes = [
     { value: 'admin', label: 'Admin' },
-    { value: 'instructor', label: 'Instructor' },
-    { value: 'student', label: 'Student' },
+    { value: 'trainee', label: 'trainee' },
+    { value: 'trainee', label: 'trainee' },
   ]
 
   return (

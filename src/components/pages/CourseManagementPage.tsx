@@ -14,7 +14,7 @@ interface Course {
   course_group?: string
   course_type: 'academic' | 'tesda' | 'upskill'
   status: 'active' | 'inactive' | 'draft'
-  enrollment_type: 'student' | 'tesda_scholar' | 'both'
+  enrollment_type: 'trainee' | 'tesda_scholar' | 'both'
   created_at: string
   subjects?: Subject[]
 }
@@ -24,15 +24,15 @@ interface Subject {
   course_id: string
   title: string
   description: string
-  instructor_id?: string
-  instructor_name?: string
-  instructor?: {
+  trainee_id?: string
+  trainee_name?: string
+  trainee?: {
     first_name: string
     last_name: string
   }
   order_index: number
   status: 'active' | 'inactive' | 'draft'
-  enrollment_type: 'student' | 'tesda_scholar' | 'both'
+  enrollment_type: 'trainee' | 'tesda_scholar' | 'both'
   created_at: string
   modules?: CourseModule[]
   enrollment_count?: number
@@ -61,7 +61,7 @@ interface NewCourse {
   course_group: string
   course_type: 'academic' | 'tesda' | 'upskill'
   status: 'active' | 'inactive' | 'draft'
-  enrollment_type: 'student' | 'tesda_scholar' | 'both'
+  enrollment_type: 'trainee' | 'tesda_scholar' | 'both'
   color_name?: string
   color_hex?: string
   bg_class?: string
@@ -72,10 +72,10 @@ interface NewCourse {
 interface NewSubject {
   title: string
   description: string
-  instructor_id?: string
+  trainee_id?: string
   order_index: number
   status: 'active' | 'inactive' | 'draft'
-  enrollment_type: 'student' | 'tesda_scholar' | 'both'
+  enrollment_type: 'trainee' | 'tesda_scholar' | 'both'
 }
 
 interface NewCourseModule {
@@ -124,11 +124,10 @@ export default function CourseManagementPage() {
       </div>
     )
   }
-  const [instructors, setInstructors] = useState<Array<{id: string, first_name: string, last_name: string}>>([])
-  const [students, setStudents] = useState<Array<{id: string, first_name: string, last_name: string, email: string}>>([])
-  const [enrolledStudents, setEnrolledStudents] = useState<Array<{id: string, first_name: string, last_name: string, email: string, enrollment_id: string, enrolled_at: string, status: string, progress: number}>>([])
-  const [availableStudents, setAvailableStudents] = useState<Array<{id: string, first_name: string, last_name: string, email: string}>>([])
-  const [selectedStudents, setSelectedStudents] = useState<string[]>([])
+  const [trainees, settrainees] = useState<Array<{id: string, first_name: string, last_name: string, email: string}>>([])
+  const [enrolledtrainees, setEnrolledtrainees] = useState<Array<{id: string, first_name: string, last_name: string, email: string, enrollment_id: string, enrolled_at: string, status: string, progress: number}>>([])
+  const [availabletrainees, setAvailabletrainees] = useState<Array<{id: string, first_name: string, last_name: string, email: string}>>([])
+  const [selectedtrainees, setSelectedtrainees] = useState<string[]>([])
   const [selectedCourseForEnrollment, setSelectedCourseForEnrollment] = useState<Course | null>(null)
   const [availableColors, setAvailableColors] = useState<Array<{id: string, color_name: string, color_hex: string, bg_class: string, text_class: string, border_class: string}>>([])
   const [courseColors, setCourseColors] = useState<Array<{course_id: string, color_name: string, color_hex: string}>>([])
@@ -142,7 +141,7 @@ export default function CourseManagementPage() {
   const [showEditModuleModal, setShowEditModuleModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showPresentationModal, setShowPresentationModal] = useState(false)
-  const [showEnrollStudentsModal, setShowEnrollStudentsModal] = useState(false)
+  const [showEnrolltraineesModal, setShowEnrolltraineesModal] = useState(false)
   const [currentPresentationModule, setCurrentPresentationModule] = useState<CourseModule | null>(null)
   
   // Form states
@@ -152,7 +151,7 @@ export default function CourseManagementPage() {
     course_group: '',
     course_type: 'academic',
     status: 'draft',
-    enrollment_type: 'student',
+    enrollment_type: 'trainee',
     color_name: '',
     color_hex: '',
     bg_class: '',
@@ -163,10 +162,10 @@ export default function CourseManagementPage() {
   const [newSubject, setNewSubject] = useState<NewSubject>({
     title: '',
     description: '',
-    instructor_id: '',
+    trainee_id: '',
     order_index: 1,
     status: 'draft',
-    enrollment_type: 'student'
+    enrollment_type: 'trainee'
   })
 
   const [newModule, setNewModule] = useState<NewCourseModule>({
@@ -284,7 +283,7 @@ export default function CourseManagementPage() {
         .from('subjects')
         .select(`
           *,
-          instructor:profiles(first_name, last_name)
+          trainee:profiles(first_name, last_name)
         `)
         .eq('course_id', courseId)
         .order('order_index', { ascending: true })
@@ -298,8 +297,8 @@ export default function CourseManagementPage() {
       const subjectsWithCounts = (data || []).map((subject: Subject) => {
         return {
           ...subject,
-          instructor_name: subject.instructor 
-            ? `${subject.instructor.first_name} ${subject.instructor.last_name}`
+          trainee_name: subject.trainee 
+            ? `${subject.trainee.first_name} ${subject.trainee.last_name}`
             : 'Unassigned',
           enrollment_count: 0 // No longer tracking subject-level enrollments
         }
@@ -330,42 +329,42 @@ export default function CourseManagementPage() {
     }
   }
 
-  const fetchInstructors = async () => {
+  const fetchtrainees = async () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
         .select('id, first_name, last_name, role')
-        .in('role', ['instructor'])
+        .in('role', ['trainee'])
         .order('first_name', { ascending: true })
 
       if (error) {
-        console.error('Error fetching instructors:', error)
+        console.error('Error fetching trainees:', error)
         return
       }
 
-      setInstructors(data || [])
-      console.log('Instructors loaded:', data?.length || 0)
+      settrainees(data || [])
+      console.log('trainees loaded:', data?.length || 0)
     } catch (error) {
-      console.error('Error fetching instructors:', error)
+      console.error('Error fetching trainees:', error)
     }
   }
 
-  const fetchStudents = async () => {
+  const fetchtrainees = async () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
         .select('id, first_name, last_name, email')
-        .in('role', ['student'])
+        .in('role', ['trainee'])
         .order('first_name', { ascending: true })
 
       if (error) {
-        console.error('Error fetching students:', error)
+        console.error('Error fetching trainees:', error)
         return
       }
 
-      setStudents(data || [])
+      settrainees(data || [])
     } catch (error) {
-      console.error('Error fetching students:', error)
+      console.error('Error fetching trainees:', error)
     }
   }
 
@@ -394,7 +393,7 @@ export default function CourseManagementPage() {
           .from('course_enrollments')
           .select(`
             *,
-            student:profiles(id, first_name, last_name, email)
+            trainee:profiles(id, first_name, last_name, email)
           `)
           .eq('course_id', courseId)
           .order('enrolled_at', { ascending: false })
@@ -409,7 +408,7 @@ export default function CourseManagementPage() {
           enrolled_at: string
           status: string
           progress: number
-          student: {
+          trainee: {
             id: string
             first_name: string
             last_name: string
@@ -417,7 +416,7 @@ export default function CourseManagementPage() {
           }
         }
 
-        type EnrolledStudent = {
+        type Enrolledtrainee = {
           id: string
           first_name: string
           last_name: string
@@ -428,20 +427,20 @@ export default function CourseManagementPage() {
           progress: number
         }
 
-        const enrolled: EnrolledStudent[] = (data || []).map((enrollment: EnrollmentData) => ({
-          ...enrollment.student,
+        const enrolled: Enrolledtrainee[] = (data || []).map((enrollment: EnrollmentData) => ({
+          ...enrollment.trainee,
           enrollment_id: enrollment.id,
           enrolled_at: enrollment.enrolled_at,
           status: enrollment.status,
           progress: enrollment.progress
         }))
 
-        setEnrolledStudents(enrolled)
+        setEnrolledtrainees(enrolled)
 
-        // Filter available students (not enrolled)
-        const enrolledStudentIds = enrolled.map((s: EnrolledStudent) => s.id)
-        const available = students.filter(student => !enrolledStudentIds.includes(student.id))
-        setAvailableStudents(available)
+        // Filter available trainees (not enrolled)
+        const enrolledtraineeIds = enrolled.map((s: Enrolledtrainee) => s.id)
+        const available = trainees.filter(trainee => !enrolledtraineeIds.includes(trainee.id))
+        setAvailabletrainees(available)
 
       } catch (error) {
         console.error('Error fetching enrollments:', error)
@@ -451,17 +450,17 @@ export default function CourseManagementPage() {
   useEffect(() => {
     console.log('CourseManagementPage mounted, fetching data...')
     fetchCourses()
-    fetchInstructors()
-    fetchStudents()
+    fetchtrainees()
+    fetchtrainees()
     fetchAvailableColors()
   }, [])
 
-  // Refresh instructors when component becomes visible (e.g., when navigating back from User Management)
+  // Refresh trainees when component becomes visible (e.g., when navigating back from User Management)
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        console.log('Page became visible, refreshing instructors...')
-        fetchInstructors()
+        console.log('Page became visible, refreshing trainees...')
+        fetchtrainees()
       }
     }
 
@@ -554,7 +553,7 @@ export default function CourseManagementPage() {
         course_group: '',
         course_type: 'academic',
         status: 'draft',
-        enrollment_type: 'student',
+        enrollment_type: 'trainee',
         color_name: '',
         color_hex: '',
         bg_class: '',
@@ -625,7 +624,7 @@ export default function CourseManagementPage() {
           course_id: selectedCourse.id,
           title: newSubject.title,
           description: newSubject.description,
-          instructor_id: newSubject.instructor_id || null,
+          trainee_id: newSubject.trainee_id || null,
           status: newSubject.status,
           enrollment_type: newSubject.enrollment_type,
           order_index: targetOrderIndex
@@ -640,10 +639,10 @@ export default function CourseManagementPage() {
       setNewSubject({
         title: '',
         description: '',
-        instructor_id: '',
+        trainee_id: '',
         order_index: 1,
         status: 'draft',
-        enrollment_type: 'student'
+        enrollment_type: 'trainee'
       })
       setShowAddSubjectModal(false)
       await fetchSubjects(selectedCourse.id)
@@ -984,7 +983,7 @@ export default function CourseManagementPage() {
         course_group: '',
         course_type: 'academic',
         status: 'draft',
-        enrollment_type: 'student',
+        enrollment_type: 'trainee',
         color_name: '',
         color_hex: '',
         bg_class: '',
@@ -1032,7 +1031,7 @@ export default function CourseManagementPage() {
     setNewSubject({
       title: subject.title,
       description: subject.description,
-      instructor_id: subject.instructor_id || '',
+      trainee_id: subject.trainee_id || '',
       order_index: subject.order_index,
       status: subject.status,
       enrollment_type: subject.enrollment_type
@@ -1091,7 +1090,7 @@ export default function CourseManagementPage() {
         .update({
           title: newSubject.title,
           description: newSubject.description,
-          instructor_id: newSubject.instructor_id || null,
+          trainee_id: newSubject.trainee_id || null,
           status: newSubject.status,
           enrollment_type: newSubject.enrollment_type,
           order_index: newSubject.order_index
@@ -1107,10 +1106,10 @@ export default function CourseManagementPage() {
       setNewSubject({
         title: '',
         description: '',
-        instructor_id: '',
+        trainee_id: '',
         order_index: 1,
         status: 'draft',
-        enrollment_type: 'student'
+        enrollment_type: 'trainee'
       })
       setEditingSubject(null)
       setShowEditSubjectModal(false)
@@ -1130,30 +1129,30 @@ export default function CourseManagementPage() {
   }
 
   // Enrollment functions
-  const handleEnrollStudents = (course: Course) => {
+  const handleEnrolltrainees = (course: Course) => {
       setSelectedCourseForEnrollment(course)
-      setSelectedStudents([])
+      setSelectedtrainees([])
       fetchEnrollments(course.id)
-      setShowEnrollStudentsModal(true)
+      setShowEnrolltraineesModal(true)
     }
 
-  const handleStudentSelection = (studentId: string) => {
-    setSelectedStudents(prev => 
-      prev.includes(studentId) 
-        ? prev.filter(id => id !== studentId)
-        : [...prev, studentId]
+  const handletraineeSelection = (traineeId: string) => {
+    setSelectedtrainees(prev => 
+      prev.includes(traineeId) 
+        ? prev.filter(id => id !== traineeId)
+        : [...prev, traineeId]
     )
   }
 
-  const handleEnrollSelectedStudents = async () => {
-      if (!selectedCourseForEnrollment || selectedStudents.length === 0) return
+  const handleEnrollSelectedtrainees = async () => {
+      if (!selectedCourseForEnrollment || selectedtrainees.length === 0) return
 
       setSubmitting(true)
 
       try {
-        const enrollments = selectedStudents.map(studentId => ({
+        const enrollments = selectedtrainees.map(traineeId => ({
           course_id: selectedCourseForEnrollment.id,
-          student_id: studentId,
+          trainee_id: traineeId,
           status: 'active'
         }))
 
@@ -1162,24 +1161,24 @@ export default function CourseManagementPage() {
           .insert(enrollments)
 
         if (error) {
-          console.error('Error enrolling students:', error)
-          showError('Error', 'Error enrolling students: ' + error.message)
+          console.error('Error enrolling trainees:', error)
+          showError('Error', 'Error enrolling trainees: ' + error.message)
           return
         }
 
-        setSelectedStudents([])
+        setSelectedtrainees([])
         await fetchEnrollments(selectedCourseForEnrollment.id)
 
-        showSuccess('Success', `Successfully enrolled ${selectedStudents.length} student${selectedStudents.length !== 1 ? 's' : ''}`)
+        showSuccess('Success', `Successfully enrolled ${selectedtrainees.length} trainee${selectedtrainees.length !== 1 ? 's' : ''}`)
       } catch (error) {
-        console.error('Error enrolling students:', error)
-        showError('Error', 'Error enrolling students. Please try again.')
+        console.error('Error enrolling trainees:', error)
+        showError('Error', 'Error enrolling trainees. Please try again.')
       } finally {
         setSubmitting(false)
       }
     }
 
-  const handleUnenrollStudent = async (enrollmentId: string) => {
+  const handleUnenrolltrainee = async (enrollmentId: string) => {
       if (!selectedCourseForEnrollment) return
 
       setSubmitting(true)
@@ -1191,17 +1190,17 @@ export default function CourseManagementPage() {
           .eq('id', enrollmentId)
 
         if (error) {
-          console.error('Error unenrolling student:', error)
-          showError('Error', 'Error unenrolling student: ' + error.message)
+          console.error('Error unenrolling trainee:', error)
+          showError('Error', 'Error unenrolling trainee: ' + error.message)
           return
         }
 
         await fetchEnrollments(selectedCourseForEnrollment.id)
 
-        showSuccess('Success', 'Student unenrolled successfully')
+        showSuccess('Success', 'trainee unenrolled successfully')
       } catch (error) {
-        console.error('Error unenrolling student:', error)
-        showError('Error', 'Error unenrolling student. Please try again.')
+        console.error('Error unenrolling trainee:', error)
+        showError('Error', 'Error unenrolling trainee. Please try again.')
       } finally {
         setSubmitting(false)
       }
@@ -1505,13 +1504,13 @@ export default function CourseManagementPage() {
   const getEnrollmentTypeDisplay = (type: string) => {
     if (type === 'both') {
       return [
-        { text: 'Students', color: 'bg-blue-100 text-blue-800' },
+        { text: 'trainees', color: 'bg-blue-100 text-blue-800' },
         { text: 'TESDA Scholars', color: 'bg-purple-100 text-purple-800' }
       ]
     } else if (type === 'tesda_scholar') {
       return [{ text: 'TESDA Scholars', color: 'bg-purple-100 text-purple-800' }]
     }
-    return [{ text: 'Students', color: 'bg-blue-100 text-blue-800' }]
+    return [{ text: 'trainees', color: 'bg-blue-100 text-blue-800' }]
   }
 
   // Helper function to get course color
@@ -1740,7 +1739,7 @@ export default function CourseManagementPage() {
                         {/* Action Button - Always at bottom */}
                         <div className="mt-auto space-y-2">
                           <button 
-                            onClick={() => handleEnrollStudents(course)}
+                            onClick={() => handleEnrolltrainees(course)}
                             className="w-full px-4 py-2.5 text-white rounded-xl font-semibold text-sm transition-all duration-200 hover:shadow-lg transform hover:-translate-y-0.5 flex items-center justify-center space-x-2"
                             style={{ backgroundColor: getButtonBg() }}
                             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
@@ -1749,7 +1748,7 @@ export default function CourseManagementPage() {
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                             </svg>
-                            <span>Enroll Students</span>
+                            <span>Enroll trainees</span>
                           </button>
                           <button 
                             onClick={() => handleCourseSelect(course)}
@@ -1791,7 +1790,7 @@ export default function CourseManagementPage() {
                   Subject Management
                 </h2>
                 <p className="text-gray-600">
-                  Organize subjects and assign instructors for <span className="font-semibold text-gray-900">{selectedCourse.title}</span>
+                  Organize subjects and assign trainees for <span className="font-semibold text-gray-900">{selectedCourse.title}</span>
                 </p>
               </div>
               
@@ -1863,22 +1862,22 @@ export default function CourseManagementPage() {
                           )}
                           
                           <div className="flex flex-wrap items-center gap-4 text-sm">
-                            {/* Instructor */}
+                            {/* trainee */}
                             <div className="flex items-center gap-2">
                               <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                               </svg>
-                              <span className="text-gray-500">Instructor:</span>
+                              <span className="text-gray-500">trainee:</span>
                               <span className={`font-semibold ${
-                                subject.instructor_name === 'Unassigned' ? 'text-gray-400 italic' : 'text-gray-900'
+                                subject.trainee_name === 'Unassigned' ? 'text-gray-400 italic' : 'text-gray-900'
                               }`}>
-                                {subject.instructor_name}
+                                {subject.trainee_name}
                               </span>
                             </div>
                             
                             {/* Enrollment Type */}
                             <div className="flex items-center gap-2">
-                              {getEnrollmentTypeDisplay(subject.enrollment_type || 'student').map((badge, idx) => (
+                              {getEnrollmentTypeDisplay(subject.enrollment_type || 'trainee').map((badge, idx) => (
                                 <span key={idx} className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded ${badge.color}`}>
                                   {badge.text}
                                 </span>
@@ -2213,10 +2212,10 @@ export default function CourseManagementPage() {
                   <select
                     required
                     value={newCourse.enrollment_type}
-                    onChange={(e) => setNewCourse(prev => ({ ...prev, enrollment_type: e.target.value as 'student' | 'tesda_scholar' | 'both' }))}
+                    onChange={(e) => setNewCourse(prev => ({ ...prev, enrollment_type: e.target.value as 'trainee' | 'tesda_scholar' | 'both' }))}
                     className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-black focus:border-black"
                   >
-                    <option value="student">Student Only</option>
+                    <option value="trainee">trainee Only</option>
                     <option value="tesda_scholar">TESDA Scholar Only</option>
                     <option value="both">Both</option>
                   </select>
@@ -2320,16 +2319,16 @@ export default function CourseManagementPage() {
                 </div>
                 
                 <div>
-                  <label className="block text-xs font-medium text-black mb-1">Instructor</label>
+                  <label className="block text-xs font-medium text-black mb-1">trainee</label>
                   <select
-                    value={newSubject.instructor_id}
-                    onChange={(e) => setNewSubject(prev => ({ ...prev, instructor_id: e.target.value }))}
+                    value={newSubject.trainee_id}
+                    onChange={(e) => setNewSubject(prev => ({ ...prev, trainee_id: e.target.value }))}
                     className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-black focus:border-black"
                   >
-                    <option value="">Select instructor</option>
-                    {instructors.map((instructor) => (
-                      <option key={instructor.id} value={instructor.id}>
-                        {instructor.first_name} {instructor.last_name}
+                    <option value="">Select trainee</option>
+                    {trainees.map((trainee) => (
+                      <option key={trainee.id} value={trainee.id}>
+                        {trainee.first_name} {trainee.last_name}
                       </option>
                     ))}
                   </select>
@@ -2433,16 +2432,16 @@ export default function CourseManagementPage() {
                 </div>
                 
                 <div>
-                  <label className="block text-xs font-medium text-black mb-1">Instructor</label>
+                  <label className="block text-xs font-medium text-black mb-1">trainee</label>
                   <select
-                    value={newSubject.instructor_id}
-                    onChange={(e) => setNewSubject(prev => ({ ...prev, instructor_id: e.target.value }))}
+                    value={newSubject.trainee_id}
+                    onChange={(e) => setNewSubject(prev => ({ ...prev, trainee_id: e.target.value }))}
                     className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-black focus:border-black"
                   >
-                    <option value="">Select instructor</option>
-                    {instructors.map((instructor) => (
-                      <option key={instructor.id} value={instructor.id}>
-                        {instructor.first_name} {instructor.last_name}
+                    <option value="">Select trainee</option>
+                    {trainees.map((trainee) => (
+                      <option key={trainee.id} value={trainee.id}>
+                        {trainee.first_name} {trainee.last_name}
                       </option>
                     ))}
                   </select>
@@ -3105,10 +3104,10 @@ export default function CourseManagementPage() {
                   <select
                     required
                     value={newCourse.enrollment_type}
-                    onChange={(e) => setNewCourse(prev => ({ ...prev, enrollment_type: e.target.value as 'student' | 'tesda_scholar' | 'both' }))}
+                    onChange={(e) => setNewCourse(prev => ({ ...prev, enrollment_type: e.target.value as 'trainee' | 'tesda_scholar' | 'both' }))}
                     className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-black focus:border-black"
                   >
-                    <option value="student">Student Only</option>
+                    <option value="trainee">trainee Only</option>
                     <option value="tesda_scholar">TESDA Scholar Only</option>
                     <option value="both">Both</option>
                   </select>
@@ -3260,17 +3259,17 @@ export default function CourseManagementPage() {
         </div>
       )}
 
-      {/* Enroll Students Modal */}
-      {showEnrollStudentsModal && selectedCourseForEnrollment && (
+      {/* Enroll trainees Modal */}
+      {showEnrolltraineesModal && selectedCourseForEnrollment && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-black">
-                  Enroll Students - {selectedCourseForEnrollment.title}
+                  Enroll trainees - {selectedCourseForEnrollment.title}
                 </h2>
                 <button 
-                  onClick={() => setShowEnrollStudentsModal(false)}
+                  onClick={() => setShowEnrolltraineesModal(false)}
                   className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -3282,33 +3281,33 @@ export default function CourseManagementPage() {
 
             <div className="p-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Available Students */}
+                {/* Available trainees */}
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-black">Available Students</h3>
+                    <h3 className="text-lg font-semibold text-black">Available trainees</h3>
                     <span className="px-2 py-1 bg-gray-200 text-gray-800 text-xs font-medium rounded-full">
-                      {availableStudents.length} available
+                      {availabletrainees.length} available
                     </span>
                   </div>
                   
                   <div className="border border-gray-200 rounded-lg max-h-96 overflow-y-auto">
-                    {availableStudents.length > 0 ? (
+                    {availabletrainees.length > 0 ? (
                       <div className="divide-y divide-gray-200">
-                        {availableStudents.map((student) => (
-                          <div key={student.id} className="p-3 hover:bg-gray-50">
+                        {availabletrainees.map((trainee) => (
+                          <div key={trainee.id} className="p-3 hover:bg-gray-50">
                             <label className="flex items-center space-x-3 cursor-pointer">
                               <input
                                 type="checkbox"
-                                checked={selectedStudents.includes(student.id)}
-                                onChange={() => handleStudentSelection(student.id)}
+                                checked={selectedtrainees.includes(trainee.id)}
+                                onChange={() => handletraineeSelection(trainee.id)}
                                 className="rounded border-gray-300 text-gray-900 focus:ring-gray-500"
                               />
                               <div className="flex-1">
                                 <div className="text-sm font-medium text-gray-900">
-                                  {student.first_name} {student.last_name}
+                                  {trainee.first_name} {trainee.last_name}
                                 </div>
                                 <div className="text-xs text-gray-500">
-                                  {student.email}
+                                  {trainee.email}
                                 </div>
                               </div>
                             </label>
@@ -3320,15 +3319,15 @@ export default function CourseManagementPage() {
                         <svg className="w-12 h-12 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg>
-                        <p>All students are already enrolled</p>
+                        <p>All trainees are already enrolled</p>
                       </div>
                     )}
                   </div>
 
-                  {selectedStudents.length > 0 && (
+                  {selectedtrainees.length > 0 && (
                     <div className="mt-4">
                       <button
-                        onClick={handleEnrollSelectedStudents}
+                        onClick={handleEnrollSelectedtrainees}
                         disabled={submitting}
                         className="w-full px-4 py-2 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center space-x-2"
                         style={{ backgroundColor: getButtonBg() }}
@@ -3337,44 +3336,44 @@ export default function CourseManagementPage() {
                       >
                         {submitting && <ButtonLoading />}
                         <span>
-                          {submitting ? 'Enrolling...' : `Enroll ${selectedStudents.length} Student${selectedStudents.length !== 1 ? 's' : ''}`}
+                          {submitting ? 'Enrolling...' : `Enroll ${selectedtrainees.length} trainee${selectedtrainees.length !== 1 ? 's' : ''}`}
                         </span>
                       </button>
                     </div>
                   )}
                 </div>
 
-                {/* Enrolled Students */}
+                {/* Enrolled trainees */}
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-black">Enrolled Students</h3>
+                    <h3 className="text-lg font-semibold text-black">Enrolled trainees</h3>
                     <span className="px-2 py-1 bg-gray-200 text-gray-800 text-xs font-medium rounded-full">
-                      {enrolledStudents.length} enrolled
+                      {enrolledtrainees.length} enrolled
                     </span>
                   </div>
                   
                   <div className="border border-gray-200 rounded-lg max-h-96 overflow-y-auto">
-                    {enrolledStudents.length > 0 ? (
+                    {enrolledtrainees.length > 0 ? (
                       <div className="divide-y divide-gray-200">
-                        {enrolledStudents.map((student) => (
-                          <div key={student.id} className="p-3 hover:bg-gray-50">
+                        {enrolledtrainees.map((trainee) => (
+                          <div key={trainee.id} className="p-3 hover:bg-gray-50">
                             <div className="flex items-center justify-between">
                               <div className="flex-1">
                                 <div className="text-sm font-medium text-gray-900">
-                                  {student.first_name} {student.last_name}
+                                  {trainee.first_name} {trainee.last_name}
                                 </div>
                                 <div className="text-xs text-gray-500">
-                                  {student.email}
+                                  {trainee.email}
                                 </div>
                                 <div className="text-xs text-gray-400 mt-1">
-                                  Enrolled: {new Date(student.enrolled_at).toLocaleDateString()}
+                                  Enrolled: {new Date(trainee.enrolled_at).toLocaleDateString()}
                                 </div>
                               </div>
                               <button
-                                onClick={() => handleUnenrollStudent(student.enrollment_id)}
+                                onClick={() => handleUnenrolltrainee(trainee.enrollment_id)}
                                 disabled={submitting}
                                 className="p-1 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors disabled:opacity-50"
-                                title="Unenroll student"
+                                title="Unenroll trainee"
                               >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -3389,7 +3388,7 @@ export default function CourseManagementPage() {
                         <svg className="w-12 h-12 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
                         </svg>
-                        <p>No students enrolled yet</p>
+                        <p>No trainees enrolled yet</p>
                       </div>
                     )}
                   </div>
@@ -3398,7 +3397,7 @@ export default function CourseManagementPage() {
 
               <div className="flex justify-end mt-6 pt-4 border-t border-gray-100">
                 <button
-                  onClick={() => setShowEnrollStudentsModal(false)}
+                  onClick={() => setShowEnrolltraineesModal(false)}
                   className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   Close

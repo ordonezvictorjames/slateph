@@ -14,10 +14,17 @@ export async function GET() {
       return NextResponse.json({ session: null }, { status: 200 })
     }
 
-    // Decode the session data (only userId, role, email)
+    // Decode the session data (userId, role, email)
     const sessionData = JSON.parse(sessionCookie.value)
     
-    return NextResponse.json({ session: sessionData }, { status: 200 })
+    // Return session with id field for compatibility with AuthContext
+    return NextResponse.json({ 
+      session: {
+        id: sessionData.userId,
+        role: sessionData.role,
+        email: sessionData.email
+      } 
+    }, { status: 200 })
   } catch (error) {
     console.error('Session retrieval error:', error)
     return NextResponse.json({ session: null }, { status: 200 })

@@ -40,7 +40,7 @@ export default function FeatureRequestsPage() {
   // Check if user is developer (can edit)
   const isDeveloper = user?.profile?.role === 'developer'
   const canEdit = isDeveloper // Only developers can edit
-  const canSubmit = !isDeveloper // Admin, instructor, student can submit
+  const canSubmit = !isDeveloper // Admin, trainee, trainee can submit
 
   // Form state
   const [formData, setFormData] = useState({

@@ -22,7 +22,7 @@ export default function LoginForm() {
   const [lastName, setLastName] = useState('')
   const [signUpEmail, setSignUpEmail] = useState('')
   const [signUpPassword, setSignUpPassword] = useState('')
-  const [userType, setUserType] = useState('student')
+  const [userType, setUserType] = useState('trainee')
   const [code, setCode] = useState('')
   const [showPasswordRequirements, setShowPasswordRequirements] = useState(false)
   const [acceptedTerms, setAcceptedTerms] = useState(false)
@@ -148,8 +148,8 @@ export default function LoginForm() {
         return
       }
 
-      // Determine role based on user_type (use 'instructor' not 'teacher')
-      const role = userType === 'instructor' ? 'instructor' : 'student'
+      // Determine role based on user_type (use 'trainee' not 'trainee')
+      const role = userType === 'trainee' ? 'trainee' : 'trainee'
 
       // Create user account
       const { data, error } = await supabase.rpc('create_user_account', {
@@ -188,7 +188,7 @@ export default function LoginForm() {
       setSignUpEmail('')
       setSignUpPassword('')
       setCode('')
-      setUserType('student')
+      setUserType('trainee')
       setAcceptedTerms(false)
       setIsSignUp(false)
       setLoading(false)
@@ -502,8 +502,8 @@ export default function LoginForm() {
                   className="h-12 border-2 border-black rounded-xl focus:border-black focus:ring-0 focus:outline-none focus-visible:outline-none focus-visible:ring-0 w-full px-4 text-black bg-white appearance-none cursor-pointer"
                   required
                 >
-                  <option value="student">Student</option>
-                  <option value="instructor">Instructor</option>
+                  <option value="trainee">trainee</option>
+                  <option value="trainee">trainee</option>
                 </select>
                 {/* Custom dropdown arrow */}
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">

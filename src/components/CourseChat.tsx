@@ -167,8 +167,8 @@ export default function CourseChat({ isOpen, onClose }: CourseChatProps) {
         if (!error && data) {
           coursesData = data
         }
-      } else if (userRole === 'instructor') {
-        // Instructor can access courses they teach
+      } else if (userRole === 'trainee') {
+        // trainee can access courses they teach
         const { data, error } = await supabase
           .from('subjects')
           .select(`
@@ -179,11 +179,11 @@ export default function CourseChat({ isOpen, onClose }: CourseChatProps) {
               description
             )
           `)
-          .eq('instructor_id', user.id)
+          .eq('trainee_id', user.id)
           .eq('courses.status', 'active')
 
         if (error) {
-          console.error('Error loading courses for instructor:', error)
+          console.error('Error loading courses for trainee:', error)
         }
         if (!error && data) {
           // Extract unique courses
@@ -196,8 +196,8 @@ export default function CourseChat({ isOpen, onClose }: CourseChatProps) {
           coursesData = Array.from(uniqueCourses.values())
         }
       } else {
-        // Students can access courses they're enrolled in
-        console.log('Querying course_enrollments for student_id:', user.id)
+        // trainees can access courses they're enrolled in
+        console.log('Querying course_enrollments for trainee_id:', user.id)
         const { data, error } = await supabase
           .from('course_enrollments')
           .select(`
@@ -208,11 +208,11 @@ export default function CourseChat({ isOpen, onClose }: CourseChatProps) {
               description
             )
           `)
-          .eq('student_id', user.id)
+          .eq('trainee_id', user.id)
           .eq('courses.status', 'active')
 
         if (error) {
-          console.error('Error loading courses for student:', error)
+          console.error('Error loading courses for trainee:', error)
           console.error('Error details:', {
             message: error.message,
             details: error.details,
@@ -221,7 +221,7 @@ export default function CourseChat({ isOpen, onClose }: CourseChatProps) {
           })
         }
         if (!error && data) {
-          console.log('Student enrollments found:', data)
+          console.log('trainee enrollments found:', data)
           coursesData = data.map((item: any) => item.courses)
         }
       }
@@ -383,7 +383,7 @@ export default function CourseChat({ isOpen, onClose }: CourseChatProps) {
     switch (role) {
       case 'admin':
         return 'bg-red-100 text-red-700'
-      case 'instructor':
+      case 'trainee':
         return 'bg-blue-100 text-blue-700'
       case 'developer':
         return 'bg-purple-100 text-purple-700'
@@ -514,7 +514,7 @@ export default function CourseChat({ isOpen, onClose }: CourseChatProps) {
                                 <span className="text-xs font-semibold text-gray-700">
                                   {msg.user_first_name} {msg.user_last_name}
                                 </span>
-                                {(msg.user_role === 'admin' || msg.user_role === 'instructor' || msg.user_role === 'developer') && (
+                                {(msg.user_role === 'admin' || msg.user_role === 'trainee' || msg.user_role === 'developer') && (
                                   <span className={`text-[10px] px-1.5 py-0.5 rounded ${getRoleBadgeColor(msg.user_role)}`}>
                                     {msg.user_role}
                                   </span>

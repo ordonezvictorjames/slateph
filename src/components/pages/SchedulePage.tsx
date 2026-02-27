@@ -13,7 +13,7 @@ interface CourseSchedule {
   batch_number: number
   start_date: string
   end_date: string
-  enrollment_type: 'student' | 'tesda_scholar' | 'both'
+  enrollment_type: 'trainee' | 'tesda_scholar' | 'both'
   sections: string[] | null
   grade_levels: number[] | null
   strands: string[] | null
@@ -60,7 +60,7 @@ export default function SchedulePage() {
     end_date: '',
     start_time: '',
     end_time: '',
-    enrollment_type: 'student' as 'student' | 'tesda_scholar' | 'both',
+    enrollment_type: 'trainee' as 'trainee' | 'tesda_scholar' | 'both',
     sections: [] as string[],
     grade_levels: [] as number[],
     strands: [] as string[],
@@ -124,7 +124,7 @@ export default function SchedulePage() {
       .from('profiles')
       .select('section')
       .not('section', 'is', null)
-      .eq('role', 'student')
+      .eq('role', 'trainee')
 
     if (error) {
       console.error('Error fetching sections:', error)
@@ -140,7 +140,7 @@ export default function SchedulePage() {
       .from('profiles')
       .select('strand')
       .not('strand', 'is', null)
-      .eq('role', 'student')
+      .eq('role', 'trainee')
 
     if (error) {
       console.error('Error fetching strands:', error)
@@ -170,8 +170,8 @@ export default function SchedulePage() {
 
       // Generate title based on enrollment type
       let generatedTitle = ''
-      if (newSchedule.enrollment_type === 'student') {
-        // For students, use grade level as title
+      if (newSchedule.enrollment_type === 'trainee') {
+        // For trainees, use grade level as title
         if (newSchedule.selected_grade) {
           generatedTitle = `Grade ${newSchedule.selected_grade}`
         } else {
@@ -225,7 +225,7 @@ export default function SchedulePage() {
         end_date: '',
         start_time: '',
         end_time: '',
-        enrollment_type: 'student',
+        enrollment_type: 'trainee',
         sections: [],
         grade_levels: [],
         strands: [],
@@ -289,7 +289,7 @@ export default function SchedulePage() {
     try {
       // Generate title based on enrollment type
       let generatedTitle = ''
-      if (newSchedule.enrollment_type === 'student') {
+      if (newSchedule.enrollment_type === 'trainee') {
         if (newSchedule.selected_grade) {
           generatedTitle = `Grade ${newSchedule.selected_grade}`
         } else {
@@ -721,7 +721,7 @@ export default function SchedulePage() {
                               {/* Filters Applied */}
                               {(schedule.sections || schedule.grade_levels || schedule.strands || schedule.batch_numbers) && (
                                 <div className="mt-3 pt-3 border-t border-gray-200">
-                                  <p className="text-xs font-bold text-gray-700 mb-2">Target Students</p>
+                                  <p className="text-xs font-bold text-gray-700 mb-2">Target trainees</p>
                                   <div className="flex flex-wrap gap-1.5">
                                     {schedule.sections && schedule.sections.map(section => (
                                       <span key={section} className="px-2.5 py-1 bg-blue-100 text-blue-800 text-xs rounded-lg font-semibold">
@@ -884,12 +884,12 @@ export default function SchedulePage() {
                     onChange={(e) => setNewSchedule(prev => ({ ...prev, enrollment_type: e.target.value as any }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                   >
-                    <option value="student">Students</option>
+                    <option value="trainee">trainees</option>
                     <option value="tesda_scholar">TESDA Scholars</option>
                   </select>
                 </div>
 
-                {newSchedule.enrollment_type === 'student' && (
+                {newSchedule.enrollment_type === 'trainee' && (
                   <>
                     <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1152,12 +1152,12 @@ export default function SchedulePage() {
                     onChange={(e) => setNewSchedule(prev => ({ ...prev, enrollment_type: e.target.value as any }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                   >
-                    <option value="student">Students</option>
+                    <option value="trainee">trainees</option>
                     <option value="tesda_scholar">TESDA Scholars</option>
                   </select>
                 </div>
 
-                {newSchedule.enrollment_type === 'student' && (
+                {newSchedule.enrollment_type === 'trainee' && (
                   <>
                     <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-gray-700 mb-2">

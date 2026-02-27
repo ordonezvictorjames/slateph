@@ -66,7 +66,7 @@ export default function ChangelogModal({ isOpen, onClose }: ChangelogModalProps)
                 </li>
                 <li className="flex items-start">
                   <span className="mr-2">✓</span>
-                  <span>SHS Strand tracking for students</span>
+                  <span>SHS Strand tracking for trainees</span>
                 </li>
               </ul>
             </div>
@@ -91,7 +91,7 @@ export default function ChangelogModal({ isOpen, onClose }: ChangelogModalProps)
                   <p className="text-sm text-gray-600 mb-2">SHS strand tracking, profile banners, and improved user profiles</p>
                   <div className="flex flex-wrap gap-2">
                     <span className="px-2 py-1 bg-indigo-100 text-indigo-800 text-xs rounded">Profiles</span>
-                    <span className="px-2 py-1 bg-indigo-100 text-indigo-800 text-xs rounded">Student Data</span>
+                    <span className="px-2 py-1 bg-indigo-100 text-indigo-800 text-xs rounded">trainee Data</span>
                   </div>
                 </div>
 

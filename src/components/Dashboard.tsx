@@ -21,7 +21,7 @@ import CodeGeneratorPage from '@/components/pages/CodeGeneratorPage'
 import FeatureRequestsPage from '@/components/pages/FeatureRequestsPage'
 import TasksPage from '@/components/pages/TasksPage'
 
-export type PageType = 'dashboard' | 'user-management' | 'course-management' | 'courses' | 'my-courses' | 'schedule' | 'analytics' | 'profile' | 'settings' | 'system-tracker' | 'code-generator' | 'feature-requests' | 'tasks' | 'social' | 'games' | 'activity'
+export type PageType = 'dashboard' | 'user-management' | 'course-management' | 'courses' | 'my-courses' | 'schedule' | 'analytics' | 'profile' | 'settings' | 'system-tracker' | 'code-generator' | 'feature-requests' | 'tasks' | 'games' | 'activity'
 
 export default function Dashboard() {
   const { signOut } = useAuth()
@@ -48,7 +48,7 @@ export default function Dashboard() {
 
   const renderCurrentPage = () => {
     const user = useAuth().user
-    const userRole = user?.profile?.role || 'student'
+    const userRole = user?.profile?.role || 'trainee'
     
     switch (currentPage) {
       case 'dashboard': return <DashboardHome onNavigate={setCurrentPage} />

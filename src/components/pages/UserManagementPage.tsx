@@ -32,7 +32,7 @@ interface Profile {
   first_name: string
   last_name: string
   email?: string
-  role: 'admin' | 'instructor' | 'student' | 'tesda_scholar'
+  role: 'admin' | 'trainee' | 'trainee' | 'tesda_scholar'
   status?: string
   avatar_url: string | null
   banner_url?: string | null
@@ -115,7 +115,7 @@ export default function UserManagementPage() {
     last_name: '',
     email: '',
     password: '',
-    role: 'student',
+    role: 'trainee',
     status: 'active',
     bio: '',
     avatar_url: '',
@@ -139,7 +139,7 @@ export default function UserManagementPage() {
       last_name: '',
       email: '',
       password: '',
-      role: 'student',
+      role: 'trainee',
       status: 'active',
       bio: '',
       avatar_url: '',
@@ -275,7 +275,7 @@ export default function UserManagementPage() {
         last_name: '',
         email: '',
         password: '',
-        role: 'student',
+        role: 'trainee',
         status: 'active',
         bio: '',
         avatar_url: '',
@@ -305,7 +305,7 @@ export default function UserManagementPage() {
       last_name: userData.last_name,
       email: userData.email,
       password: '',
-      role: userData.role as 'admin' | 'instructor' | 'student' | 'tesda_scholar',
+      role: userData.role as 'admin' | 'trainee' | 'trainee' | 'tesda_scholar',
       status: userData.status as 'active' | 'inactive' | 'pending',
       bio: '',
       avatar_url: userData.avatar_url,
@@ -461,7 +461,7 @@ export default function UserManagementPage() {
         last_name: '',
         email: '',
         password: '',
-        role: 'student',
+        role: 'trainee',
         status: 'active',
         bio: '',
         avatar_url: '',
@@ -500,21 +500,21 @@ export default function UserManagementPage() {
     // Fetch course information based on role
     let courseInfo: string[] = []
     
-    if (userData.role === 'student') {
-      // Fetch enrolled courses for students
+    if (userData.role === 'trainee') {
+      // Fetch enrolled courses for trainees
       const { data: enrollments } = await supabase
         .from('course_enrollments')
         .select('courses(title)')
-        .eq('student_id', userData.id)
+        .eq('trainee_id', userData.id)
         .eq('status', 'active')
       
       courseInfo = enrollments?.map((e: any) => e.courses?.title).filter(Boolean) || []
-    } else if (userData.role === 'instructor') {
-      // Fetch assigned courses for instructors (via subjects)
+    } else if (userData.role === 'trainee') {
+      // Fetch assigned courses for trainees (via subjects)
       const { data: subjects } = await supabase
         .from('subjects')
         .select('courses(title)')
-        .eq('instructor_id', userData.id)
+        .eq('trainee_id', userData.id)
       
       // Get unique course titles
       const courseTitles = subjects?.map((s: any) => s.courses?.title).filter(Boolean) || []
@@ -642,9 +642,9 @@ export default function UserManagementPage() {
             >
               <option value="all">All Roles</option>
               <option value="admin">Admin</option>
-              <option value="instructor">Instructor</option>
-              <option value="student">Student</option>
-              <option value="Student">Student</option>
+              <option value="trainee">trainee</option>
+              <option value="trainee">trainee</option>
+              <option value="trainee">trainee</option>
             </select>
           </div>
 
@@ -753,8 +753,8 @@ export default function UserManagementPage() {
                     <td className="px-6 py-3 whitespace-nowrap">
                       <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                         u.role === 'admin' ? 'bg-purple-100 text-purple-800' :
-                        u.role === 'instructor' ? 'bg-blue-100 text-blue-800' :
-                        u.role === 'student' ? 'bg-green-100 text-green-800' :
+                        u.role === 'trainee' ? 'bg-blue-100 text-blue-800' :
+                        u.role === 'trainee' ? 'bg-green-100 text-green-800' :
                         'bg-orange-100 text-orange-800'
                       }`}>
                         {u.role}
@@ -762,17 +762,17 @@ export default function UserManagementPage() {
                     </td>
                     <td className="px-6 py-3 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        {u.role === 'student' ? (u.strand || '-') : '-'}
+                        {u.role === 'trainee' ? (u.strand || '-') : '-'}
                       </div>
                     </td>
                     <td className="px-6 py-3 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        {u.role === 'student' ? (u.section || '-') : '-'}
+                        {u.role === 'trainee' ? (u.section || '-') : '-'}
                       </div>
                     </td>
                     <td className="px-6 py-3 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        {u.role === 'student' ? (u.grade || '-') : '-'}
+                        {u.role === 'trainee' ? (u.grade || '-') : '-'}
                       </div>
                     </td>
                     <td className="px-6 py-3 whitespace-nowrap">
@@ -900,23 +900,23 @@ export default function UserManagementPage() {
                     <div className="flex gap-2 flex-wrap">
                       <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                         u.role === 'admin' ? 'bg-purple-100 text-purple-800' :
-                        u.role === 'instructor' ? 'bg-blue-100 text-blue-800' :
-                        u.role === 'student' ? 'bg-green-100 text-green-800' :
+                        u.role === 'trainee' ? 'bg-blue-100 text-blue-800' :
+                        u.role === 'trainee' ? 'bg-green-100 text-green-800' :
                         'bg-orange-100 text-orange-800'
                       }`}>
                         {u.role}
                       </span>
-                      {u.role === 'student' && u.strand && (
+                      {u.role === 'trainee' && u.strand && (
                         <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-50 text-blue-700">
                           {u.strand}
                         </span>
                       )}
-                      {u.role === 'student' && u.section && (
+                      {u.role === 'trainee' && u.section && (
                         <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-indigo-50 text-indigo-700">
                           {u.section}
                         </span>
                       )}
-                      {u.role === 'student' && u.grade && (
+                      {u.role === 'trainee' && u.grade && (
                         <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-50 text-purple-700">
                           Grade {u.grade}
                         </span>
@@ -1138,15 +1138,15 @@ export default function UserManagementPage() {
                         onChange={(e) => handleInputChange('role', e.target.value)}
                         className="w-full px-4 py-3 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all bg-white"
                       >
-                        <option value="student">Student</option>
-                        <option value="instructor">Instructor</option>
+                        <option value="trainee">trainee</option>
+                        <option value="trainee">trainee</option>
                         <option value="admin">Admin</option>
                       </select>
                     </div>
                   </div>
 
-                  {/* SHS Strand - Only for Students */}
-                  {newUser.role === 'student' && (
+                  {/* SHS Strand - Only for trainees */}
+                  {newUser.role === 'trainee' && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         SHS Strand
@@ -1171,8 +1171,8 @@ export default function UserManagementPage() {
                     </div>
                   )}
 
-                  {/* Section and Grade - Only for Students */}
-                  {newUser.role === 'student' && (
+                  {/* Section and Grade - Only for trainees */}
+                  {newUser.role === 'trainee' && (
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1368,15 +1368,15 @@ export default function UserManagementPage() {
                         onChange={(e) => handleInputChange('role', e.target.value)}
                         className="w-full px-4 py-3 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all bg-white"
                       >
-                        <option value="student">Student</option>
-                        <option value="instructor">Instructor</option>
+                        <option value="trainee">trainee</option>
+                        <option value="trainee">trainee</option>
                         <option value="admin">Admin</option>
                       </select>
                     </div>
                   </div>
 
-                  {/* SHS Strand - Only for Students */}
-                  {newUser.role === 'student' && (
+                  {/* SHS Strand - Only for trainees */}
+                  {newUser.role === 'trainee' && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         SHS Strand
@@ -1401,8 +1401,8 @@ export default function UserManagementPage() {
                     </div>
                   )}
 
-                  {/* Section and Grade - Only for Students */}
-                  {newUser.role === 'student' && (
+                  {/* Section and Grade - Only for trainees */}
+                  {newUser.role === 'trainee' && (
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1624,8 +1624,8 @@ export default function UserManagementPage() {
                 <div className="flex items-center justify-center space-x-2">
                   <span className={`px-3 py-1 text-sm font-semibold rounded-full ${
                     viewingProfile.role === 'admin' ? 'bg-purple-100 text-purple-800' :
-                    viewingProfile.role === 'instructor' ? 'bg-blue-100 text-blue-800' :
-                    viewingProfile.role === 'student' ? 'bg-green-100 text-green-800' :
+                    viewingProfile.role === 'trainee' ? 'bg-blue-100 text-blue-800' :
+                    viewingProfile.role === 'trainee' ? 'bg-green-100 text-green-800' :
                     viewingProfile.role === 'developer' ? 'bg-orange-100 text-orange-800' :
                     'bg-gray-100 text-gray-800'
                   }`}>
@@ -1654,8 +1654,8 @@ export default function UserManagementPage() {
                   </div>
                 </div>
 
-                {/* Strand (for students) */}
-                {viewingProfile.role === 'student' && (
+                {/* Strand (for trainees) */}
+                {viewingProfile.role === 'trainee' && (
                   <div>
                     <label className="block text-sm font-medium text-gray-500 mb-1">SHS Strand</label>
                     <div className="flex items-center space-x-2">
@@ -1680,10 +1680,10 @@ export default function UserManagementPage() {
               </div>
 
               {/* Courses Section - Full Width */}
-              {(viewingProfile.role === 'student' || viewingProfile.role === 'instructor') && viewingProfile.courses && viewingProfile.courses.length > 0 && (
+              {(viewingProfile.role === 'trainee' || viewingProfile.role === 'trainee') && viewingProfile.courses && viewingProfile.courses.length > 0 && (
                 <div className="mt-6 pt-6 border-t border-gray-200">
                   <label className="block text-sm font-medium text-gray-500 mb-3">
-                    {viewingProfile.role === 'student' ? 'Enrolled Courses' : 'Assigned Courses'}
+                    {viewingProfile.role === 'trainee' ? 'Enrolled Courses' : 'Assigned Courses'}
                   </label>
                   <div className="flex flex-wrap gap-2">
                     {viewingProfile.courses.map((course, index) => (
@@ -1699,13 +1699,13 @@ export default function UserManagementPage() {
               )}
 
               {/* No Courses Message */}
-              {(viewingProfile.role === 'student' || viewingProfile.role === 'instructor') && (!viewingProfile.courses || viewingProfile.courses.length === 0) && (
+              {(viewingProfile.role === 'trainee' || viewingProfile.role === 'trainee') && (!viewingProfile.courses || viewingProfile.courses.length === 0) && (
                 <div className="mt-6 pt-6 border-t border-gray-200">
                   <label className="block text-sm font-medium text-gray-500 mb-3">
-                    {viewingProfile.role === 'student' ? 'Enrolled Courses' : 'Assigned Courses'}
+                    {viewingProfile.role === 'trainee' ? 'Enrolled Courses' : 'Assigned Courses'}
                   </label>
                   <p className="text-gray-400 text-sm italic">
-                    {viewingProfile.role === 'student' ? 'Not enrolled in any courses yet' : 'No courses assigned yet'}
+                    {viewingProfile.role === 'trainee' ? 'Not enrolled in any courses yet' : 'No courses assigned yet'}
                   </p>
                 </div>
               )}

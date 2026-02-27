@@ -7,7 +7,7 @@ import './globals.css'
 export const metadata: Metadata = {
   title: 'Slate - Modern Learning Management System',
   description: 'A comprehensive Learning Management System built with Next.js, React, and Supabase. Features include course management, user authentication, scheduling, and analytics.',
-  keywords: 'LMS, Learning Management System, Education, Courses, Students, Instructors, Online Learning, E-learning, Education Platform',
+  keywords: 'LMS, Learning Management System, Education, Courses, trainees, trainees, Online Learning, E-learning, Education Platform',
   authors: [{ name: 'Slate Team' }],
   creator: 'Slate Team',
   publisher: 'Slate',

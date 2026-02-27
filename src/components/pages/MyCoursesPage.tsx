@@ -12,7 +12,7 @@ interface Course {
   course_group?: string
   course_type: 'academic' | 'tesda' | 'upskill'
   status: 'active' | 'inactive' | 'draft'
-  enrollment_type: 'student' | 'tesda_scholar' | 'both'
+  enrollment_type: 'trainee' | 'tesda_scholar' | 'both'
   created_at: string
   subjects?: Subject[]
 }
@@ -24,14 +24,14 @@ interface Subject {
   description: string
   order_index: number
   status: 'active' | 'inactive' | 'draft'
-  enrollment_type: 'student' | 'tesda_scholar' | 'both'
-  instructor_id?: string
+  enrollment_type: 'trainee' | 'tesda_scholar' | 'both'
+  trainee_id?: string
   created_at: string
-  instructor?: {
+  trainee?: {
     first_name: string
     last_name: string
   }
-  instructor_name?: string
+  trainee_name?: string
 }
 
 interface Module {
@@ -77,32 +77,32 @@ export default function MyCoursesPage() {
   const fetchEnrolledCourses = async () => {
     try {
       setLoading(true)
-      const userRole = user?.profile?.role || 'student'
+      const userRole = user?.profile?.role || 'trainee'
 
       let courseIds: string[] = []
 
-      if (userRole === 'instructor') {
-        // Instructors see courses where they are assigned to at least one subject
-        const { data: instructorSubjects, error: subjectsError } = await supabase
+      if (userRole === 'trainee') {
+        // trainees see courses where they are assigned to at least one subject
+        const { data: traineeSubjects, error: subjectsError } = await supabase
           .from('subjects')
           .select('course_id')
-          .eq('instructor_id', user?.id)
+          .eq('trainee_id', user?.id)
 
         if (subjectsError) {
-          console.error('Error fetching instructor subjects:', subjectsError)
+          console.error('Error fetching trainee subjects:', subjectsError)
           setLoading(false)
           return
         }
 
         // Get unique course IDs
-        const courseIdsSet = new Set<string>(instructorSubjects?.map((s: { course_id: string }) => s.course_id) || [])
+        const courseIdsSet = new Set<string>(traineeSubjects?.map((s: { course_id: string }) => s.course_id) || [])
         courseIds = Array.from(courseIdsSet)
       } else {
-        // Students see courses they are enrolled in
+        // trainees see courses they are enrolled in
         const { data: enrollments, error: enrollmentError } = await supabase
           .from('course_enrollments')
           .select('course_id')
-          .eq('student_id', user?.id)
+          .eq('trainee_id', user?.id)
           .eq('status', 'active')
 
         if (enrollmentError) {
@@ -146,7 +146,7 @@ export default function MyCoursesPage() {
         .from('subjects')
         .select(`
           *,
-          instructor:profiles(first_name, last_name)
+          trainee:profiles(first_name, last_name)
         `)
         .eq('course_id', courseId)
         .order('order_index', { ascending: true })
@@ -156,14 +156,14 @@ export default function MyCoursesPage() {
         return
       }
 
-      const subjectsWithInstructor = (data || []).map((subject: Subject) => ({
+      const subjectsWithtrainee = (data || []).map((subject: Subject) => ({
         ...subject,
-        instructor_name: subject.instructor 
-          ? `${subject.instructor.first_name} ${subject.instructor.last_name}`
+        trainee_name: subject.trainee 
+          ? `${subject.trainee.first_name} ${subject.trainee.last_name}`
           : 'Unassigned'
       }))
 
-      setSubjects(subjectsWithInstructor)
+      setSubjects(subjectsWithtrainee)
     } catch (error) {
       console.error('Error fetching subjects:', error)
     }
@@ -417,7 +417,7 @@ export default function MyCoursesPage() {
   }
 
   const getEnrollmentTypeDisplay = (type: string) => {
-    return [{ text: 'Student', color: 'bg-blue-100 text-blue-700' }]
+    return [{ text: 'trainee', color: 'bg-blue-100 text-blue-700' }]
   }
 
   const getContentTypeIcon = (contentType: string) => {
@@ -468,8 +468,8 @@ export default function MyCoursesPage() {
         <div>
           <h1 className="text-2xl font-bold text-black">My Courses</h1>
           <p className="text-gray-600 mt-1">
-            {user?.profile?.role === 'instructor' 
-              ? 'View courses where you are assigned as an instructor' 
+            {user?.profile?.role === 'trainee' 
+              ? 'View courses where you are assigned as an trainee' 
               : 'View your enrolled courses, subjects, and modules'}
           </p>
         </div>
@@ -529,10 +529,10 @@ export default function MyCoursesPage() {
                   </svg>
                 </div>
                 <h3 className="text-lg font-medium text-black mb-2">
-                  {user?.profile?.role === 'instructor' ? 'No assigned courses' : 'No enrolled courses'}
+                  {user?.profile?.role === 'trainee' ? 'No assigned courses' : 'No enrolled courses'}
                 </h3>
                 <p className="text-gray-500">
-                  {user?.profile?.role === 'instructor' 
+                  {user?.profile?.role === 'trainee' 
                     ? 'You have not been assigned to any courses yet. Contact your administrator.' 
                     : 'You are not enrolled in any courses yet. Contact your administrator to enroll.'}
                 </p>
@@ -654,7 +654,7 @@ export default function MyCoursesPage() {
                           }`}>
                             {subject.status.charAt(0).toUpperCase() + subject.status.slice(1)}
                           </span>
-                          {getEnrollmentTypeDisplay(subject.enrollment_type || 'student').map((badge, idx) => (
+                          {getEnrollmentTypeDisplay(subject.enrollment_type || 'trainee').map((badge, idx) => (
                             <span key={idx} className={`inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full ${badge.color}`}>
                               {badge.text}
                             </span>
@@ -663,8 +663,8 @@ export default function MyCoursesPage() {
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                             </svg>
-                            <span className={subject.instructor_name === 'Unassigned' ? 'text-gray-400' : 'text-gray-700 font-medium'}>
-                              {subject.instructor_name}
+                            <span className={subject.trainee_name === 'Unassigned' ? 'text-gray-400' : 'text-gray-700 font-medium'}>
+                              {subject.trainee_name}
                             </span>
                           </div>
                         </div>

@@ -392,8 +392,8 @@ export default function CodeGeneratorPage() {
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
                               codeData.user_role === 'admin' ? 'bg-red-100 text-red-800' :
-                              codeData.user_role === 'instructor' ? 'bg-blue-100 text-blue-800' :
-                              codeData.user_role === 'student' ? 'bg-green-100 text-green-800' :
+                              codeData.user_role === 'trainee' ? 'bg-blue-100 text-blue-800' :
+                              codeData.user_role === 'trainee' ? 'bg-green-100 text-green-800' :
                               codeData.user_role === 'developer' ? 'bg-purple-100 text-purple-800' :
                               'bg-gray-100 text-gray-800'
                             }`}>
@@ -423,8 +423,8 @@ export default function CodeGeneratorPage() {
                         <span className="font-mono font-bold text-xl">{codeData.code}</span>
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
                           codeData.user_role === 'admin' ? 'bg-red-100 text-red-800' :
-                          codeData.user_role === 'instructor' ? 'bg-blue-100 text-blue-800' :
-                          codeData.user_role === 'student' ? 'bg-green-100 text-green-800' :
+                          codeData.user_role === 'trainee' ? 'bg-blue-100 text-blue-800' :
+                          codeData.user_role === 'trainee' ? 'bg-green-100 text-green-800' :
                           codeData.user_role === 'developer' ? 'bg-purple-100 text-purple-800' :
                           'bg-gray-100 text-gray-800'
                         }`}>

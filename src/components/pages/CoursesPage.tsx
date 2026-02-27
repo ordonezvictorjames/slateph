@@ -13,10 +13,10 @@ interface Course {
   course_group?: string
   course_type: 'academic' | 'tesda' | 'upskill'
   status: 'active' | 'inactive' | 'draft'
-  enrollment_type: 'student' | 'tesda_scholar' | 'both'
+  enrollment_type: 'trainee' | 'tesda_scholar' | 'both'
   created_at: string
   subjects?: Subject[]
-  student_enrollments?: number
+  trainee_enrollments?: number
   total_modules?: number
 }
 
@@ -25,11 +25,11 @@ interface Subject {
   title: string
   description?: string
   status?: 'active' | 'inactive' | 'draft'
-  instructor?: {
+  trainee?: {
     first_name: string
     last_name: string
   }
-  instructor_name?: string
+  trainee_name?: string
   modules?: CourseModule[]
 }
 
@@ -70,16 +70,16 @@ export default function CoursesPage() {
   const fetchCourses = async () => {
     try {
       setLoading(true)
-      const userRole = user?.profile?.role || 'student'
+      const userRole = user?.profile?.role || 'trainee'
 
       let coursesQuery = supabase.from('courses').select('*')
 
       // Role-based filtering
-      if (userRole === 'student') {
-        // Students only see courses they can enroll in (student or both)
-        coursesQuery = coursesQuery.in('enrollment_type', ['student', 'both'])
+      if (userRole === 'trainee') {
+        // trainees only see courses they can enroll in (trainee or both)
+        coursesQuery = coursesQuery.in('enrollment_type', ['trainee', 'both'])
       }
-      // Instructors, admins, and developers see all courses (no filtering)
+      // trainees, admins, and developers see all courses (no filtering)
 
       const { data: coursesData, error: coursesError } = await coursesQuery.order('created_at', { ascending: false })
 
@@ -99,7 +99,7 @@ export default function CoursesPage() {
               title, 
               description, 
               status, 
-              instructor:profiles!subjects_instructor_id_fkey(first_name, last_name)
+              trainee:profiles!subjects_trainee_id_fkey(first_name, last_name)
             `)
             .eq('course_id', course.id)
             .order('order_index', { ascending: true })
@@ -122,36 +122,36 @@ export default function CoursesPage() {
           }
 
           // Fetch enrollment counts for this course
-          let studentEnrollments = 0
+          let traineeEnrollments = 0
           
           // Get all enrollments for this course
           const { data: allEnrollments, error: enrollmentError } = await supabase
             .from('course_enrollments')
             .select(`
               id,
-              student:profiles!course_enrollments_student_id_fkey(role)
+              trainee:profiles!course_enrollments_trainee_id_fkey(role)
             `)
             .eq('course_id', course.id)
             .eq('status', 'active')
           
           if (!enrollmentError && allEnrollments) {
-            // Count enrollments by student role
+            // Count enrollments by trainee role
             interface EnrollmentWithRole {
-              student: { role: string }
+              trainee: { role: string }
             }
             allEnrollments.forEach((enrollment: EnrollmentWithRole) => {
-              const role = enrollment.student.role
-              if (role === 'student') {
-                studentEnrollments++
+              const role = enrollment.trainee.role
+              if (role === 'trainee') {
+                traineeEnrollments++
               }
             })
           }
 
-          // Process subjects to add instructor_name
+          // Process subjects to add trainee_name
           const processedSubjects = (subjects || []).map((subject: any) => ({
             ...subject,
-            instructor_name: subject.instructor 
-              ? `${subject.instructor.first_name} ${subject.instructor.last_name}`
+            trainee_name: subject.trainee 
+              ? `${subject.trainee.first_name} ${subject.trainee.last_name}`
               : undefined
           }))
 
@@ -159,7 +159,7 @@ export default function CoursesPage() {
             ...course,
             subjects: processedSubjects,
             total_modules: totalModules,
-            student_enrollments: studentEnrollments || 0
+            trainee_enrollments: traineeEnrollments || 0
           }
         })
       )
@@ -225,8 +225,8 @@ export default function CoursesPage() {
 
   const getEnrollmentTypeDisplay = (enrollmentType: string) => {
     const badges = []
-    if (enrollmentType === 'student' || enrollmentType === 'both') {
-      badges.push({ text: 'Students', color: 'bg-blue-100 text-blue-800' })
+    if (enrollmentType === 'trainee' || enrollmentType === 'both') {
+      badges.push({ text: 'trainees', color: 'bg-blue-100 text-blue-800' })
     }
     if (enrollmentType === 'tesda_scholar' || enrollmentType === 'both') {
       badges.push({ text: 'TESDA Scholars', color: 'bg-purple-100 text-purple-800' })
@@ -496,15 +496,15 @@ export default function CoursesPage() {
                     </p>
                   )}
                   
-                  {/* Instructor Info */}
-                  {subject.instructor_name && (
+                  {/* trainee Info */}
+                  {subject.trainee_name && (
                     <div className="pt-4 border-t border-gray-100">
                       <div className="flex items-center space-x-2 mb-3">
                         <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                         </svg>
-                        <span className="text-sm text-gray-500">Instructor:</span>
-                        <span className="text-sm font-semibold text-gray-900">{subject.instructor_name}</span>
+                        <span className="text-sm text-gray-500">trainee:</span>
+                        <span className="text-sm font-semibold text-gray-900">{subject.trainee_name}</span>
                       </div>
                     </div>
                   )}
@@ -603,7 +603,7 @@ export default function CoursesPage() {
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Subjects</th>
                   <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Modules</th>
-                  <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Students</th>
+                  <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">trainees</th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Created</th>
                 </tr>
               </thead>
@@ -645,7 +645,7 @@ export default function CoursesPage() {
                           <span className="text-sm font-semibold text-purple-600">{course.total_modules || 0}</span>
                         </td>
                         <td className="px-6 py-3 whitespace-nowrap text-center">
-                          <span className="text-sm font-semibold text-green-600">{course.student_enrollments || 0}</span>
+                          <span className="text-sm font-semibold text-green-600">{course.trainee_enrollments || 0}</span>
                         </td>
                         <td className="px-6 py-3 whitespace-nowrap">
                           <div className="flex items-center text-sm text-gray-500">
@@ -701,8 +701,8 @@ export default function CoursesPage() {
                         <div className="text-xs text-gray-500">Modules</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-lg font-bold text-green-600">{course.student_enrollments || 0}</div>
-                        <div className="text-xs text-gray-500">Students</div>
+                        <div className="text-lg font-bold text-green-600">{course.trainee_enrollments || 0}</div>
+                        <div className="text-xs text-gray-500">trainees</div>
                       </div>
                     </div>
                   </div>
@@ -719,7 +719,7 @@ export default function CoursesPage() {
           <h3 className="text-xl font-semibold text-gray-900 mb-2">No courses found</h3>
           <p className="text-gray-500">
             {user?.profile?.role === 'admin' ? 'Create your first course to get started.' :
-             user?.profile?.role === 'instructor' ? 'You have not been assigned to any courses yet.' :
+             user?.profile?.role === 'trainee' ? 'You have not been assigned to any courses yet.' :
              'No courses are available for enrollment at this time.'}
           </p>
         </div>

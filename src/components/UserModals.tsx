@@ -9,7 +9,7 @@ export interface NewUser {
   last_name: string
   email: string
   password: string
-  role: 'admin' | 'instructor' | 'student' | 'tesda_scholar'
+  role: 'admin' | 'trainee' | 'trainee' | 'tesda_scholar'
   status: 'active' | 'inactive' | 'pending'
   bio: string
   avatar_url: string | null
@@ -88,9 +88,9 @@ export function UserModal({
 
   const currentAvatar = animalAvatars[currentIndex]
 
-  // Check if student fields are complete
-  const isStudentFieldsComplete = () => {
-    if (user.role === 'student') {
+  // Check if trainee fields are complete
+  const istraineeFieldsComplete = () => {
+    if (user.role === 'trainee') {
       return user.strand && user.section && user.grade
     }
     if (user.role === 'tesda_scholar') {
@@ -99,14 +99,14 @@ export function UserModal({
     return true
   }
 
-  const isFormValid = isStudentFieldsComplete()
+  const isFormValid = istraineeFieldsComplete()
 
   // Handle form submission with validation
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     
     if (!isFormValid) {
-      showError('Incomplete Student Details', 'Please fill in Strand, Section, and Grade Level for student accounts.')
+      showError('Incomplete trainee Details', 'Please fill in Strand, Section, and Grade Level for trainee accounts.')
       return
     }
     
@@ -248,9 +248,9 @@ export function UserModal({
                       onChange={(e) => onInputChange('role', e.target.value)}
                       className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-white"
                     >
-                      <option value="student">Student</option>
+                      <option value="trainee">trainee</option>
                       <option value="tesda_scholar">TESDA Scholar</option>
-                      <option value="instructor">Instructor</option>
+                      <option value="trainee">trainee</option>
                       <option value="admin">Admin</option>
                     </select>
                   </div>
@@ -300,8 +300,8 @@ export function UserModal({
                 </div>
               </div>
 
-              {/* Student Details Section - Second row, below Account Details */}
-              {(user.role === 'student' || user.role === 'tesda_scholar') && (
+              {/* trainee Details Section - Second row, below Account Details */}
+              {(user.role === 'trainee' || user.role === 'tesda_scholar') && (
                 <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100 xl:col-start-2">
                   <div className="flex items-center mb-4">
                     <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-2">
@@ -310,11 +310,11 @@ export function UserModal({
                       </svg>
                     </div>
                     <h3 className="text-base font-semibold text-gray-900">
-                      {user.role === 'tesda_scholar' ? 'TESDA Scholar Details' : 'Student Details'}
+                      {user.role === 'tesda_scholar' ? 'TESDA Scholar Details' : 'trainee Details'}
                     </h3>
                   </div>
                   
-                  {user.role === 'student' ? (
+                  {user.role === 'trainee' ? (
                     <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -406,8 +406,8 @@ export function UserModal({
               disabled={submitting || !isFormValid}
               className="px-6 py-2.5 text-sm font-medium bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 shadow-lg hover:shadow-xl"
               title={
-                !isFormValid && user.role === 'student' 
-                  ? 'Please fill in all student details (Strand, Section, and Grade)' 
+                !isFormValid && user.role === 'trainee' 
+                  ? 'Please fill in all trainee details (Strand, Section, and Grade)' 
                   : !isFormValid && user.role === 'tesda_scholar'
                   ? 'Please fill in Batch Number'
                   : ''

@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
 import { Loading } from '@/components/ui/loading'
 
-interface Student {
+interface trainee {
   id: string
   first_name: string
   last_name: string
@@ -13,7 +13,7 @@ interface Student {
   created_at: string
 }
 
-interface Instructor {
+interface trainee {
   id: string
   first_name: string
   last_name: string
@@ -65,22 +65,22 @@ interface BugReport {
 export default function TasksPage() {
   const { user } = useAuth()
   const [loading, setLoading] = useState(true)
-  const [unenrolledStudents, setUnenrolledStudents] = useState<Student[]>([])
-  const [unassignedInstructors, setUnassignedInstructors] = useState<Instructor[]>([])
+  const [unenrolledtrainees, setUnenrolledtrainees] = useState<trainee[]>([])
+  const [unassignedtrainees, setUnassignedtrainees] = useState<trainee[]>([])
   const [courses, setCourses] = useState<Course[]>([])
   const [featureRequests, setFeatureRequests] = useState<FeatureRequest[]>([])
   const [passwordResets, setPasswordResets] = useState<PasswordResetRequest[]>([])
   const [bugReports, setBugReports] = useState<BugReport[]>([])
-  const [selectedTab, setSelectedTab] = useState<'students' | 'instructors' | 'features' | 'passwords' | 'bugs'>('students')
+  const [selectedTab, setSelectedTab] = useState<'trainees' | 'trainees' | 'features' | 'passwords' | 'bugs'>('trainees')
   const [showEnrollModal, setShowEnrollModal] = useState(false)
   const [showAssignModal, setShowAssignModal] = useState(false)
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
-  const [selectedInstructor, setSelectedInstructor] = useState<Instructor | null>(null)
+  const [selectedtrainee, setSelectedtrainee] = useState<trainee | null>(null)
+  const [selectedtrainee, setSelectedtrainee] = useState<trainee | null>(null)
   const [selectedCourse, setSelectedCourse] = useState<string>('')
   const [processing, setProcessing] = useState(false)
   const supabase = createClient()
 
-  const userRole = user?.profile?.role || 'student'
+  const userRole = user?.profile?.role || 'trainee'
 
   useEffect(() => {
     if (userRole === 'admin' || userRole === 'developer') {
@@ -92,39 +92,39 @@ export default function TasksPage() {
     try {
       setLoading(true)
 
-      // Fetch all students
-      const { data: allStudents } = await supabase
+      // Fetch all trainees
+      const { data: alltrainees } = await supabase
         .from('profiles')
         .select('id, first_name, last_name, email, created_at')
-        .eq('role', 'student')
+        .eq('role', 'trainee')
         .order('created_at', { ascending: false })
 
-      // Fetch enrolled students
-      const { data: enrolledStudents } = await supabase
+      // Fetch enrolled trainees
+      const { data: enrolledtrainees } = await supabase
         .from('course_enrollments')
-        .select('student_id')
+        .select('trainee_id')
         .eq('status', 'active')
 
-      const enrolledStudentIds = new Set(enrolledStudents?.map((e: { student_id: string }) => e.student_id) || [])
-      const unenrolled = (allStudents || []).filter((s: Student) => !enrolledStudentIds.has(s.id))
-      setUnenrolledStudents(unenrolled)
+      const enrolledtraineeIds = new Set(enrolledtrainees?.map((e: { trainee_id: string }) => e.trainee_id) || [])
+      const unenrolled = (alltrainees || []).filter((s: trainee) => !enrolledtraineeIds.has(s.id))
+      setUnenrolledtrainees(unenrolled)
 
-      // Fetch all instructors
-      const { data: allInstructors } = await supabase
+      // Fetch all trainees
+      const { data: alltrainees } = await supabase
         .from('profiles')
         .select('id, first_name, last_name, email, created_at')
-        .eq('role', 'instructor')
+        .eq('role', 'trainee')
         .order('created_at', { ascending: false })
 
-      // Fetch assigned instructors
-      const { data: assignedInstructors } = await supabase
+      // Fetch assigned trainees
+      const { data: assignedtrainees } = await supabase
         .from('subjects')
-        .select('instructor_id')
-        .not('instructor_id', 'is', null)
+        .select('trainee_id')
+        .not('trainee_id', 'is', null)
 
-      const assignedInstructorIds = new Set(assignedInstructors?.map((s: { instructor_id: string }) => s.instructor_id) || [])
-      const unassigned = (allInstructors || []).filter((i: Instructor) => !assignedInstructorIds.has(i.id))
-      setUnassignedInstructors(unassigned)
+      const assignedtraineeIds = new Set(assignedtrainees?.map((s: { trainee_id: string }) => s.trainee_id) || [])
+      const unassigned = (alltrainees || []).filter((i: trainee) => !assignedtraineeIds.has(i.id))
+      setUnassignedtrainees(unassigned)
 
       // Fetch active courses
       const { data: coursesData } = await supabase
@@ -242,8 +242,8 @@ export default function TasksPage() {
     }
   }
 
-  const handleEnrollStudent = async () => {
-    if (!selectedStudent || !selectedCourse) return
+  const handleEnrolltrainee = async () => {
+    if (!selectedtrainee || !selectedCourse) return
 
     try {
       setProcessing(true)
@@ -260,7 +260,7 @@ export default function TasksPage() {
         .from('course_enrollments')
         .insert({
           course_id: selectedCourse,
-          student_id: selectedStudent.id,
+          trainee_id: selectedtrainee.id,
           status: 'active',
           enrolled_at: new Date().toISOString()
         })
@@ -271,11 +271,11 @@ export default function TasksPage() {
       const { data: notifData, error: notifError } = await supabase
         .from('notifications')
         .insert({
-          user_id: selectedStudent.id,
+          user_id: selectedtrainee.id,
           type: 'course_enrollment',
           title: 'Enrolled in Course',
           message: `You have been enrolled in ${courseData?.title || 'a course'}`,
-          link: '/student/my-courses',
+          link: '/trainee/my-courses',
           metadata: {
             course_id: selectedCourse,
             course_title: courseData?.title
@@ -290,20 +290,20 @@ export default function TasksPage() {
       // Refresh tasks
       await fetchTasks()
       setShowEnrollModal(false)
-      setSelectedStudent(null)
+      setSelectedtrainee(null)
       setSelectedCourse('')
       
-      alert(`${selectedStudent.first_name} ${selectedStudent.last_name} has been enrolled in ${courseData?.title || 'the course'}. A notification has been sent to the student.`)
+      alert(`${selectedtrainee.first_name} ${selectedtrainee.last_name} has been enrolled in ${courseData?.title || 'the course'}. A notification has been sent to the trainee.`)
     } catch (error) {
-      console.error('Error enrolling student:', error)
-      alert('Failed to enroll student')
+      console.error('Error enrolling trainee:', error)
+      alert('Failed to enroll trainee')
     } finally {
       setProcessing(false)
     }
   }
 
-  const handleAssignInstructor = async () => {
-    if (!selectedInstructor || !selectedCourse) return
+  const handleAssigntrainee = async () => {
+    if (!selectedtrainee || !selectedCourse) return
 
     try {
       setProcessing(true)
@@ -328,10 +328,10 @@ export default function TasksPage() {
         .eq('id', selectedCourse)
         .single()
 
-      // Assign instructor to the first subject
+      // Assign trainee to the first subject
       const { error: assignError } = await supabase
         .from('subjects')
-        .update({ instructor_id: selectedInstructor.id })
+        .update({ trainee_id: selectedtrainee.id })
         .eq('id', subjects[0].id)
 
       if (assignError) throw assignError
@@ -340,11 +340,11 @@ export default function TasksPage() {
       const { data: notifData, error: notifError } = await supabase
         .from('notifications')
         .insert({
-          user_id: selectedInstructor.id,
+          user_id: selectedtrainee.id,
           type: 'course_assignment',
           title: 'Assigned to Subject',
           message: `You have been assigned to teach ${subjects[0].title} in ${courseData?.title || 'a course'}`,
-          link: '/instructor/courses',
+          link: '/trainee/courses',
           metadata: {
             subject_id: subjects[0].id,
             subject_title: subjects[0].title,
@@ -360,13 +360,13 @@ export default function TasksPage() {
       // Refresh tasks
       await fetchTasks()
       setShowAssignModal(false)
-      setSelectedInstructor(null)
+      setSelectedtrainee(null)
       setSelectedCourse('')
       
-      alert(`${selectedInstructor.first_name} ${selectedInstructor.last_name} has been assigned to ${subjects[0].title} in ${courseData?.title || 'the course'}. A notification has been sent to the instructor.`)
+      alert(`${selectedtrainee.first_name} ${selectedtrainee.last_name} has been assigned to ${subjects[0].title} in ${courseData?.title || 'the course'}. A notification has been sent to the trainee.`)
     } catch (error) {
-      console.error('Error assigning instructor:', error)
-      alert('Failed to assign instructor')
+      console.error('Error assigning trainee:', error)
+      alert('Failed to assign trainee')
     } finally {
       setProcessing(false)
     }
@@ -493,32 +493,32 @@ export default function TasksPage() {
       <div className="mb-6 border-b border-gray-200">
         <div className="flex space-x-8">
           <button
-            onClick={() => setSelectedTab('students')}
+            onClick={() => setSelectedTab('trainees')}
             className={`pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-              selectedTab === 'students'
+              selectedTab === 'trainees'
                 ? 'border-black text-black'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            Unenrolled Students
-            {unenrolledStudents.length > 0 && (
+            Unenrolled trainees
+            {unenrolledtrainees.length > 0 && (
               <span className="ml-2 bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full text-xs font-semibold">
-                {unenrolledStudents.length}
+                {unenrolledtrainees.length}
               </span>
             )}
           </button>
           <button
-            onClick={() => setSelectedTab('instructors')}
+            onClick={() => setSelectedTab('trainees')}
             className={`pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-              selectedTab === 'instructors'
+              selectedTab === 'trainees'
                 ? 'border-black text-black'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            Unassigned Instructors
-            {unassignedInstructors.length > 0 && (
+            Unassigned trainees
+            {unassignedtrainees.length > 0 && (
               <span className="ml-2 bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs font-semibold">
-                {unassignedInstructors.length}
+                {unassignedtrainees.length}
               </span>
             )}
           </button>
@@ -578,46 +578,46 @@ export default function TasksPage() {
 
       {/* Content */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        {selectedTab === 'students' && (
+        {selectedTab === 'trainees' && (
           <div className="overflow-x-auto">
-            {unenrolledStudents.length === 0 ? (
+            {unenrolledtrainees.length === 0 ? (
               <div className="text-center py-12">
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900">All students enrolled</h3>
-                <p className="text-gray-600 mt-1">There are no unenrolled students at the moment.</p>
+                <h3 className="text-lg font-semibold text-gray-900">All trainees enrolled</h3>
+                <p className="text-gray-600 mt-1">There are no unenrolled trainees at the moment.</p>
               </div>
             ) : (
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">trainee</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Registered</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {unenrolledStudents.map((student) => (
-                    <tr key={student.id} className="hover:bg-gray-50">
+                  {unenrolledtrainees.map((trainee) => (
+                    <tr key={trainee.id} className="hover:bg-gray-50">
                       <td className="px-6 py-3 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
-                          {student.first_name} {student.last_name}
+                          {trainee.first_name} {trainee.last_name}
                         </div>
                       </td>
                       <td className="px-6 py-3 whitespace-nowrap">
-                        <div className="text-sm text-gray-600">{student.email}</div>
+                        <div className="text-sm text-gray-600">{trainee.email}</div>
                       </td>
                       <td className="px-6 py-3 whitespace-nowrap">
-                        <div className="text-sm text-gray-600">{formatDate(student.created_at)}</div>
+                        <div className="text-sm text-gray-600">{formatDate(trainee.created_at)}</div>
                       </td>
                       <td className="px-6 py-3 whitespace-nowrap text-right text-sm font-medium">
                         <button
                           onClick={() => {
-                            setSelectedStudent(student)
+                            setSelectedtrainee(trainee)
                             setShowEnrollModal(true)
                           }}
                           className="text-black hover:text-gray-700 font-semibold"
@@ -633,46 +633,46 @@ export default function TasksPage() {
           </div>
         )}
 
-        {selectedTab === 'instructors' && (
+        {selectedTab === 'trainees' && (
           <div className="overflow-x-auto">
-            {unassignedInstructors.length === 0 ? (
+            {unassignedtrainees.length === 0 ? (
               <div className="text-center py-12">
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900">All instructors assigned</h3>
-                <p className="text-gray-600 mt-1">There are no unassigned instructors at the moment.</p>
+                <h3 className="text-lg font-semibold text-gray-900">All trainees assigned</h3>
+                <p className="text-gray-600 mt-1">There are no unassigned trainees at the moment.</p>
               </div>
             ) : (
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Instructor</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">trainee</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Registered</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {unassignedInstructors.map((instructor) => (
-                    <tr key={instructor.id} className="hover:bg-gray-50">
+                  {unassignedtrainees.map((trainee) => (
+                    <tr key={trainee.id} className="hover:bg-gray-50">
                       <td className="px-6 py-3 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
-                          {instructor.first_name} {instructor.last_name}
+                          {trainee.first_name} {trainee.last_name}
                         </div>
                       </td>
                       <td className="px-6 py-3 whitespace-nowrap">
-                        <div className="text-sm text-gray-600">{instructor.email}</div>
+                        <div className="text-sm text-gray-600">{trainee.email}</div>
                       </td>
                       <td className="px-6 py-3 whitespace-nowrap">
-                        <div className="text-sm text-gray-600">{formatDate(instructor.created_at)}</div>
+                        <div className="text-sm text-gray-600">{formatDate(trainee.created_at)}</div>
                       </td>
                       <td className="px-6 py-3 whitespace-nowrap text-right text-sm font-medium">
                         <button
                           onClick={() => {
-                            setSelectedInstructor(instructor)
+                            setSelectedtrainee(trainee)
                             setShowAssignModal(true)
                           }}
                           className="text-black hover:text-gray-700 font-semibold"
@@ -893,13 +893,13 @@ export default function TasksPage() {
         )}
       </div>
 
-      {/* Enroll Student Modal */}
-      {showEnrollModal && selectedStudent && (
+      {/* Enroll trainee Modal */}
+      {showEnrollModal && selectedtrainee && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Enroll Student</h3>
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Enroll trainee</h3>
             <p className="text-gray-600 mb-4">
-              Enroll <span className="font-semibold">{selectedStudent.first_name} {selectedStudent.last_name}</span> to a course:
+              Enroll <span className="font-semibold">{selectedtrainee.first_name} {selectedtrainee.last_name}</span> to a course:
             </p>
             <select
               value={selectedCourse}
@@ -917,7 +917,7 @@ export default function TasksPage() {
               <button
                 onClick={() => {
                   setShowEnrollModal(false)
-                  setSelectedStudent(null)
+                  setSelectedtrainee(null)
                   setSelectedCourse('')
                 }}
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-semibold"
@@ -926,7 +926,7 @@ export default function TasksPage() {
                 Cancel
               </button>
               <button
-                onClick={handleEnrollStudent}
+                onClick={handleEnrolltrainee}
                 disabled={!selectedCourse || processing}
                 className="flex-1 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -937,13 +937,13 @@ export default function TasksPage() {
         </div>
       )}
 
-      {/* Assign Instructor Modal */}
-      {showAssignModal && selectedInstructor && (
+      {/* Assign trainee Modal */}
+      {showAssignModal && selectedtrainee && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Assign Instructor</h3>
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Assign trainee</h3>
             <p className="text-gray-600 mb-4">
-              Assign <span className="font-semibold">{selectedInstructor.first_name} {selectedInstructor.last_name}</span> to a course:
+              Assign <span className="font-semibold">{selectedtrainee.first_name} {selectedtrainee.last_name}</span> to a course:
             </p>
             <select
               value={selectedCourse}
@@ -961,7 +961,7 @@ export default function TasksPage() {
               <button
                 onClick={() => {
                   setShowAssignModal(false)
-                  setSelectedInstructor(null)
+                  setSelectedtrainee(null)
                   setSelectedCourse('')
                 }}
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-semibold"
@@ -970,7 +970,7 @@ export default function TasksPage() {
                 Cancel
               </button>
               <button
-                onClick={handleAssignInstructor}
+                onClick={handleAssigntrainee}
                 disabled={!selectedCourse || processing}
                 className="flex-1 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
               >

@@ -117,13 +117,13 @@ export async function logUserCreation(
 }
 
 export async function logCourseCreation(
-  instructorId: string, 
+  traineeId: string, 
   courseId: string, 
   courseTitle: string,
   metadata?: Record<string, any>
 ) {
   return logActivity({
-    userId: instructorId,
+    userId: traineeId,
     activityType: 'course_created',
     description: `Created new course: ${courseTitle}`,
     metadata: {
