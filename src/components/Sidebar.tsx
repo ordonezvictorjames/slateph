@@ -568,6 +568,27 @@ export default function Sidebar({ currentPage, onPageChange }: SidebarProps) {
         )}
       </div>
 
+      {/* Promotional Card */}
+      {(isHovered || isMobileOpen) && (
+        <div className="px-2 pb-3">
+          <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl p-4 border border-orange-200">
+            <div className="flex justify-center mb-3">
+              <img 
+                src="/book.png" 
+                alt="Upgrade" 
+                className="w-32 h-32 object-contain"
+              />
+            </div>
+            <p className="text-sm text-gray-700 text-center mb-4 leading-relaxed">
+              Streamline restaurant management with real-time insights.
+            </p>
+            <button className="w-full bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white font-semibold py-2.5 px-4 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+              Upgrade Now
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Logout Button */}
       <div className="px-2 pb-3 pt-1">
         <button 
