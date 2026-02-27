@@ -124,10 +124,10 @@ export default function CourseManagementPage() {
       </div>
     )
   }
-  const [trainees, settrainees] = useState<Array<{id: string, first_name: string, last_name: string, email: string}>>([])
+  const [trainees, settrainees] = useState<Array<{id: string, first_name: string, last_name: string, email: string, role: string}>>([])
   const [instructors, setInstructors] = useState<Array<{id: string, first_name: string, last_name: string, email: string}>>([])
   const [enrolledtrainees, setEnrolledtrainees] = useState<Array<{id: string, first_name: string, last_name: string, email: string, enrollment_id: string, enrolled_at: string, status: string, progress: number}>>([])
-  const [availabletrainees, setAvailabletrainees] = useState<Array<{id: string, first_name: string, last_name: string, email: string}>>([])
+  const [availabletrainees, setAvailabletrainees] = useState<Array<{id: string, first_name: string, last_name: string, email: string, role: string}>>([])
   const [selectedtrainees, setSelectedtrainees] = useState<string[]>([])
   const [selectedCourseForEnrollment, setSelectedCourseForEnrollment] = useState<Course | null>(null)
   const [availableColors, setAvailableColors] = useState<Array<{id: string, color_name: string, color_hex: string, bg_class: string, text_class: string, border_class: string}>>([])
@@ -337,7 +337,7 @@ export default function CourseManagementPage() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, email')
+        .select('id, first_name, last_name, email, role')
         .in('role', ['trainee', 'tesda_scholar'])
         .order('first_name', { ascending: true })
 
@@ -392,7 +392,7 @@ export default function CourseManagementPage() {
     }
   }
 
-  const fetchEnrollments = async (courseId: string) => {
+  const fetchEnrollments = async (courseId: string, enrollmentType: 'trainee' | 'tesda_scholar' | 'both' = 'both') => {
       try {
         const { data, error } = await supabase
           .from('course_enrollments')
@@ -442,9 +442,20 @@ export default function CourseManagementPage() {
 
         setEnrolledtrainees(enrolled)
 
-        // Filter available trainees (not enrolled)
+        // Filter available trainees based on enrollment type and not already enrolled
         const enrolledtraineeIds = enrolled.map((s: Enrolledtrainee) => s.id)
-        const available = trainees.filter(trainee => !enrolledtraineeIds.includes(trainee.id))
+        let available = trainees.filter(trainee => !enrolledtraineeIds.includes(trainee.id))
+        
+        // Further filter by enrollment type
+        if (enrollmentType === 'trainee') {
+          // Only show trainees (not scholars)
+          available = available.filter(t => t.role === 'trainee')
+        } else if (enrollmentType === 'tesda_scholar') {
+          // Only show scholars
+          available = available.filter(t => t.role === 'tesda_scholar')
+        }
+        // If 'both', show all available students (no additional filtering needed)
+        
         setAvailabletrainees(available)
 
       } catch (error) {
@@ -1140,7 +1151,7 @@ export default function CourseManagementPage() {
   const handleEnrolltrainees = (course: Course) => {
       setSelectedCourseForEnrollment(course)
       setSelectedtrainees([])
-      fetchEnrollments(course.id)
+      fetchEnrollments(course.id, course.enrollment_type)
       setShowEnrolltraineesModal(true)
     }
 
