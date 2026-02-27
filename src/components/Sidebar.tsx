@@ -575,12 +575,15 @@ export default function Sidebar({ currentPage, onPageChange }: SidebarProps) {
             <div className="flex justify-center mb-4">
               <img 
                 src="/book.png" 
-                alt="Upgrade" 
+                alt="Feedback" 
                 className="w-32 h-32 object-contain"
               />
             </div>
-            <button className="w-full bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white font-semibold py-2.5 px-4 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
-              Upgrade Now
+            <button 
+              onClick={() => onPageChange('feature-requests')}
+              className="w-full bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white font-semibold py-2.5 px-4 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+            >
+              Feedback
             </button>
           </div>
         </div>
