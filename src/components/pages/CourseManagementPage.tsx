@@ -1231,7 +1231,7 @@ export default function CourseManagementPage() {
             .eq('course_id', deletingItem.item.id)
           
           if (courseSubjects && courseSubjects.length > 0) {
-            const subjectIds = courseSubjects.map(s => s.id)
+            const subjectIds = courseSubjects.map((s: { id: string }) => s.id)
             
             // Delete modules for these subjects
             await supabase
