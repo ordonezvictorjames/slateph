@@ -24,7 +24,7 @@ interface Subject {
   course_id: string
   title: string
   description: string
-  peer_lead_id?: string
+  instructor_id?: string
   trainee_name?: string
   trainee?: {
     first_name: string
@@ -72,7 +72,7 @@ interface NewCourse {
 interface NewSubject {
   title: string
   description: string
-  peer_lead_id?: string
+  instructor_id?: string
   order_index: number
   status: 'active' | 'inactive' | 'draft'
   enrollment_type: 'trainee' | 'tesda_scholar' | 'both'
@@ -166,7 +166,7 @@ export default function CourseManagementPage() {
   const [newSubject, setNewSubject] = useState<NewSubject>({
     title: '',
     description: '',
-    peer_lead_id: '',
+    instructor_id: '',
     order_index: 1,
     status: 'draft',
     enrollment_type: 'trainee'
@@ -629,7 +629,7 @@ export default function CourseManagementPage() {
           course_id: selectedCourse.id,
           title: newSubject.title,
           description: newSubject.description,
-          peer_lead_id: newSubject.peer_lead_id || null,
+          peer_lead_id: newSubject.instructor_id || null,
           status: newSubject.status,
           enrollment_type: newSubject.enrollment_type,
           order_index: targetOrderIndex
@@ -644,7 +644,7 @@ export default function CourseManagementPage() {
       setNewSubject({
         title: '',
         description: '',
-        peer_lead_id: '',
+        instructor_id: '',
         order_index: 1,
         status: 'draft',
         enrollment_type: 'trainee'
@@ -1039,7 +1039,7 @@ export default function CourseManagementPage() {
     setNewSubject({
       title: subject.title,
       description: subject.description,
-      peer_lead_id: subject.peer_lead_id || '',
+      instructor_id: subject.instructor_id || '',
       order_index: subject.order_index,
       status: subject.status,
       enrollment_type: subject.enrollment_type
@@ -1098,7 +1098,7 @@ export default function CourseManagementPage() {
         .update({
           title: newSubject.title,
           description: newSubject.description,
-          peer_lead_id: newSubject.peer_lead_id || null,
+          peer_lead_id: newSubject.instructor_id || null,
           status: newSubject.status,
           enrollment_type: newSubject.enrollment_type,
           order_index: newSubject.order_index
@@ -1114,7 +1114,7 @@ export default function CourseManagementPage() {
       setNewSubject({
         title: '',
         description: '',
-        peer_lead_id: '',
+        instructor_id: '',
         order_index: 1,
         status: 'draft',
         enrollment_type: 'trainee'
@@ -1160,7 +1160,7 @@ export default function CourseManagementPage() {
       try {
         const enrollments = selectedtrainees.map(traineeId => ({
           course_id: selectedCourseForEnrollment.id,
-          participant_id: traineeId,
+          trainee_id: traineeId,
           status: 'active'
         }))
 
@@ -2564,8 +2564,8 @@ export default function CourseManagementPage() {
                 <div>
                   <label className="block text-xs font-medium text-black mb-1">Assign Instructor</label>
                   <select
-                    value={newSubject.trainee_id}
-                    onChange={(e) => setNewSubject(prev => ({ ...prev, peer_lead_id: e.target.value }))}
+                    value={newSubject.instructor_id}
+                    onChange={(e) => setNewSubject(prev => ({ ...prev, instructor_id: e.target.value }))}
                     className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-black focus:border-black"
                   >
                     <option value="">Select Instructor</option>
@@ -2677,8 +2677,8 @@ export default function CourseManagementPage() {
                 <div>
                   <label className="block text-xs font-medium text-black mb-1">Assign Instructor</label>
                   <select
-                    value={newSubject.trainee_id}
-                    onChange={(e) => setNewSubject(prev => ({ ...prev, peer_lead_id: e.target.value }))}
+                    value={newSubject.instructor_id}
+                    onChange={(e) => setNewSubject(prev => ({ ...prev, instructor_id: e.target.value }))}
                     className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-black focus:border-black"
                   >
                     <option value="">Select Instructor</option>
