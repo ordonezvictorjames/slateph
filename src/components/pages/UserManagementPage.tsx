@@ -754,7 +754,6 @@ export default function UserManagementPage() {
                       <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                         u.role === 'admin' ? 'bg-purple-100 text-purple-800' :
                         u.role === 'trainee' ? 'bg-blue-100 text-blue-800' :
-                        u.role === 'trainee' ? 'bg-green-100 text-green-800' :
                         'bg-orange-100 text-orange-800'
                       }`}>
                         {u.role}
@@ -901,7 +900,6 @@ export default function UserManagementPage() {
                       <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                         u.role === 'admin' ? 'bg-purple-100 text-purple-800' :
                         u.role === 'trainee' ? 'bg-blue-100 text-blue-800' :
-                        u.role === 'trainee' ? 'bg-green-100 text-green-800' :
                         'bg-orange-100 text-orange-800'
                       }`}>
                         {u.role}

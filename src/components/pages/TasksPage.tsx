@@ -75,7 +75,6 @@ export default function TasksPage() {
   const [showEnrollModal, setShowEnrollModal] = useState(false)
   const [showAssignModal, setShowAssignModal] = useState(false)
   const [selectedtrainee, setSelectedtrainee] = useState<trainee | null>(null)
-  const [selectedtrainee, setSelectedtrainee] = useState<trainee | null>(null)
   const [selectedCourse, setSelectedCourse] = useState<string>('')
   const [processing, setProcessing] = useState(false)
   const supabase = createClient()
@@ -109,14 +108,7 @@ export default function TasksPage() {
       const unenrolled = (alltrainees || []).filter((s: trainee) => !enrolledtraineeIds.has(s.id))
       setUnenrolledtrainees(unenrolled)
 
-      // Fetch all trainees
-      const { data: alltrainees } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name, email, created_at')
-        .eq('role', 'trainee')
-        .order('created_at', { ascending: false })
-
-      // Fetch assigned trainees
+      // Fetch assigned trainees (reuse alltrainees from above)
       const { data: assignedtrainees } = await supabase
         .from('subjects')
         .select('trainee_id')

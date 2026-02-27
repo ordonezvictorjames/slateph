@@ -333,26 +333,6 @@ export default function CourseManagementPage() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, role')
-        .in('role', ['trainee'])
-        .order('first_name', { ascending: true })
-
-      if (error) {
-        console.error('Error fetching trainees:', error)
-        return
-      }
-
-      settrainees(data || [])
-      console.log('trainees loaded:', data?.length || 0)
-    } catch (error) {
-      console.error('Error fetching trainees:', error)
-    }
-  }
-
-  const fetchtrainees = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
         .select('id, first_name, last_name, email')
         .in('role', ['trainee'])
         .order('first_name', { ascending: true })
@@ -450,7 +430,6 @@ export default function CourseManagementPage() {
   useEffect(() => {
     console.log('CourseManagementPage mounted, fetching data...')
     fetchCourses()
-    fetchtrainees()
     fetchtrainees()
     fetchAvailableColors()
   }, [])

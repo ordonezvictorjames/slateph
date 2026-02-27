@@ -61,7 +61,6 @@ interface DashboardStats {
 
 interface UserStats {
   totaltrainees: number
-  totaltrainees: number
   totalAdmins: number
 }
 
@@ -471,7 +470,6 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
   const [showChangelogModal, setShowChangelogModal] = useState(false)
   const [userStats, setUserStats] = useState<UserStats>({
     totaltrainees: 0,
-    totaltrainees: 0,
     totalAdmins: 0
   })
   const [pendingTasks, setPendingTasks] = useState<{
@@ -803,32 +801,6 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
           }
         }
       }
-      // Filter courses for trainees - only show courses they're assigned to
-      else if (userRole === 'trainee') {
-        // First, get all course IDs where this trainee is assigned to subjects
-        const { data: traineeSubjects, error: subjectsError } = await supabase
-          .from('subjects')
-          .select('course_id')
-          .eq('trainee_id', user?.id)
-
-        if (subjectsError) {
-          console.error('Error fetching trainee subjects:', subjectsError)
-        } else {
-          // Get unique course IDs
-          const courseIdsSet = new Set(traineeSubjects?.map((s: { course_id: string }) => s.course_id) || [])
-          const courseIds = Array.from(courseIdsSet)
-          
-          if (courseIds.length > 0) {
-            // Filter courses by the trainee's assigned course IDs
-            coursesQuery = coursesQuery.in('id', courseIds)
-          } else {
-            // trainee has no assigned courses - set empty array and skip query
-            setCourses([])
-            setLoading(false)
-            return
-          }
-        }
-      }
 
       const { data: coursesData, error: coursesError } = await coursesQuery
 
@@ -969,16 +941,13 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
       // Fetch user statistics by role
       const [
         { count: totaltrainees },
-        { count: totaltrainees },
         { count: totalAdmins }
       ] = await Promise.all([
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'trainee'),
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'trainee'),
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'admin')
       ])
 
       setUserStats({
-        totaltrainees: totaltrainees || 0,
         totaltrainees: totaltrainees || 0,
         totalAdmins: totalAdmins || 0
       })
@@ -1000,7 +969,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
         const unenrolledCount = (alltrainees || []).filter((s: { id: string }) => !enrolledtraineeIds.has(s.id)).length
 
         // Get trainees not assigned to any subject
-        const { data: alltrainees } = await supabase
+        const { data: alltraineesForSubjects } = await supabase
           .from('profiles')
           .select('id')
           .eq('role', 'trainee')
@@ -1011,7 +980,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
           .not('trainee_id', 'is', null)
 
         const assignedtraineeIds = new Set(assignedtrainees?.map((s: { trainee_id: string }) => s.trainee_id) || [])
-        const unassignedCount = (alltrainees || []).filter((i: { id: string }) => !assignedtraineeIds.has(i.id)).length
+        const unassignedCount = (alltraineesForSubjects || []).filter((i: { id: string }) => !assignedtraineeIds.has(i.id)).length
 
         // Get pending and ongoing feature requests (for developers only)
         let pendingRequests = 0
@@ -1131,8 +1100,6 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                   <p className="text-gray-600">
                     {userRole === 'trainee' 
                       ? 'Ready to continue your learning journey? Check out your courses below.'
-                      : userRole === 'trainee'
-                      ? 'Your trainees are waiting. Let\'s make today productive!'
                       : 'Manage your platform and keep everything running smoothly.'}
                   </p>
                 </div>
@@ -1399,15 +1366,6 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                   {courses.filter(c => c.is_user_enrolled).length > 0 && (
                     <span className="ml-2 text-sm font-normal text-gray-500">
                       ({courses.filter(c => c.is_user_enrolled).length} enrolled)
-                    </span>
-                  )}
-                </>
-              ) : userRole === 'trainee' ? (
-                <>
-                  My Courses
-                  {courses.length > 0 && (
-                    <span className="ml-2 text-sm font-normal text-gray-500">
-                      ({courses.length} assigned)
                     </span>
                   )}
                 </>
@@ -1839,7 +1797,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
                       </svg>
                     </div>
-                    <div className="text-3xl font-bold text-black">{userStats.totaltrainees + userStats.totaltrainees}</div>
+                    <div className="text-3xl font-bold text-black">{userStats.totaltrainees}</div>
                   </div>
                   <div className="text-sm text-gray-600 font-medium">Total trainees</div>
                 </div>

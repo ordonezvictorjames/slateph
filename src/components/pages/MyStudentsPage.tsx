@@ -124,8 +124,7 @@ export default function MytraineesPage() {
 
   const getRoleBadge = (role: string) => {
     const roleStyles = {
-      trainee: 'bg-blue-100 text-blue-800',
-      trainee: 'bg-purple-100 text-purple-800'
+      trainee: 'bg-blue-100 text-blue-800'
     }
     
     return (
