@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
 import { Loading } from '@/components/ui/loading'
+import { getRoleColor, getRoleLabel } from '@/utils/roleUtils'
 
 interface User {
   id: string
@@ -166,21 +167,6 @@ export default function OnlineUsers() {
     }
   }, [user?.id])
 
-  const getRoleBadgeColor = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return 'bg-red-100 text-red-800'
-      case 'developer':
-        return 'bg-purple-100 text-purple-800'
-      case 'trainee':
-        return 'bg-blue-100 text-blue-800'
-      case 'trainee':
-        return 'bg-green-100 text-green-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
-  }
-
   const formatLastSeen = (lastSeen: string | null) => {
     if (!lastSeen) return 'Never'
     
@@ -238,8 +224,8 @@ export default function OnlineUsers() {
             )}
           </div>
           <div className="flex items-center justify-between">
-            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${getRoleBadgeColor(u.role)}`}>
-              {u.role}
+            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${getRoleColor(u.role)}`}>
+              {getRoleLabel(u.role)}
             </span>
             {u.last_seen && (
               <span className="text-xs text-gray-500 ml-2">

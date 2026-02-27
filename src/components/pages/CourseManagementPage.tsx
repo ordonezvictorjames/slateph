@@ -144,6 +144,9 @@ export default function CourseManagementPage() {
   const [showEnrolltraineesModal, setShowEnrolltraineesModal] = useState(false)
   const [currentPresentationModule, setCurrentPresentationModule] = useState<CourseModule | null>(null)
   
+  // View mode state
+  const [viewMode, setViewMode] = useState<'list' | 'card'>('card')
+  
   // Form states
   const [newCourse, setNewCourse] = useState<NewCourse>({
     title: '',
@@ -1133,7 +1136,7 @@ export default function CourseManagementPage() {
       try {
         const enrollments = selectedtrainees.map(traineeId => ({
           course_id: selectedCourseForEnrollment.id,
-          trainee_id: traineeId,
+          participant_id: traineeId,
           status: 'active'
         }))
 
@@ -1599,24 +1602,116 @@ export default function CourseManagementPage() {
             </div>
           </div>
 
+          {/* Statistics Summary */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Total Courses */}
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Total Courses</p>
+                  <p className="text-2xl font-bold text-gray-900">{courses.length}</p>
+                </div>
+                <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            {/* Active Courses */}
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Active</p>
+                  <p className="text-2xl font-bold text-green-600">{courses.filter(c => c.status === 'active').length}</p>
+                </div>
+                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            {/* Inactive Courses */}
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Inactive</p>
+                  <p className="text-2xl font-bold text-red-600">{courses.filter(c => c.status === 'inactive').length}</p>
+                </div>
+                <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            {/* Draft Courses */}
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Draft</p>
+                  <p className="text-2xl font-bold text-yellow-600">{courses.filter(c => c.status === 'draft').length}</p>
+                </div>
+                <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-100">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-black">Courses</h2>
-                {courses.length > 0 && (
-                  <button 
-                    onClick={() => setShowAddCourseModal(true)}
-                    className="px-4 py-2 text-white rounded-lg transition-colors flex items-center space-x-2"
-                    style={{ backgroundColor: getButtonBg() }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                    <span>Add Course</span>
-                  </button>
-                )}
+                <div className="flex items-center gap-3">
+                  {/* View Toggle */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setViewMode('list')}
+                      className={`px-3 py-2 rounded-lg border transition-colors flex items-center gap-2 ${
+                        viewMode === 'list'
+                          ? 'bg-black text-white border-black'
+                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => setViewMode('card')}
+                      className={`px-3 py-2 rounded-lg border transition-colors flex items-center gap-2 ${
+                        viewMode === 'card'
+                          ? 'bg-black text-white border-black'
+                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                      </svg>
+                    </button>
+                  </div>
+                  {courses.length > 0 && (
+                    <button 
+                      onClick={() => setShowAddCourseModal(true)}
+                      className="px-4 py-2 text-white rounded-lg transition-colors flex items-center space-x-2"
+                      style={{ backgroundColor: getButtonBg() }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                      <span>Add Course</span>
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -1640,7 +1735,95 @@ export default function CourseManagementPage() {
                   Create Course
                 </button>
               </div>
+            ) : viewMode === 'list' ? (
+              /* List View */
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Course</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Enrollment</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {courses.map((course) => (
+                      <tr key={course.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center">
+                            <div className="w-3 h-3 rounded-full bg-gray-400 mr-3 flex-shrink-0" />
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">{course.title}</div>
+                              <div className="text-sm text-gray-500 line-clamp-1">{course.description}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                            {course.course_type === 'academic' ? 'Academic' : course.course_type === 'tesda' ? 'TESDA' : 'UpSkill'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex flex-wrap gap-1">
+                            {getEnrollmentTypeDisplay(course.enrollment_type).map((badge, idx) => (
+                              <span key={idx} className={`inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full ${badge.color}`}>
+                                {badge.text}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${getStatusColor(course.status)}`}>
+                            {course.status.charAt(0).toUpperCase() + course.status.slice(1)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => handleEnrolltrainees(course)}
+                              className="px-3 py-1.5 text-white rounded-lg text-xs transition-colors"
+                              style={{ backgroundColor: getButtonBg() }}
+                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
+                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
+                            >
+                              Enroll
+                            </button>
+                            <button
+                              onClick={() => handleCourseSelect(course)}
+                              className="px-3 py-1.5 text-white rounded-lg text-xs transition-colors"
+                              style={{ backgroundColor: getButtonBg() }}
+                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
+                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
+                            >
+                              Subjects
+                            </button>
+                            <button
+                              onClick={() => handleEditCourse(course)}
+                              className="p-1.5 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => handleDeleteCourse(course)}
+                              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             ) : (
+              /* Card View */
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {courses.map((course) => {
                   const courseColor = getCourseColor(course.id)
