@@ -94,13 +94,7 @@ export default function CoursesPage() {
           // Fetch subjects for this course
           const { data: subjects, error: subjectsError } = await supabase
             .from('subjects')
-            .select(`
-              id, 
-              title, 
-              description, 
-              status, 
-              trainee:profiles!subjects_trainee_id_fkey(first_name, last_name)
-            `)
+            .select('id, title, description, status')
             .eq('course_id', course.id)
             .order('order_index', { ascending: true })
 

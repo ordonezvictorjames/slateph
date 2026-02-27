@@ -1,0 +1,123 @@
+-- Update the create_user_account function to accept new roles
+-- Date: February 27, 2026
+
+-- Drop all versions of the function
+DROP FUNCTION IF EXISTS create_user_account(TEXT, TEXT, TEXT, TEXT, TEXT);
+DROP FUNCTION IF EXISTS create_user_account;
+
+CREATE OR REPLACE FUNCTION create_user_account(
+  p_first_name TEXT,
+  p_last_name TEXT,
+  p_email TEXT,
+  p_password TEXT,
+  p_role TEXT
+)
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_user_id UUID;
+  v_result JSON;
+BEGIN
+  -- Validate role
+  IF p_role NOT IN ('admin', 'instructor', 'trainee', 'tesda_scholar', 'developer', 'peer_lead', 'participant') THEN
+    RETURN json_build_object(
+      'success', false,
+      'message', 'Invalid role. Must be admin, instructor, trainee, tesda_scholar, or developer'
+    );
+  END IF;
+
+  -- Create auth user
+  INSERT INTO auth.users (
+    instance_id,
+    id,
+    aud,
+    role,
+    email,
+    encrypted_password,
+    email_confirmed_at,
+    recovery_sent_at,
+    last_sign_in_at,
+    raw_app_meta_data,
+    raw_user_meta_data,
+    created_at,
+    updated_at,
+    confirmation_token,
+    email_change,
+    email_change_token_new,
+    recovery_token
+  )
+  VALUES (
+    '00000000-0000-0000-0000-000000000000',
+    gen_random_uuid(),
+    'authenticated',
+    'authenticated',
+    p_email,
+    crypt(p_password, gen_salt('bf')),
+    NOW(),
+    NOW(),
+    NOW(),
+    json_build_object('provider', 'email', 'providers', ARRAY['email']),
+    json_build_object('first_name', p_first_name, 'last_name', p_last_name),
+    NOW(),
+    NOW(),
+    '',
+    '',
+    '',
+    ''
+  )
+  RETURNING id INTO v_user_id;
+
+  -- Create profile
+  INSERT INTO public.profiles (
+    id,
+    first_name,
+    last_name,
+    email,
+    role,
+    status,
+    created_at,
+    updated_at
+  )
+  VALUES (
+    v_user_id,
+    p_first_name,
+    p_last_name,
+    p_email,
+    CAST(p_role AS user_role),
+    'active',
+    NOW(),
+    NOW()
+  );
+
+  -- Return success
+  RETURN json_build_object(
+    'success', true,
+    'message', 'User created successfully',
+    'user', json_build_object(
+      'id', v_user_id,
+      'email', p_email,
+      'first_name', p_first_name,
+      'last_name', p_last_name,
+      'role', p_role
+    )
+  );
+
+EXCEPTION
+  WHEN unique_violation THEN
+    RETURN json_build_object(
+      'success', false,
+      'message', 'User with this email already exists'
+    );
+  WHEN OTHERS THEN
+    RETURN json_build_object(
+      'success', false,
+      'message', 'Error creating user: ' || SQLERRM
+    );
+END;
+$$;
+
+-- Grant execute permission
+GRANT EXECUTE ON FUNCTION create_user_account TO authenticated;
+GRANT EXECUTE ON FUNCTION create_user_account TO anon;

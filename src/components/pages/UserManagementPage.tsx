@@ -32,7 +32,7 @@ interface Profile {
   first_name: string
   last_name: string
   email?: string
-  role: 'admin' | 'trainee' | 'trainee' | 'tesda_scholar'
+  role: 'admin' | 'instructor' | 'trainee' | 'tesda_scholar' | 'developer'
   status?: string
   avatar_url: string | null
   banner_url?: string | null
@@ -90,6 +90,7 @@ export default function UserManagementPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [roleFilter, setRoleFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [viewMode, setViewMode] = useState<'list' | 'card'>('list')
   
   const supabase = createClient()
 
@@ -614,7 +615,7 @@ export default function UserManagementPage() {
 
       {/* Filters */}
       <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Search */}
           <div className="md:col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
@@ -662,28 +663,62 @@ export default function UserManagementPage() {
               <option value="pending">Pending</option>
             </select>
           </div>
+
+          {/* View Toggle */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">View</label>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setViewMode('list')}
+                className={`flex-1 px-4 py-2 rounded-lg border transition-colors flex items-center justify-center gap-2 ${
+                  viewMode === 'list'
+                    ? 'bg-black text-white border-black'
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                </svg>
+                <span className="text-sm font-medium">List</span>
+              </button>
+              <button
+                onClick={() => setViewMode('card')}
+                className={`flex-1 px-4 py-2 rounded-lg border transition-colors flex items-center justify-center gap-2 ${
+                  viewMode === 'card'
+                    ? 'bg-black text-white border-black'
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+                <span className="text-sm font-medium">Card</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Users Table */}
+      {/* Users Display */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        {/* Desktop Table View */}
-        <div className="hidden lg:block overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Strand</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Section</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grade</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+        {/* List View (Table) */}
+        {viewMode === 'list' && (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Strand</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Section</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grade</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
                 <tr>
                   <td colSpan={9} className="px-6 py-12 text-center">
@@ -836,45 +871,47 @@ export default function UserManagementPage() {
             </tbody>
           </table>
         </div>
+        )}
 
-        {/* Mobile Card View */}
-        <div className="lg:hidden">
-          {loading ? (
-            <div className="p-12 text-center">
-              <Loading size="md" />
-            </div>
-          ) : filteredUsers.length === 0 ? (
-            <div className="p-12 text-center">
-              <div className="text-gray-400 mb-2">
-                <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
+        {/* Card View */}
+        {viewMode === 'card' && (
+          <div className="p-4">
+            {loading ? (
+              <div className="text-center py-12">
+                <Loading size="md" />
               </div>
-              <p className="text-gray-500">No users found</p>
-            </div>
-          ) : (
-            <div className="p-4 space-y-4">
+            ) : filteredUsers.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="text-gray-400 mb-2">
+                  <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <p className="text-gray-500">No users found</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {filteredUsers.map((u) => (
-                <div key={u.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                  <div className="flex items-center mb-3">
-                    <div className="flex-shrink-0 h-12 w-12">
+                <div key={u.id} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-start mb-4">
+                    <div className="flex-shrink-0 h-14 w-14">
                       {u.avatar_url ? (
                         u.avatar_url.startsWith('data:') ? (
-                          <img className="h-12 w-12 rounded-full object-cover" src={u.avatar_url} alt="" />
+                          <img className="h-14 w-14 rounded-full object-cover" src={u.avatar_url} alt="" />
                         ) : u.avatar_url.length <= 2 ? (
-                          <div className="h-12 w-12 rounded-full bg-gray-200 flex items-center justify-center text-xl">
+                          <div className="h-14 w-14 rounded-full bg-gray-200 flex items-center justify-center text-2xl">
                             {u.avatar_url}
                           </div>
                         ) : (
-                          <img className="h-12 w-12 rounded-full object-cover" src={u.avatar_url} alt="" />
+                          <img className="h-14 w-14 rounded-full object-cover" src={u.avatar_url} alt="" />
                         )
                       ) : (
-                        <div className="h-12 w-12 rounded-full bg-gray-200 flex items-center justify-center text-sm font-medium text-gray-600">
+                        <div className="h-14 w-14 rounded-full bg-gray-200 flex items-center justify-center text-sm font-medium text-gray-600">
                           {u.first_name.charAt(0)}{u.last_name.charAt(0)}
                         </div>
                       )}
                     </div>
-                    <div className="ml-3 flex-1">
+                    <div className="ml-4 flex-1">
                       <button
                         onClick={() => handleViewProfile({
                           id: u.id,
@@ -891,56 +928,58 @@ export default function UserManagementPage() {
                           section: u.section,
                           grade: u.grade
                         })}
-                        className="font-medium text-indigo-600 hover:text-indigo-900 hover:underline cursor-pointer transition-colors text-left"
+                        className="font-semibold text-indigo-600 hover:text-indigo-900 hover:underline cursor-pointer transition-colors text-left"
                       >
                         {u.first_name} {u.last_name}
                       </button>
-                      <div className="text-sm text-gray-500">{u.email}</div>
+                      <div className="text-sm text-gray-500 mt-1">{u.email}</div>
                     </div>
                   </div>
                   
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex gap-2 flex-wrap">
-                      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        (u.role as string) === 'admin' ? 'bg-purple-100 text-purple-800' :
-                        (u.role as string) === 'instructor' ? 'bg-green-100 text-green-800' :
-                        (u.role as string) === 'trainee' ? 'bg-blue-100 text-blue-800' :
-                        'bg-orange-100 text-orange-800'
-                      }`}>
-                        {(u.role as string) === 'admin' && 'Admin'}
-                        {(u.role as string) === 'instructor' && 'Instructor'}
-                        {(u.role as string) === 'trainee' && 'Trainee'}
-                        {(u.role as string) === 'developer' && 'Developer'}
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    <span className={`px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      (u.role as string) === 'admin' ? 'bg-purple-100 text-purple-800' :
+                      (u.role as string) === 'instructor' ? 'bg-green-100 text-green-800' :
+                      (u.role as string) === 'trainee' ? 'bg-blue-100 text-blue-800' :
+                      'bg-orange-100 text-orange-800'
+                    }`}>
+                      {(u.role as string) === 'admin' && 'Admin'}
+                      {(u.role as string) === 'instructor' && 'Instructor'}
+                      {(u.role as string) === 'trainee' && 'Trainee'}
+                      {(u.role as string) === 'developer' && 'Developer'}
+                    </span>
+                    {u.role === 'trainee' && u.strand && (
+                      <span className="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-50 text-blue-700">
+                        {u.strand}
                       </span>
-                      {u.role === 'trainee' && u.strand && (
-                        <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-50 text-blue-700">
-                          {u.strand}
-                        </span>
-                      )}
-                      {u.role === 'trainee' && u.section && (
-                        <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-indigo-50 text-indigo-700">
-                          {u.section}
-                        </span>
-                      )}
-                      {u.role === 'trainee' && u.grade && (
-                        <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-50 text-purple-700">
-                          Grade {u.grade}
-                        </span>
-                      )}
-                      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        u.status === 'active' ? 'bg-green-100 text-green-800' :
-                        u.status === 'inactive' ? 'bg-red-100 text-red-800' :
-                        'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {u.status || 'active'}
+                    )}
+                    {u.role === 'trainee' && u.section && (
+                      <span className="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-indigo-50 text-indigo-700">
+                        {u.section}
                       </span>
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {new Date(u.created_at).toLocaleDateString()}
-                    </div>
+                    )}
+                    {u.role === 'trainee' && u.grade && (
+                      <span className="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-50 text-purple-700">
+                        Grade {u.grade}
+                      </span>
+                    )}
+                    <span className={`px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      u.status === 'active' ? 'bg-green-100 text-green-800' :
+                      u.status === 'inactive' ? 'bg-red-100 text-red-800' :
+                      'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {u.status || 'active'}
+                    </span>
+                  </div>
+
+                  <div className="text-xs text-gray-500 mb-4 flex items-center">
+                    <svg className="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    {new Date(u.created_at).toLocaleDateString()}
                   </div>
                   
-                  <div className="flex gap-2 pt-3 border-t border-gray-100">
+                  <div className="flex gap-2 pt-4 border-t border-gray-100">
                     <button
                       onClick={() => handleEditUser({
                         id: u.id,
@@ -985,6 +1024,7 @@ export default function UserManagementPage() {
             </div>
           )}
         </div>
+        )}
 
         {/* Table Footer with Count */}
         {!loading && filteredUsers.length > 0 && (

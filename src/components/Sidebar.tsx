@@ -195,12 +195,6 @@ export default function Sidebar({ currentPage, onPageChange }: SidebarProps) {
           label: 'Code Generator', 
           roles: ['developer'] 
         },
-      ]
-    },
-    {
-      title: 'Feedback',
-      roles: ['admin', 'developer'],
-      items: [
         { 
           id: 'tasks' as PageType, 
           icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>, 
@@ -211,6 +205,18 @@ export default function Sidebar({ currentPage, onPageChange }: SidebarProps) {
           id: 'feature-requests' as PageType, 
           icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>, 
           label: 'Bugs and Request', 
+          roles: ['admin', 'developer'] 
+        },
+      ]
+    },
+    {
+      title: 'Apps',
+      roles: ['admin', 'developer'],
+      items: [
+        { 
+          id: 'profile' as PageType, 
+          icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>, 
+          label: 'Social', 
           roles: ['admin', 'developer'] 
         },
       ]
@@ -266,9 +272,15 @@ export default function Sidebar({ currentPage, onPageChange }: SidebarProps) {
       ]
     },
     {
-      title: 'Feedback',
+      title: 'Apps',
       roles: ['trainee'],
       items: [
+        { 
+          id: 'profile' as PageType, 
+          icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>, 
+          label: 'Social', 
+          roles: ['trainee'] 
+        },
         { 
           id: 'feature-requests' as PageType, 
           icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>, 
@@ -316,9 +328,15 @@ export default function Sidebar({ currentPage, onPageChange }: SidebarProps) {
       ]
     },
     {
-      title: 'Feedback',
+      title: 'Apps',
       roles: ['trainee'],
       items: [
+        { 
+          id: 'profile' as PageType, 
+          icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>, 
+          label: 'Social', 
+          roles: ['trainee'] 
+        },
         { 
           id: 'feature-requests' as PageType, 
           icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>, 
@@ -379,7 +397,7 @@ export default function Sidebar({ currentPage, onPageChange }: SidebarProps) {
       {/* Sidebar */}
       <div 
         className={`
-          ${isHovered || isMobileOpen ? 'w-64' : 'w-16'} 
+          ${isHovered || isMobileOpen ? 'w-52' : 'w-16'} 
           h-screen flex flex-col transition-all duration-300 ease-in-out border-r shadow-sm fixed left-0 top-0 z-50
           lg:translate-x-0
           ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
@@ -494,122 +512,27 @@ export default function Sidebar({ currentPage, onPageChange }: SidebarProps) {
         </div>
       </nav>
 
-      {/* Profile Section */}
-      <div className="px-2 pb-1 border-t border-gray-200 pt-1.5">
-        {isSectionEnabled('profile') && (
-          <>
-            {(isHovered || isMobileOpen) && (
-              <button
-                onClick={() => toggleGroup('Profile')}
-                className="w-full px-3 py-1 mb-0.5 flex items-center justify-between hover:bg-gray-100 rounded transition-colors"
-              >
-                <h3 className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">
-                  Profile
-                </h3>
-                <svg 
-                  className={`w-3 h-3 text-gray-500 transition-transform duration-200 ${collapsedGroups['Profile'] ? '-rotate-90' : ''}`}
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-            )}
-            
-            {!collapsedGroups['Profile'] && (
-              <ul className={(isHovered || isMobileOpen) ? 'space-y-0.5' : 'space-y-2'}>
-              <li>
-                <button 
-                  onClick={() => {
-                    onPageChange('profile')
-                    setIsMobileOpen(false)
-                  }}
-                  className={`w-full flex items-center ${(isHovered || isMobileOpen) ? 'px-3 py-1.5' : 'justify-center px-3 py-2'} hover:opacity-80 rounded-lg transition-all duration-200 group`}
-                  style={getButtonStyle(currentPage === 'profile')}
-                >
-                  <span className="flex-shrink-0">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </span>
-                  {(isHovered || isMobileOpen) && (
-                    <span className="ml-3 text-xs whitespace-nowrap overflow-hidden">
-                      My Profile
-                    </span>
-                  )}
-                </button>
-              </li>
-              <li>
-                <button 
-                  onClick={() => {
-                    onPageChange('settings')
-                    setIsMobileOpen(false)
-                  }}
-                  className={`w-full flex items-center ${(isHovered || isMobileOpen) ? 'px-3 py-1.5' : 'justify-center px-3 py-2'} hover:opacity-80 rounded-lg transition-all duration-200 group`}
-                  style={getButtonStyle(currentPage === 'settings')}
-                >
-                  <span className="flex-shrink-0">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                  </span>
-                  {(isHovered || isMobileOpen) && (
-                    <span className="ml-3 text-xs whitespace-nowrap overflow-hidden">
-                      Settings
-                    </span>
-                  )}
-                </button>
-              </li>
-            </ul>
-            )}
-          </>
-        )}
-      </div>
-
-      {/* Logout Button */}
-      <div className="px-2 pb-3 pt-1">
-        <button 
-          onClick={async () => {
-            try {
-              await signOut()
-            } catch (error) {
-              console.error('Logout error:', error)
-            }
-          }}
-          className={`w-full flex items-center ${(isHovered || isMobileOpen) ? 'px-3 py-1.5' : 'justify-center px-3 py-2'} text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all duration-200 group`}
-        >
-          <span className="flex-shrink-0">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-          </span>
-          {(isHovered || isMobileOpen) && (
-            <span className="ml-3 text-xs whitespace-nowrap overflow-hidden">
-              Log out
-            </span>
-          )}
-        </button>
-      </div>
-
       {/* Feedback Card */}
       {(isHovered || isMobileOpen) && (
         <div className="px-2 pb-3">
-          <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl p-4 border border-orange-200">
-            <div className="flex justify-center mb-4">
+          <div className="relative pt-12">
+            {/* Overlapping Image */}
+            <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 z-10">
               <img 
                 src="/book.png" 
                 alt="Feedback" 
-                className="w-32 h-32 object-contain"
+                className="w-[85px] h-[85px] object-contain drop-shadow-lg"
               />
             </div>
-            <button 
-              onClick={() => onPageChange('feature-requests')}
-              className="w-full bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white font-semibold py-2.5 px-4 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
-            >
-              Feedback
-            </button>
+            {/* Card Content */}
+            <div className="p-4 pt-5">
+              <button 
+                onClick={() => onPageChange('feature-requests')}
+                className="w-full bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+              >
+                Feedback
+              </button>
+            </div>
           </div>
         </div>
       )}

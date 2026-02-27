@@ -9,7 +9,7 @@ export interface NewUser {
   last_name: string
   email: string
   password: string
-  role: 'admin' | 'trainee' | 'trainee' | 'tesda_scholar'
+  role: 'admin' | 'instructor' | 'trainee' | 'tesda_scholar'
   status: 'active' | 'inactive' | 'pending'
   bio: string
   avatar_url: string | null
@@ -88,28 +88,12 @@ export function UserModal({
 
   const currentAvatar = animalAvatars[currentIndex]
 
-  // Check if trainee fields are complete
-  const istraineeFieldsComplete = () => {
-    if (user.role === 'trainee') {
-      return user.strand && user.section && user.grade
-    }
-    if (user.role === 'tesda_scholar') {
-      return user.batch_number
-    }
-    return true
-  }
+  // Check if form is valid
+  const isFormValid = true
 
-  const isFormValid = istraineeFieldsComplete()
-
-  // Handle form submission with validation
+  // Handle form submission
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    
-    if (!isFormValid) {
-      showError('Incomplete trainee Details', 'Please fill in Strand, Section, and Grade Level for trainee accounts.')
-      return
-    }
-    
     onSubmit(e)
   }
 
@@ -248,9 +232,9 @@ export function UserModal({
                       onChange={(e) => onInputChange('role', e.target.value)}
                       className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-white"
                     >
-                      <option value="trainee">trainee</option>
+                      <option value="trainee">Trainee</option>
                       <option value="tesda_scholar">TESDA Scholar</option>
-                      <option value="trainee">trainee</option>
+                      <option value="instructor">Instructor</option>
                       <option value="admin">Admin</option>
                     </select>
                   </div>
@@ -299,96 +283,6 @@ export function UserModal({
                   {isEditMode && <p className="text-xs text-gray-500 mt-2">Leave blank to keep current</p>}
                 </div>
               </div>
-
-              {/* trainee Details Section - Second row, below Account Details */}
-              {(user.role === 'trainee' || user.role === 'tesda_scholar') && (
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100 xl:col-start-2">
-                  <div className="flex items-center mb-4">
-                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-2">
-                      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                      </svg>
-                    </div>
-                    <h3 className="text-base font-semibold text-gray-900">
-                      {user.role === 'tesda_scholar' ? 'TESDA Scholar Details' : 'trainee Details'}
-                    </h3>
-                  </div>
-                  
-                  {user.role === 'trainee' ? (
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          SHS Strand
-                        </label>
-                        <select
-                          value={user.strand || ''}
-                          onChange={(e) => onInputChange('strand', e.target.value || null)}
-                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
-                        >
-                          <option value="">Select Strand</option>
-                          <option value="STEM">STEM</option>
-                          <option value="ABM">ABM</option>
-                          <option value="HUMSS">HUMSS</option>
-                          <option value="GAS">GAS</option>
-                          <option value="TVL-ICT">TVL-ICT</option>
-                          <option value="TVL-HE">TVL-HE</option>
-                          <option value="TVL-IA">TVL-IA</option>
-                          <option value="TVL-Agri">TVL-Agri</option>
-                          <option value="Arts and Design">Arts & Design</option>
-                          <option value="Sports">Sports</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Section
-                        </label>
-                        <select
-                          value={user.section || ''}
-                          onChange={(e) => onInputChange('section', e.target.value || null)}
-                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
-                        >
-                          <option value="">Select Section</option>
-                          {scientistSections.map((section) => (
-                            <option key={section} value={section}>{section}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Grade Level
-                        </label>
-                        <input
-                          type="number"
-                          min="1"
-                          max="12"
-                          value={user.grade || ''}
-                          onChange={(e) => onInputChange('grade', e.target.value ? parseInt(e.target.value) : null)}
-                          placeholder="11 or 12"
-                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Batch Number
-                      </label>
-                      <select
-                        value={user.batch_number || ''}
-                        onChange={(e) => onInputChange('batch_number', e.target.value ? parseInt(e.target.value) : null)}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
-                      >
-                        <option value="">Select Batch Number</option>
-                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(batch => (
-                          <option key={batch} value={batch}>
-                            Batch {batch}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           </div>
 
@@ -403,15 +297,8 @@ export function UserModal({
             </button>
             <button
               type="submit"
-              disabled={submitting || !isFormValid}
+              disabled={submitting}
               className="px-6 py-2.5 text-sm font-medium bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 shadow-lg hover:shadow-xl"
-              title={
-                !isFormValid && user.role === 'trainee' 
-                  ? 'Please fill in all trainee details (Strand, Section, and Grade)' 
-                  : !isFormValid && user.role === 'tesda_scholar'
-                  ? 'Please fill in Batch Number'
-                  : ''
-              }
             >
               {submitting && <ButtonLoading />}
               <span>{submitting ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update User' : 'Create User')}</span>

@@ -338,13 +338,15 @@ export default function CourseManagementPage() {
         .order('first_name', { ascending: true })
 
       if (error) {
-        console.error('Error fetching trainees:', error)
+        // Silently handle RLS policy restrictions - set empty array to prevent UI issues
+        settrainees([])
         return
       }
 
       settrainees(data || [])
     } catch (error) {
-      console.error('Error fetching trainees:', error)
+      // Silently handle errors - set empty array to prevent UI issues
+      settrainees([])
     }
   }
 
