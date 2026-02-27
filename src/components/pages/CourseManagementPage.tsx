@@ -24,7 +24,7 @@ interface Subject {
   course_id: string
   title: string
   description: string
-  trainee_id?: string
+  peer_lead_id?: string
   trainee_name?: string
   trainee?: {
     first_name: string
@@ -72,7 +72,7 @@ interface NewCourse {
 interface NewSubject {
   title: string
   description: string
-  trainee_id?: string
+  peer_lead_id?: string
   order_index: number
   status: 'active' | 'inactive' | 'draft'
   enrollment_type: 'trainee' | 'tesda_scholar' | 'both'
@@ -165,7 +165,7 @@ export default function CourseManagementPage() {
   const [newSubject, setNewSubject] = useState<NewSubject>({
     title: '',
     description: '',
-    trainee_id: '',
+    peer_lead_id: '',
     order_index: 1,
     status: 'draft',
     enrollment_type: 'trainee'
@@ -337,7 +337,7 @@ export default function CourseManagementPage() {
       const { data, error } = await supabase
         .from('profiles')
         .select('id, first_name, last_name, email')
-        .in('role', ['trainee'])
+        .in('role', ['instructor'])
         .order('first_name', { ascending: true })
 
       if (error) {
@@ -608,7 +608,7 @@ export default function CourseManagementPage() {
           course_id: selectedCourse.id,
           title: newSubject.title,
           description: newSubject.description,
-          trainee_id: newSubject.trainee_id || null,
+          peer_lead_id: newSubject.peer_lead_id || null,
           status: newSubject.status,
           enrollment_type: newSubject.enrollment_type,
           order_index: targetOrderIndex
@@ -623,7 +623,7 @@ export default function CourseManagementPage() {
       setNewSubject({
         title: '',
         description: '',
-        trainee_id: '',
+        peer_lead_id: '',
         order_index: 1,
         status: 'draft',
         enrollment_type: 'trainee'
@@ -1015,7 +1015,7 @@ export default function CourseManagementPage() {
     setNewSubject({
       title: subject.title,
       description: subject.description,
-      trainee_id: subject.trainee_id || '',
+      peer_lead_id: subject.peer_lead_id || '',
       order_index: subject.order_index,
       status: subject.status,
       enrollment_type: subject.enrollment_type
@@ -1074,7 +1074,7 @@ export default function CourseManagementPage() {
         .update({
           title: newSubject.title,
           description: newSubject.description,
-          trainee_id: newSubject.trainee_id || null,
+          peer_lead_id: newSubject.peer_lead_id || null,
           status: newSubject.status,
           enrollment_type: newSubject.enrollment_type,
           order_index: newSubject.order_index
@@ -1090,7 +1090,7 @@ export default function CourseManagementPage() {
       setNewSubject({
         title: '',
         description: '',
-        trainee_id: '',
+        peer_lead_id: '',
         order_index: 1,
         status: 'draft',
         enrollment_type: 'trainee'
@@ -1966,6 +1966,20 @@ export default function CourseManagementPage() {
                   className="w-full h-full object-contain opacity-90"
                 />
               </div>
+
+              {/* Add Subject Button */}
+              <button 
+                onClick={() => setShowAddSubjectModal(true)}
+                className="z-10 px-6 py-3 text-white rounded-lg transition-colors flex items-center space-x-2"
+                style={{ backgroundColor: getButtonBg() }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                <span>Add Subject</span>
+              </button>
             </div>
           </div>
 
@@ -2483,13 +2497,13 @@ export default function CourseManagementPage() {
                 </div>
                 
                 <div>
-                  <label className="block text-xs font-medium text-black mb-1">trainee</label>
+                  <label className="block text-xs font-medium text-black mb-1">Assign Instructor</label>
                   <select
                     value={newSubject.trainee_id}
-                    onChange={(e) => setNewSubject(prev => ({ ...prev, trainee_id: e.target.value }))}
+                    onChange={(e) => setNewSubject(prev => ({ ...prev, peer_lead_id: e.target.value }))}
                     className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-black focus:border-black"
                   >
-                    <option value="">Select trainee</option>
+                    <option value="">Select Instructor</option>
                     {trainees.map((trainee) => (
                       <option key={trainee.id} value={trainee.id}>
                         {trainee.first_name} {trainee.last_name}
@@ -2596,13 +2610,13 @@ export default function CourseManagementPage() {
                 </div>
                 
                 <div>
-                  <label className="block text-xs font-medium text-black mb-1">trainee</label>
+                  <label className="block text-xs font-medium text-black mb-1">Assign Instructor</label>
                   <select
                     value={newSubject.trainee_id}
-                    onChange={(e) => setNewSubject(prev => ({ ...prev, trainee_id: e.target.value }))}
+                    onChange={(e) => setNewSubject(prev => ({ ...prev, peer_lead_id: e.target.value }))}
                     className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-black focus:border-black"
                   >
-                    <option value="">Select trainee</option>
+                    <option value="">Select Instructor</option>
                     {trainees.map((trainee) => (
                       <option key={trainee.id} value={trainee.id}>
                         {trainee.first_name} {trainee.last_name}
@@ -3574,6 +3588,7 @@ export default function CourseManagementPage() {
     </div>
   )
 }
+
 
 
 
