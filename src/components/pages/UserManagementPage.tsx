@@ -642,9 +642,9 @@ export default function UserManagementPage() {
             >
               <option value="all">All Roles</option>
               <option value="admin">Admin</option>
-              <option value="trainee">trainee</option>
-              <option value="trainee">trainee</option>
-              <option value="trainee">trainee</option>
+              <option value="instructor">Instructor</option>
+              <option value="trainee">Trainee</option>
+              <option value="developer">Developer</option>
             </select>
           </div>
 
@@ -753,10 +753,14 @@ export default function UserManagementPage() {
                     <td className="px-6 py-3 whitespace-nowrap">
                       <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                         u.role === 'admin' ? 'bg-purple-100 text-purple-800' :
+                        u.role === 'instructor' ? 'bg-green-100 text-green-800' :
                         u.role === 'trainee' ? 'bg-blue-100 text-blue-800' :
                         'bg-orange-100 text-orange-800'
                       }`}>
-                        {u.role}
+                        {u.role === 'admin' ? 'Admin' : 
+                         u.role === 'instructor' ? 'Instructor' :
+                         u.role === 'trainee' ? 'Trainee' : 
+                         'Developer'}
                       </span>
                     </td>
                     <td className="px-6 py-3 whitespace-nowrap">
@@ -899,10 +903,14 @@ export default function UserManagementPage() {
                     <div className="flex gap-2 flex-wrap">
                       <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                         u.role === 'admin' ? 'bg-purple-100 text-purple-800' :
+                        u.role === 'instructor' ? 'bg-green-100 text-green-800' :
                         u.role === 'trainee' ? 'bg-blue-100 text-blue-800' :
                         'bg-orange-100 text-orange-800'
                       }`}>
-                        {u.role}
+                        {u.role === 'admin' ? 'Admin' : 
+                         u.role === 'instructor' ? 'Instructor' :
+                         u.role === 'trainee' ? 'Trainee' : 
+                         'Developer'}
                       </span>
                       {u.role === 'trainee' && u.strand && (
                         <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-50 text-blue-700">

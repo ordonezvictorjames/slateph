@@ -124,12 +124,22 @@ export default function MytraineesPage() {
 
   const getRoleBadge = (role: string) => {
     const roleStyles = {
-      trainee: 'bg-blue-100 text-blue-800'
+      admin: 'bg-purple-100 text-purple-800',
+      instructor: 'bg-green-100 text-green-800',
+      trainee: 'bg-blue-100 text-blue-800',
+      developer: 'bg-orange-100 text-orange-800'
+    }
+    
+    const roleNames: Record<string, string> = {
+      admin: 'Admin',
+      instructor: 'Instructor',
+      trainee: 'Trainee',
+      developer: 'Developer'
     }
     
     return (
       <span className={`px-2 py-1 rounded-full text-xs font-medium ${roleStyles[role as keyof typeof roleStyles] || roleStyles.trainee}`}>
-        {role.charAt(0).toUpperCase() + role.slice(1)}
+        {roleNames[role] || role.charAt(0).toUpperCase() + role.slice(1)}
       </span>
     )
   }
