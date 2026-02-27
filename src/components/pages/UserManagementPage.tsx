@@ -645,6 +645,7 @@ export default function UserManagementPage() {
               <option value="admin">Admin</option>
               <option value="instructor">Instructor</option>
               <option value="trainee">Trainee</option>
+              <option value="tesda_scholar">Scholar</option>
               <option value="developer">Developer</option>
             </select>
           </div>
@@ -710,9 +711,6 @@ export default function UserManagementPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Strand</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Section</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grade</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -721,13 +719,13 @@ export default function UserManagementPage() {
               <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="px-6 py-12 text-center">
+                  <td colSpan={6} className="px-6 py-12 text-center">
                     <Loading size="md" />
                   </td>
                 </tr>
               ) : filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-6 py-12 text-center">
+                  <td colSpan={6} className="px-6 py-12 text-center">
                     <div className="text-gray-400 mb-2">
                       <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -789,29 +787,17 @@ export default function UserManagementPage() {
                       <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                         (u.role as string) === 'admin' ? 'bg-purple-100 text-purple-800' :
                         (u.role as string) === 'instructor' ? 'bg-green-100 text-green-800' :
-                        (u.role as string) === 'trainee' ? 'bg-blue-100 text-blue-800' :
-                        'bg-orange-100 text-orange-800'
+                        (u.role as string) === 'trainee' ? 'bg-orange-100 text-orange-800' :
+                        (u.role as string) === 'tesda_scholar' ? 'bg-blue-100 text-blue-800' :
+                        (u.role as string) === 'developer' ? 'bg-red-100 text-red-800' :
+                        'bg-gray-100 text-gray-800'
                       }`}>
                         {(u.role as string) === 'admin' && 'Admin'}
                         {(u.role as string) === 'instructor' && 'Instructor'}
                         {(u.role as string) === 'trainee' && 'Trainee'}
+                        {(u.role as string) === 'tesda_scholar' && 'Scholar'}
                         {(u.role as string) === 'developer' && 'Developer'}
                       </span>
-                    </td>
-                    <td className="px-6 py-3 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {u.role === 'trainee' ? (u.strand || '-') : '-'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-3 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {u.role === 'trainee' ? (u.section || '-') : '-'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-3 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {u.role === 'trainee' ? (u.grade || '-') : '-'}
-                      </div>
                     </td>
                     <td className="px-6 py-3 whitespace-nowrap">
                       <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -940,12 +926,15 @@ export default function UserManagementPage() {
                     <span className={`px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                       (u.role as string) === 'admin' ? 'bg-purple-100 text-purple-800' :
                       (u.role as string) === 'instructor' ? 'bg-green-100 text-green-800' :
-                      (u.role as string) === 'trainee' ? 'bg-blue-100 text-blue-800' :
-                      'bg-orange-100 text-orange-800'
+                      (u.role as string) === 'trainee' ? 'bg-orange-100 text-orange-800' :
+                      (u.role as string) === 'tesda_scholar' ? 'bg-blue-100 text-blue-800' :
+                      (u.role as string) === 'developer' ? 'bg-red-100 text-red-800' :
+                      'bg-gray-100 text-gray-800'
                     }`}>
                       {(u.role as string) === 'admin' && 'Admin'}
                       {(u.role as string) === 'instructor' && 'Instructor'}
                       {(u.role as string) === 'trainee' && 'Trainee'}
+                      {(u.role as string) === 'tesda_scholar' && 'Scholar'}
                       {(u.role as string) === 'developer' && 'Developer'}
                     </span>
                     {u.role === 'trainee' && u.strand && (
@@ -1670,12 +1659,13 @@ export default function UserManagementPage() {
                 <div className="flex items-center justify-center space-x-2">
                   <span className={`px-3 py-1 text-sm font-semibold rounded-full ${
                     viewingProfile.role === 'admin' ? 'bg-purple-100 text-purple-800' :
-                    viewingProfile.role === 'trainee' ? 'bg-blue-100 text-blue-800' :
-                    viewingProfile.role === 'trainee' ? 'bg-green-100 text-green-800' :
-                    viewingProfile.role === 'developer' ? 'bg-orange-100 text-orange-800' :
+                    viewingProfile.role === 'instructor' ? 'bg-green-100 text-green-800' :
+                    viewingProfile.role === 'trainee' ? 'bg-orange-100 text-orange-800' :
+                    viewingProfile.role === 'tesda_scholar' ? 'bg-blue-100 text-blue-800' :
+                    viewingProfile.role === 'developer' ? 'bg-red-100 text-red-800' :
                     'bg-gray-100 text-gray-800'
                   }`}>
-                    {viewingProfile.role.charAt(0).toUpperCase() + viewingProfile.role.slice(1)}
+                    {viewingProfile.role === 'tesda_scholar' ? 'Scholar' : viewingProfile.role.charAt(0).toUpperCase() + viewingProfile.role.slice(1)}
                   </span>
                   <span className={`px-3 py-1 text-sm font-semibold rounded-full ${
                     viewingProfile.status === 'active' ? 'bg-green-100 text-green-800' :
