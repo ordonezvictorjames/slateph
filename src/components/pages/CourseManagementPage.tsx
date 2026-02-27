@@ -125,6 +125,7 @@ export default function CourseManagementPage() {
     )
   }
   const [trainees, settrainees] = useState<Array<{id: string, first_name: string, last_name: string, email: string}>>([])
+  const [instructors, setInstructors] = useState<Array<{id: string, first_name: string, last_name: string, email: string}>>([])
   const [enrolledtrainees, setEnrolledtrainees] = useState<Array<{id: string, first_name: string, last_name: string, email: string, enrollment_id: string, enrolled_at: string, status: string, progress: number}>>([])
   const [availabletrainees, setAvailabletrainees] = useState<Array<{id: string, first_name: string, last_name: string, email: string}>>([])
   const [selectedtrainees, setSelectedtrainees] = useState<string[]>([])
@@ -337,7 +338,7 @@ export default function CourseManagementPage() {
       const { data, error } = await supabase
         .from('profiles')
         .select('id, first_name, last_name, email')
-        .in('role', ['instructor'])
+        .in('role', ['trainee', 'tesda_scholar'])
         .order('first_name', { ascending: true })
 
       if (error) {
@@ -350,6 +351,25 @@ export default function CourseManagementPage() {
     } catch (error) {
       // Silently handle errors - set empty array to prevent UI issues
       settrainees([])
+    }
+  }
+
+  const fetchInstructors = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, email')
+        .eq('role', 'instructor')
+        .order('first_name', { ascending: true })
+
+      if (error) {
+        setInstructors([])
+        return
+      }
+
+      setInstructors(data || [])
+    } catch (error) {
+      setInstructors([])
     }
   }
 
@@ -436,6 +456,7 @@ export default function CourseManagementPage() {
     console.log('CourseManagementPage mounted, fetching data...')
     fetchCourses()
     fetchtrainees()
+    fetchInstructors()
     fetchAvailableColors()
   }, [])
 
@@ -709,7 +730,10 @@ export default function CourseManagementPage() {
         status: 'draft',
         duration_minutes: 0,
         canva_url: '',
-        conference_url: ''
+        conference_url: '',
+        text_content: '',
+        video_url: '',
+        document_url: ''
       })
       setShowAddModuleModal(false)
       await fetchModules(selectedSubject.id)
@@ -1199,30 +1223,80 @@ export default function CourseManagementPage() {
       
       switch (deletingItem.type) {
         case 'course':
-          ({ error } = await supabase
-            .from('courses')
-            .delete()
-            .eq('id', deletingItem.item.id))
-          break
-        case 'subject':
-          ({ error } = await supabase
+          // First, delete all related records
+          // Delete modules for all subjects in this course
+          const { data: courseSubjects } = await supabase
+            .from('subjects')
+            .select('id')
+            .eq('course_id', deletingItem.item.id)
+          
+          if (courseSubjects && courseSubjects.length > 0) {
+            const subjectIds = courseSubjects.map(s => s.id)
+            
+            // Delete modules for these subjects
+            await supabase
+              .from('modules')
+              .delete()
+              .in('subject_id', subjectIds)
+          }
+          
+          // Delete subjects
+          await supabase
             .from('subjects')
             .delete()
-            .eq('id', deletingItem.item.id))
+            .eq('course_id', deletingItem.item.id)
+          
+          // Delete enrollments
+          await supabase
+            .from('course_enrollments')
+            .delete()
+            .eq('course_id', deletingItem.item.id)
+          
+          // Delete course colors
+          await supabase
+            .from('course_colors')
+            .delete()
+            .eq('course_id', deletingItem.item.id)
+          
+          // Finally, delete the course
+          const courseDeleteResult = await supabase
+            .from('courses')
+            .delete()
+            .eq('id', deletingItem.item.id)
+          
+          error = courseDeleteResult.error
           break
-        case 'module':
-          ({ error } = await supabase
+        case 'subject':
+          // Delete modules first
+          await supabase
             .from('modules')
             .delete()
-            .eq('id', deletingItem.item.id))
+            .eq('subject_id', deletingItem.item.id)
+          
+          // Then delete the subject
+          const subjectDeleteResult = await supabase
+            .from('subjects')
+            .delete()
+            .eq('id', deletingItem.item.id)
+          
+          error = subjectDeleteResult.error
+          break
+        case 'module':
+          const moduleDeleteResult = await supabase
+            .from('modules')
+            .delete()
+            .eq('id', deletingItem.item.id)
+          
+          error = moduleDeleteResult.error
           break
         default:
           throw new Error('Invalid delete type')
       }
 
-      if (error) {
+      // Check if there's a real error (not just an empty object)
+      if (error && (error.message || error.code)) {
         console.error(`Error deleting ${deletingItem.type}:`, error)
-        showError('Error', `Error deleting ${deletingItem.type}: ` + error.message)
+        showError('Error', `Error deleting ${deletingItem.type}: ${error.message || error.code || 'Unknown error'}`)
         return
       }
 
@@ -1488,13 +1562,13 @@ export default function CourseManagementPage() {
   const getEnrollmentTypeDisplay = (type: string) => {
     if (type === 'both') {
       return [
-        { text: 'trainees', color: 'bg-blue-100 text-blue-800' },
+        { text: 'Trainees', color: 'bg-blue-100 text-blue-800' },
         { text: 'TESDA Scholars', color: 'bg-purple-100 text-purple-800' }
       ]
     } else if (type === 'tesda_scholar') {
       return [{ text: 'TESDA Scholars', color: 'bg-purple-100 text-purple-800' }]
     }
-    return [{ text: 'trainees', color: 'bg-blue-100 text-blue-800' }]
+    return [{ text: 'Trainees', color: 'bg-blue-100 text-blue-800' }]
   }
 
   // Helper function to get course color
@@ -1912,7 +1986,7 @@ export default function CourseManagementPage() {
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                             </svg>
-                            <span>Enroll trainees</span>
+                            <span>Enroll Students</span>
                           </button>
                           <button 
                             onClick={() => handleCourseSelect(course)}
@@ -2040,26 +2114,17 @@ export default function CourseManagementPage() {
                           )}
                           
                           <div className="flex flex-wrap items-center gap-4 text-sm">
-                            {/* trainee */}
+                            {/* Instructor */}
                             <div className="flex items-center gap-2">
                               <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                               </svg>
-                              <span className="text-gray-500">trainee:</span>
+                              <span className="text-gray-500">Instructor:</span>
                               <span className={`font-semibold ${
                                 subject.trainee_name === 'Unassigned' ? 'text-gray-400 italic' : 'text-gray-900'
                               }`}>
                                 {subject.trainee_name}
                               </span>
-                            </div>
-                            
-                            {/* Enrollment Type */}
-                            <div className="flex items-center gap-2">
-                              {getEnrollmentTypeDisplay(subject.enrollment_type || 'trainee').map((badge, idx) => (
-                                <span key={idx} className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded ${badge.color}`}>
-                                  {badge.text}
-                                </span>
-                              ))}
                             </div>
                           </div>
                         </div>
@@ -2393,8 +2458,8 @@ export default function CourseManagementPage() {
                     onChange={(e) => setNewCourse(prev => ({ ...prev, enrollment_type: e.target.value as 'trainee' | 'tesda_scholar' | 'both' }))}
                     className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-black focus:border-black"
                   >
-                    <option value="trainee">trainee Only</option>
-                    <option value="tesda_scholar">TESDA Scholar Only</option>
+                    <option value="trainee">Trainee</option>
+                    <option value="tesda_scholar">TESDA Scholar</option>
                     <option value="both">Both</option>
                   </select>
                 </div>
@@ -2504,9 +2569,9 @@ export default function CourseManagementPage() {
                     className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-black focus:border-black"
                   >
                     <option value="">Select Instructor</option>
-                    {trainees.map((trainee) => (
-                      <option key={trainee.id} value={trainee.id}>
-                        {trainee.first_name} {trainee.last_name}
+                    {instructors.map((instructor) => (
+                      <option key={instructor.id} value={instructor.id}>
+                        {instructor.first_name} {instructor.last_name}
                       </option>
                     ))}
                   </select>
@@ -2617,9 +2682,9 @@ export default function CourseManagementPage() {
                     className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-black focus:border-black"
                   >
                     <option value="">Select Instructor</option>
-                    {trainees.map((trainee) => (
-                      <option key={trainee.id} value={trainee.id}>
-                        {trainee.first_name} {trainee.last_name}
+                    {instructors.map((instructor) => (
+                      <option key={instructor.id} value={instructor.id}>
+                        {instructor.first_name} {instructor.last_name}
                       </option>
                     ))}
                   </select>
@@ -3285,8 +3350,8 @@ export default function CourseManagementPage() {
                     onChange={(e) => setNewCourse(prev => ({ ...prev, enrollment_type: e.target.value as 'trainee' | 'tesda_scholar' | 'both' }))}
                     className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-black focus:border-black"
                   >
-                    <option value="trainee">trainee Only</option>
-                    <option value="tesda_scholar">TESDA Scholar Only</option>
+                    <option value="trainee">Trainee</option>
+                    <option value="tesda_scholar">TESDA Scholar</option>
                     <option value="both">Both</option>
                   </select>
                 </div>
@@ -3444,7 +3509,7 @@ export default function CourseManagementPage() {
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-black">
-                  Enroll trainees - {selectedCourseForEnrollment.title}
+                  Enroll Students - {selectedCourseForEnrollment.title}
                 </h2>
                 <button 
                   onClick={() => setShowEnrolltraineesModal(false)}
