@@ -568,27 +568,6 @@ export default function Sidebar({ currentPage, onPageChange }: SidebarProps) {
         )}
       </div>
 
-      {/* Promotional Card */}
-      {(isHovered || isMobileOpen) && (
-        <div className="px-2 pb-3">
-          <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl p-4 border border-orange-200">
-            <div className="flex justify-center mb-4">
-              <img 
-                src="/book.png" 
-                alt="Feedback" 
-                className="w-32 h-32 object-contain"
-              />
-            </div>
-            <button 
-              onClick={() => onPageChange('feature-requests')}
-              className="w-full bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white font-semibold py-2.5 px-4 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
-            >
-              Feedback
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Logout Button */}
       <div className="px-2 pb-3 pt-1">
         <button 
@@ -613,6 +592,27 @@ export default function Sidebar({ currentPage, onPageChange }: SidebarProps) {
           )}
         </button>
       </div>
+
+      {/* Feedback Card */}
+      {(isHovered || isMobileOpen) && (
+        <div className="px-2 pb-3">
+          <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl p-4 border border-orange-200">
+            <div className="flex justify-center mb-4">
+              <img 
+                src="/book.png" 
+                alt="Feedback" 
+                className="w-32 h-32 object-contain"
+              />
+            </div>
+            <button 
+              onClick={() => onPageChange('feature-requests')}
+              className="w-full bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white font-semibold py-2.5 px-4 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+            >
+              Feedback
+            </button>
+          </div>
+        </div>
+      )}
       </div>
     </>
   )
