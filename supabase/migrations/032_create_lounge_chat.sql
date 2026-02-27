@@ -1,0 +1,1 @@
+Error: Failed to run sql query: ERROR: 42710: policy "All users can read lounge messages" for table "lounge_chat_messages" already exists

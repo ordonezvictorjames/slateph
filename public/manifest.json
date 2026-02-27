@@ -1,0 +1,14 @@
+{
+  "name": "Slate - Learning Management System",
+  "short_name": "Slate",
+  "description": "A modern Learning Management System for education",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "orientation": "portrait-primary",
+  "icons": [],
+  "categories": ["education", "productivity"],
+  "lang": "en",
+  "dir": "ltr"
+}
