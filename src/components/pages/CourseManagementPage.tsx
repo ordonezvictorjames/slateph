@@ -710,7 +710,7 @@ export default function CourseManagementPage() {
       const moduleData = {
         subject_id: selectedSubject.id,
         title: newModule.title,
-        description: newModule.description,
+        description: newModule.title, // Use title as description since field is removed from UI
         content_type: newModule.content_type,
         status: newModule.status,
         order_index: nextOrderIndex,
@@ -807,7 +807,7 @@ export default function CourseManagementPage() {
     try {
       const updateData = {
         title: newModule.title,
-        description: newModule.description,
+        description: newModule.title, // Use title as description since field is removed from UI
         content_type: newModule.content_type,
         status: newModule.status,
         duration_minutes: newModule.duration_minutes || null,
@@ -2759,18 +2759,6 @@ export default function CourseManagementPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-medium text-black mb-1">Description *</label>
-                <textarea
-                  required
-                  value={newModule.description}
-                  onChange={(e) => setNewModule(prev => ({ ...prev, description: e.target.value }))}
-                  rows={3}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-black focus:border-black"
-                  placeholder="Enter module description"
-                />
-              </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-black mb-1">Content Type *</label>
@@ -3028,18 +3016,6 @@ export default function CourseManagementPage() {
                   onChange={(e) => setNewModule(prev => ({ ...prev, title: e.target.value }))}
                   className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-black focus:border-black"
                   placeholder="Enter module title"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-black mb-1">Description *</label>
-                <textarea
-                  required
-                  value={newModule.description}
-                  onChange={(e) => setNewModule(prev => ({ ...prev, description: e.target.value }))}
-                  rows={3}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-black focus:border-black"
-                  placeholder="Enter module description"
                 />
               </div>
 
