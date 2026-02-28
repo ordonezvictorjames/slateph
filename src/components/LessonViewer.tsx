@@ -158,7 +158,8 @@ export default function LessonViewer({ module, isOpen, onClose }: LessonViewerPr
         let docEmbedUrl = module.document_url
         if (isSupabaseStorage) {
           // Use Google Docs Viewer for PDFs and Office files to prevent downloads
-          docEmbedUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(module.document_url)}&embedded=true`
+          // view=FitH sets the default view to fit width
+          docEmbedUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(module.document_url)}&embedded=true&view=FitH`
         } else {
           // For external URLs (like Google Docs), use the helper function
           docEmbedUrl = getGoogleDocsEmbedUrl(module.document_url)

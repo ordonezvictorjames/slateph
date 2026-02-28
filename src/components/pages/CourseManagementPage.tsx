@@ -1655,19 +1655,18 @@ export default function CourseManagementPage() {
         let docEmbedUrl = module.document_url
         if (isSupabaseStorage) {
           // Use Google Docs Viewer for PDFs and Office files to prevent downloads
-          docEmbedUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(module.document_url)}&embedded=true`
+          // view=FitH sets the default view to fit width
+          docEmbedUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(module.document_url)}&embedded=true&view=FitH`
         }
 
         return (
-          <div className="w-full h-full bg-gray-900 flex items-center justify-center p-4">
-            <div className="w-full h-full max-w-7xl bg-white rounded-lg shadow-2xl overflow-hidden">
-              <iframe
-                src={docEmbedUrl}
-                className="w-full h-full border-0"
-                title={module.title}
-                allow="fullscreen"
-              />
-            </div>
+          <div className="w-full h-full">
+            <iframe
+              src={docEmbedUrl}
+              className="w-full h-full border-0"
+              title={module.title}
+              allow="fullscreen"
+            />
           </div>
         )
       
@@ -3657,67 +3656,24 @@ export default function CourseManagementPage() {
 
       {/* Presentation Modal */}
       {showPresentationModal && currentPresentationModule && (
-        <div className="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-50">
-          <div className="w-full h-full flex flex-col">
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 bg-black bg-opacity-50 backdrop-blur-sm">
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  {getContentTypeIcon(currentPresentationModule.content_type)}
-                  <h2 className="text-xl font-semibold text-white">{currentPresentationModule.title}</h2>
-                </div>
-                <span className="px-3 py-1 bg-white bg-opacity-20 text-white text-sm rounded-full">
-                  {currentPresentationModule.content_type === 'canva_presentation' ? 'Canva Presentation' : currentPresentationModule.content_type}
-                </span>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                {currentPresentationModule.duration_minutes && (
-                  <span className="text-white text-sm bg-white bg-opacity-20 px-3 py-1 rounded-full">
-                    {currentPresentationModule.duration_minutes} min
-                  </span>
-                )}
-                <button 
-                  onClick={() => {
-                    setShowPresentationModal(false)
-                    setCurrentPresentationModule(null)
-                  }}
-                  className="p-2 text-white hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
-                  title="Close presentation"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            </div>
+        <div className="fixed inset-0 bg-black z-50">
+          {/* Floating Close Button */}
+          <button 
+            onClick={() => {
+              setShowPresentationModal(false)
+              setCurrentPresentationModule(null)
+            }}
+            className="absolute top-4 right-4 z-10 p-3 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white rounded-full transition-all shadow-lg"
+            title="Close presentation"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
 
-            {/* Content */}
-            <div className="flex-1 p-4">
-              <div className="w-full h-full bg-white rounded-lg overflow-hidden">
-                {renderPresentationContent(currentPresentationModule)}
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="p-4 bg-black bg-opacity-50 backdrop-blur-sm">
-              <div className="flex items-center justify-between">
-                <div className="text-white text-sm">
-                  <p className="opacity-75">{currentPresentationModule.description}</p>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <button 
-                    onClick={() => {
-                      setShowPresentationModal(false)
-                      setCurrentPresentationModule(null)
-                    }}
-                    className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-                  >
-                    Close Lesson
-                  </button>
-                </div>
-              </div>
-            </div>
+          {/* Fullscreen Content */}
+          <div className="w-full h-full">
+            {renderPresentationContent(currentPresentationModule)}
           </div>
         </div>
       )}
