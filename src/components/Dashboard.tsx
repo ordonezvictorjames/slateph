@@ -10,7 +10,6 @@ import DashboardHome from '@/components/pages/DashboardHome'
 import UserManagementPage from '@/components/pages/UserManagementPage'
 import MyStudentsPage from '@/components/pages/MyStudentsPage'
 import CourseManagementPage from '@/components/pages/CourseManagementPage'
-import CoursesPage from '@/components/pages/CoursesPage'
 import MyCoursesPage from '@/components/pages/MyCoursesPage'
 import AnalyticsPage from '@/components/pages/AnalyticsPage'
 import SchedulePage from '@/components/pages/SchedulePage'
@@ -21,7 +20,7 @@ import CodeGeneratorPage from '@/components/pages/CodeGeneratorPage'
 import FeatureRequestsPage from '@/components/pages/FeatureRequestsPage'
 import TasksPage from '@/components/pages/TasksPage'
 
-export type PageType = 'dashboard' | 'user-management' | 'course-management' | 'courses' | 'my-courses' | 'schedule' | 'analytics' | 'profile' | 'settings' | 'system-tracker' | 'code-generator' | 'feature-requests' | 'tasks' | 'games' | 'activity'
+export type PageType = 'dashboard' | 'user-management' | 'course-management' | 'my-courses' | 'schedule' | 'analytics' | 'profile' | 'settings' | 'system-tracker' | 'code-generator' | 'feature-requests' | 'tasks' | 'games' | 'activity'
 
 export default function Dashboard() {
   const { signOut } = useAuth()
@@ -54,7 +53,6 @@ export default function Dashboard() {
       case 'dashboard': return <DashboardHome onNavigate={setCurrentPage} />
       case 'user-management': return userRole === 'instructor' ? <MyStudentsPage /> : <UserManagementPage />
       case 'course-management': return <CourseManagementPage />
-      case 'courses': return <CoursesPage />
       case 'my-courses': return <MyCoursesPage />
       case 'schedule': return <SchedulePage />
       case 'analytics': return <AnalyticsPage />
