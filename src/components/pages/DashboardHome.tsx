@@ -968,19 +968,19 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
         const enrolledtraineeIds = new Set(enrolledtrainees?.map((e: { trainee_id: string }) => e.trainee_id) || [])
         const unenrolledCount = (alltrainees || []).filter((s: { id: string }) => !enrolledtraineeIds.has(s.id)).length
 
-        // Get trainees not assigned to any subject
-        const { data: alltraineesForSubjects } = await supabase
+        // Get instructors not assigned to any subject
+        const { data: allInstructors } = await supabase
           .from('profiles')
           .select('id')
-          .eq('role', 'trainee')
+          .eq('role', 'instructor')
 
-        const { data: assignedtrainees } = await supabase
+        const { data: assignedInstructors } = await supabase
           .from('subjects')
-          .select('trainee_id')
-          .not('trainee_id', 'is', null)
+          .select('instructor_id')
+          .not('instructor_id', 'is', null)
 
-        const assignedtraineeIds = new Set(assignedtrainees?.map((s: { trainee_id: string }) => s.trainee_id) || [])
-        const unassignedCount = (alltraineesForSubjects || []).filter((i: { id: string }) => !assignedtraineeIds.has(i.id)).length
+        const assignedInstructorIds = new Set(assignedInstructors?.map((s: { instructor_id: string }) => s.instructor_id) || [])
+        const unassignedCount = (allInstructors || []).filter((i: { id: string }) => !assignedInstructorIds.has(i.id)).length
 
         // Get pending and ongoing feature requests (for developers only)
         let pendingRequests = 0
@@ -1064,7 +1064,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
   const getEnrollmentTypeDisplay = (enrollmentType: string) => {
     const badges = []
     if (enrollmentType === 'trainee' || enrollmentType === 'both') {
-      badges.push({ text: 'trainees', color: 'bg-blue-100 text-blue-800' })
+      badges.push({ text: 'Trainees', color: 'bg-blue-100 text-blue-800' })
     }
     if (enrollmentType === 'tesda_scholar' || enrollmentType === 'both') {
       badges.push({ text: 'TESDA Scholars', color: 'bg-purple-100 text-purple-800' })
@@ -1274,7 +1274,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                           </div>
                         )}
 
-                        {/* Row 2, Col 3 (wraps to new row on mobile): Unassigned trainees */}
+                        {/* Row 2, Col 3 (wraps to new row on mobile): Unassigned Instructors */}
                         {pendingTasks.unassignedtrainees > 0 && (
                           <div 
                             onClick={() => onNavigate('tasks')}
@@ -1286,7 +1286,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                               </svg>
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="text-sm font-semibold text-black">{pendingTasks.unassignedtrainees} Unassigned trainee{pendingTasks.unassignedtrainees > 1 ? 's' : ''}</div>
+                              <div className="text-sm font-semibold text-black">{pendingTasks.unassignedtrainees} Unassigned Instructor{pendingTasks.unassignedtrainees > 1 ? 's' : ''}</div>
                               <div className="text-xs text-gray-500 mt-0.5">Not assigned to any course</div>
                             </div>
                             <div className="flex-shrink-0">
