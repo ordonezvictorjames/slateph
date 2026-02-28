@@ -2448,16 +2448,49 @@ export default function CourseManagementPage() {
                         {module.title}
                       </h3>
                     </div>
+
+                    {/* Document/Slide Thumbnail Preview */}
+                    {(module.content_type === 'pdf_document' || module.content_type === 'slide_presentation' || module.content_type === 'online_document') && module.document_url && (
+                      <div className="relative w-full h-32 bg-gradient-to-br from-blue-50 to-indigo-50 border-b border-gray-200 overflow-hidden flex items-center justify-center">
+                        <div className="text-center">
+                          <div className="flex justify-center mb-2">
+                            {module.content_type === 'pdf_document' ? (
+                              <svg className="w-12 h-12 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" />
+                                <path d="M14 2v6h6" />
+                                <text x="7" y="17" fontSize="6" fill="white" fontWeight="bold">PDF</text>
+                              </svg>
+                            ) : module.content_type === 'slide_presentation' ? (
+                              <svg className="w-12 h-12 text-orange-500" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" />
+                                <path d="M14 2v6h6" />
+                                <text x="6" y="17" fontSize="6" fill="white" fontWeight="bold">PPT</text>
+                              </svg>
+                            ) : (
+                              <svg className="w-12 h-12 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" />
+                                <path d="M14 2v6h6" />
+                                <text x="6" y="17" fontSize="6" fill="white" fontWeight="bold">DOC</text>
+                              </svg>
+                            )}
+                          </div>
+                          <p className="text-xs font-medium text-gray-600 px-4">
+                            {module.content_type === 'pdf_document' ? 'PDF Document' : 
+                             module.content_type === 'slide_presentation' ? 'Slide Presentation' : 'Online Document'}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">✓ File uploaded</p>
+                        </div>
+                        <div className="absolute bottom-2 right-2 bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-semibold flex items-center gap-1">
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                          Saved
+                        </div>
+                      </div>
+                    )}
                     
                     {/* Module Content */}
                     <div className="p-5 flex flex-col flex-1">
-                      {/* Description */}
-                      {module.description && (
-                        <p className="text-sm text-gray-600 mb-4 line-clamp-2 leading-relaxed">
-                          {module.description}
-                        </p>
-                      )}
-                      
                       {/* Module Info */}
                       <div className="mt-auto space-y-3">
                         {/* Duration Badge */}
