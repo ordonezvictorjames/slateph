@@ -2363,34 +2363,29 @@ export default function CourseManagementPage() {
                 {modules.map((module, index) => (
                   <div
                     key={module.id}
-                    className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col"
+                    className="group bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col"
                   >
-                    {/* Module Header */}
-                    <div className="relative bg-white p-4 sm:p-6">
-                      {/* Decorative Pattern */}
-                      <div className="absolute inset-0 opacity-10">
-                        <svg className="w-full h-full" viewBox="0 0 400 200" fill="none">
-                          <defs>
-                            <pattern id={`pattern-module-admin-${module.id}`} x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
-                              <circle cx="20" cy="20" r="2" fill="black" opacity="0.5"/>
-                              <circle cx="0" cy="0" r="1" fill="black" opacity="0.3"/>
-                              <circle cx="40" cy="40" r="1" fill="black" opacity="0.3"/>
-                            </pattern>
-                          </defs>
-                          <rect width="100%" height="100%" fill={`url(#pattern-module-admin-${module.id})`}/>
-                        </svg>
-                      </div>
-                      
-                      {/* Module Number Badge */}
-                      <div className="relative flex items-center justify-between mb-3">
-                        <div className="flex items-center justify-center w-12 h-12 bg-black/10 backdrop-blur-sm rounded-xl">
-                          <span className="text-2xl font-bold text-black">{index + 1}</span>
+                    {/* Module Header with Gradient Background */}
+                    <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 p-5 border-b border-gray-200">
+                      {/* Module Number and Status Row */}
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          {/* Module Number Badge */}
+                          <div className="flex items-center justify-center w-10 h-10 bg-white border-2 border-gray-300 rounded-lg shadow-sm">
+                            <span className="text-lg font-bold text-gray-700">{index + 1}</span>
+                          </div>
+                          {/* Content Type Icon */}
+                          <div className="flex items-center justify-center w-10 h-10 bg-white border border-gray-200 rounded-lg">
+                            {getContentTypeIcon(module.content_type)}
+                          </div>
                         </div>
+                        
+                        {/* Status Badge */}
                         {'status' in module && module.status && (
-                          <span className={`inline-flex items-center px-3 py-1.5 text-xs font-bold rounded-full backdrop-blur-md ${
-                            module.status === 'active' ? 'bg-green-500 text-white' :
-                            module.status === 'inactive' ? 'bg-red-500 text-white' :
-                            'bg-yellow-500 text-white'
+                          <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-md ${
+                            module.status === 'active' ? 'bg-green-100 text-green-700 border border-green-200' :
+                            module.status === 'inactive' ? 'bg-red-100 text-red-700 border border-red-200' :
+                            'bg-yellow-100 text-yellow-700 border border-yellow-200'
                           }`}>
                             {module.status.charAt(0).toUpperCase() + module.status.slice(1)}
                           </span>
@@ -2398,57 +2393,58 @@ export default function CourseManagementPage() {
                       </div>
                       
                       {/* Module Title */}
-                      <h3 className="relative text-xl font-bold text-black line-clamp-2">
+                      <h3 className="text-lg font-bold text-gray-900 line-clamp-2 leading-tight">
                         {module.title}
                       </h3>
                     </div>
                     
                     {/* Module Content */}
-                    <div className="p-4 sm:p-6 flex flex-col flex-1">
+                    <div className="p-5 flex flex-col flex-1">
                       {/* Description */}
                       {module.description && (
-                        <p className="text-sm text-gray-600 mb-4 line-clamp-3">
+                        <p className="text-sm text-gray-600 mb-4 line-clamp-2 leading-relaxed">
                           {module.description}
                         </p>
                       )}
                       
                       {/* Module Info */}
                       <div className="mt-auto space-y-3">
-                        <div className="pt-4 border-t border-gray-100 space-y-2">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-gray-500">Type:</span>
-                            <span className="font-semibold text-gray-900 capitalize flex items-center gap-1">
-                              {getContentTypeIcon(module.content_type)}
-                            </span>
+                        {/* Duration Badge */}
+                        {module.duration_minutes && (
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span className="font-medium">{module.duration_minutes} minutes</span>
                           </div>
-                          {module.duration_minutes && (
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-gray-500">Duration:</span>
-                              <span className="font-semibold text-gray-900">
-                                {module.duration_minutes} min
-                              </span>
-                            </div>
-                          )}
-                        </div>
+                        )}
 
                         {/* Action Buttons */}
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
                           <button
-                            onClick={() => handleEditModule(module)}
-                            className="flex-1 px-3 py-2 text-white rounded-xl font-semibold text-sm transition-colors duration-200 flex items-center justify-center space-x-1"
-                            title="Edit module"
+                            onClick={() => handleStartLesson(module)}
+                            className="flex-1 px-4 py-2.5 text-white rounded-lg font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
                             style={{ backgroundColor: getButtonBg() }}
                             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
                             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
                           >
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M8 5v14l11-7z" />
+                            </svg>
+                            <span>Start</span>
+                          </button>
+                          <button
+                            onClick={() => handleEditModule(module)}
+                            className="px-3 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium text-sm hover:bg-gray-200 transition-colors duration-200 flex items-center justify-center"
+                            title="Edit module"
+                          >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
-                            <span>Edit</span>
                           </button>
                           <button
                             onClick={() => handleDeleteModule(module)}
-                            className="px-3 py-2 bg-gray-600 text-white rounded-xl font-semibold text-sm hover:bg-gray-700 transition-colors duration-200 flex items-center justify-center"
+                            className="px-3 py-2.5 bg-red-50 text-red-600 rounded-lg font-medium text-sm hover:bg-red-100 transition-colors duration-200 flex items-center justify-center"
                             title="Delete module"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2456,21 +2452,6 @@ export default function CourseManagementPage() {
                             </svg>
                           </button>
                         </div>
-
-                        {/* Start Lesson Button */}
-                        <button
-                          onClick={() => handleStartLesson(module)}
-                          className="w-full px-4 py-2.5 text-white rounded-xl font-semibold text-sm transition-colors duration-200 flex items-center justify-center space-x-2"
-                          style={{ backgroundColor: getButtonBg() }}
-                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
-                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          <span>Start Lesson</span>
-                        </button>
                       </div>
                     </div>
                   </div>
