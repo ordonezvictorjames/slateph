@@ -207,9 +207,35 @@ export default function CourseManagementPage() {
   const { showSuccess, showError } = useToast()
 
   // Function to upload PDF file to Supabase Storage
-  const uploadPDFFile = async (file: File): Promise<string | null> => {
+  const uploadPDFFile = async (file: File, oldFileUrl?: string | null): Promise<string | null> => {
     try {
       setUploadingFile(true)
+      
+      // Delete old file if it exists and is from Supabase storage
+      if (oldFileUrl && oldFileUrl.includes('supabase.co/storage')) {
+        try {
+          // Extract file path from URL
+          const urlParts = oldFileUrl.split('/documents/')
+          if (urlParts.length > 1) {
+            const oldFilePath = urlParts[1].split('?')[0] // Remove query params if any
+            console.log('Deleting old file:', oldFilePath)
+            
+            const { error: deleteError } = await supabase.storage
+              .from('documents')
+              .remove([oldFilePath])
+            
+            if (deleteError) {
+              console.error('Error deleting old file:', deleteError)
+              // Continue with upload even if delete fails
+            } else {
+              console.log('Old file deleted successfully')
+            }
+          }
+        } catch (deleteErr) {
+          console.error('Error parsing old file URL:', deleteErr)
+          // Continue with upload even if delete fails
+        }
+      }
       
       // Create a unique filename
       const fileExt = file.name.split('.').pop()
@@ -248,9 +274,35 @@ export default function CourseManagementPage() {
   }
 
   // Function to upload Presentation files (PPT, PPTX, PDF)
-  const uploadPresentationFile = async (file: File): Promise<string | null> => {
+  const uploadPresentationFile = async (file: File, oldFileUrl?: string | null): Promise<string | null> => {
     try {
       setUploadingFile(true)
+      
+      // Delete old file if it exists and is from Supabase storage
+      if (oldFileUrl && oldFileUrl.includes('supabase.co/storage')) {
+        try {
+          // Extract file path from URL
+          const urlParts = oldFileUrl.split('/documents/')
+          if (urlParts.length > 1) {
+            const oldFilePath = urlParts[1].split('?')[0] // Remove query params if any
+            console.log('Deleting old file:', oldFilePath)
+            
+            const { error: deleteError } = await supabase.storage
+              .from('documents')
+              .remove([oldFilePath])
+            
+            if (deleteError) {
+              console.error('Error deleting old file:', deleteError)
+              // Continue with upload even if delete fails
+            } else {
+              console.log('Old file deleted successfully')
+            }
+          }
+        } catch (deleteErr) {
+          console.error('Error parsing old file URL:', deleteErr)
+          // Continue with upload even if delete fails
+        }
+      }
       
       // Create a unique filename
       const fileExt = file.name.split('.').pop()
@@ -3079,7 +3131,7 @@ export default function CourseManagementPage() {
                           e.target.value = ''
                           return
                         }
-                        const uploadedUrl = await uploadPDFFile(file)
+                        const uploadedUrl = await uploadPDFFile(file, newModule.document_url)
                         if (uploadedUrl) {
                           setNewModule(prev => ({ ...prev, document_url: uploadedUrl }))
                         }
@@ -3126,7 +3178,7 @@ export default function CourseManagementPage() {
                           e.target.value = ''
                           return
                         }
-                        const uploadedUrl = await uploadPresentationFile(file)
+                        const uploadedUrl = await uploadPresentationFile(file, newModule.document_url)
                         if (uploadedUrl) {
                           setNewModule(prev => ({ ...prev, document_url: uploadedUrl }))
                         }
@@ -3371,7 +3423,7 @@ export default function CourseManagementPage() {
                           e.target.value = ''
                           return
                         }
-                        const uploadedUrl = await uploadPDFFile(file)
+                        const uploadedUrl = await uploadPDFFile(file, newModule.document_url)
                         if (uploadedUrl) {
                           setNewModule(prev => ({ ...prev, document_url: uploadedUrl }))
                         }
@@ -3418,7 +3470,7 @@ export default function CourseManagementPage() {
                           e.target.value = ''
                           return
                         }
-                        const uploadedUrl = await uploadPresentationFile(file)
+                        const uploadedUrl = await uploadPresentationFile(file, newModule.document_url)
                         if (uploadedUrl) {
                           setNewModule(prev => ({ ...prev, document_url: uploadedUrl }))
                         }
