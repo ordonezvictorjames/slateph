@@ -2870,33 +2870,20 @@ export default function CourseManagementPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-black mb-1">Content Type *</label>
-                  <select
-                    required
-                    value={newModule.content_type}
-                    onChange={(e) => setNewModule(prev => ({ ...prev, content_type: e.target.value as any }))}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-black focus:border-black"
-                  >
-                    <option value="video">Video</option>
-                    <option value="canva_presentation">Canva Presentation</option>
-                    <option value="slide_presentation">Slide Presentation</option>
-                    <option value="online_document">Online Document</option>
-                    <option value="pdf_document">Document</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-black mb-1">Duration (minutes)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={newModule.duration_minutes || ''}
-                    onChange={(e) => setNewModule(prev => ({ ...prev, duration_minutes: parseInt(e.target.value) || 0 }))}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-black focus:border-black"
-                    placeholder="0"
-                  />
-                </div>
+              <div>
+                <label className="block text-xs font-medium text-black mb-1">Content Type *</label>
+                <select
+                  required
+                  value={newModule.content_type}
+                  onChange={(e) => setNewModule(prev => ({ ...prev, content_type: e.target.value as any }))}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-black focus:border-black"
+                >
+                  <option value="video">Video</option>
+                  <option value="canva_presentation">Canva Presentation</option>
+                  <option value="slide_presentation">Slide Presentation</option>
+                  <option value="online_document">Online Document</option>
+                  <option value="pdf_document">Document</option>
+                </select>
               </div>
 
               {/* Canva URL field - only show when content type is canva_presentation */}
@@ -3175,33 +3162,20 @@ export default function CourseManagementPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-black mb-1">Content Type *</label>
-                  <select
-                    required
-                    value={newModule.content_type}
-                    onChange={(e) => setNewModule(prev => ({ ...prev, content_type: e.target.value as any }))}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-black focus:border-black"
-                  >
-                    <option value="video">Video</option>
-                    <option value="canva_presentation">Canva Presentation</option>
-                    <option value="slide_presentation">Slide Presentation</option>
-                    <option value="online_document">Online Document</option>
-                    <option value="pdf_document">Document</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-black mb-1">Duration (minutes)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={newModule.duration_minutes || ''}
-                    onChange={(e) => setNewModule(prev => ({ ...prev, duration_minutes: parseInt(e.target.value) || 0 }))}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-black focus:border-black"
-                    placeholder="0"
-                  />
-                </div>
+              <div>
+                <label className="block text-xs font-medium text-black mb-1">Content Type *</label>
+                <select
+                  required
+                  value={newModule.content_type}
+                  onChange={(e) => setNewModule(prev => ({ ...prev, content_type: e.target.value as any }))}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-black focus:border-black"
+                >
+                  <option value="video">Video</option>
+                  <option value="canva_presentation">Canva Presentation</option>
+                  <option value="slide_presentation">Slide Presentation</option>
+                  <option value="online_document">Online Document</option>
+                  <option value="pdf_document">Document</option>
+                </select>
               </div>
 
               {/* Canva URL field - only show when content type is canva_presentation */}

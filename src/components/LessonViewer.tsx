@@ -26,8 +26,6 @@ interface LessonViewerProps {
 }
 
 export default function LessonViewer({ module, isOpen, onClose }: LessonViewerProps) {
-  const [isFullscreen, setIsFullscreen] = useState(false)
-
   useEffect(() => {
     if (isOpen) {
       console.log('LessonViewer opened:', module.title, module.content_type)

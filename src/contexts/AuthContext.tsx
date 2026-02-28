@@ -52,7 +52,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   avatar_url: profile.avatar_url,
                   banner_url: profile.banner_url,
                   spotify_url: profile.spotify_url,
-                  
                   created_at: profile.created_at,
                   updated_at: profile.updated_at
                 }
@@ -112,7 +111,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           avatar_url: data.user.avatar_url,
           banner_url: data.user.banner_url,
           spotify_url: data.user.spotify_url,
-          
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }
@@ -222,7 +220,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             avatar_url: profile.avatar_url,
             banner_url: profile.banner_url,
             spotify_url: profile.spotify_url,
-            
             created_at: profile.created_at,
             updated_at: profile.updated_at
           }

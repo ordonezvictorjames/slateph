@@ -9,7 +9,7 @@ export interface NewUser {
   last_name: string
   email: string
   password: string
-  role: 'admin' | 'instructor' | 'trainee' | 'tesda_scholar'
+  role: 'admin' | 'instructor' | 'trainee' | 'tesda_scholar' | 'developer'
   status: 'active' | 'inactive' | 'pending'
   bio: string
   avatar_url: string | null

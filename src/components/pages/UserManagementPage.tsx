@@ -14,7 +14,7 @@ interface UserData {
   first_name: string
   last_name: string
   email: string
-  role: string
+  role: 'admin' | 'instructor' | 'trainee' | 'tesda_scholar' | 'developer'
   status: string
   teams: string[]
   avatar_url: string | null
@@ -307,7 +307,7 @@ export default function UserManagementPage() {
       last_name: userData.last_name,
       email: userData.email,
       password: '',
-      role: userData.role as 'admin' | 'trainee' | 'trainee' | 'tesda_scholar',
+      role: userData.role as 'admin' | 'instructor' | 'trainee' | 'tesda_scholar' | 'developer',
       status: userData.status as 'active' | 'inactive' | 'pending',
       bio: '',
       avatar_url: userData.avatar_url,
@@ -502,7 +502,7 @@ export default function UserManagementPage() {
     // Fetch course information based on role
     let courseInfo: string[] = []
     
-    if (userData.role === 'trainee') {
+    if (userData.role === 'trainee' || userData.role === 'tesda_scholar') {
       // Fetch enrolled courses for trainees
       const { data: enrollments } = await supabase
         .from('course_enrollments')
@@ -511,8 +511,8 @@ export default function UserManagementPage() {
         .eq('status', 'active')
       
       courseInfo = enrollments?.map((e: any) => e.courses?.title).filter(Boolean) || []
-    } else if (userData.role === 'trainee') {
-      // Fetch assigned courses for trainees (via subjects)
+    } else if (userData.role === 'instructor') {
+      // Fetch assigned courses for instructors (via subjects)
       const { data: subjects } = await supabase
         .from('subjects')
         .select('courses(title)')
@@ -1770,10 +1770,10 @@ export default function UserManagementPage() {
               </div>
 
               {/* Courses Section - Full Width */}
-              {(viewingProfile.role === 'trainee' || viewingProfile.role === 'trainee') && viewingProfile.courses && viewingProfile.courses.length > 0 && (
+              {(viewingProfile.role === 'trainee' || viewingProfile.role === 'tesda_scholar' || viewingProfile.role === 'instructor') && viewingProfile.courses && viewingProfile.courses.length > 0 && (
                 <div className="mt-6 pt-6 border-t border-gray-200">
                   <label className="block text-sm font-medium text-gray-500 mb-3">
-                    {viewingProfile.role === 'trainee' ? 'Enrolled Courses' : 'Assigned Courses'}
+                    {viewingProfile.role === 'instructor' ? 'Assigned Courses' : 'Enrolled Courses'}
                   </label>
                   <div className="flex flex-wrap gap-2">
                     {viewingProfile.courses.map((course, index) => (
@@ -1789,10 +1789,10 @@ export default function UserManagementPage() {
               )}
 
               {/* No Courses Message */}
-              {(viewingProfile.role === 'trainee' || viewingProfile.role === 'trainee') && (!viewingProfile.courses || viewingProfile.courses.length === 0) && (
+              {(viewingProfile.role === 'trainee' || viewingProfile.role === 'tesda_scholar' || viewingProfile.role === 'instructor') && (!viewingProfile.courses || viewingProfile.courses.length === 0) && (
                 <div className="mt-6 pt-6 border-t border-gray-200">
                   <label className="block text-sm font-medium text-gray-500 mb-3">
-                    {viewingProfile.role === 'trainee' ? 'Enrolled Courses' : 'Assigned Courses'}
+                    {viewingProfile.role === 'instructor' ? 'Assigned Courses' : 'Enrolled Courses'}
                   </label>
                   <p className="text-gray-400 text-sm italic">
                     {viewingProfile.role === 'trainee' ? 'Not enrolled in any courses yet' : 'No courses assigned yet'}
