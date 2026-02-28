@@ -154,12 +154,17 @@ export default function LessonViewer({ module, isOpen, onClose }: LessonViewerPr
 
         const isSupabaseStorage = module.document_url.includes('supabase.co/storage')
         
-        // For Supabase storage files, use Google Docs Viewer to prevent downloads
+        // Choose viewer based on content type
         let docEmbedUrl = module.document_url
         if (isSupabaseStorage) {
-          // Use Google Docs Viewer for PDFs and Office files to prevent downloads
-          // view=FitH sets the default view to fit width
-          docEmbedUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(module.document_url)}&embedded=true&view=FitH`
+          if (module.content_type === 'slide_presentation') {
+            // Use Microsoft Office Online Viewer for PowerPoint files (better slide navigation)
+            docEmbedUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(module.document_url)}`
+          } else {
+            // Use Google Docs Viewer for PDFs and other documents
+            // view=FitH sets the default view to fit width
+            docEmbedUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(module.document_url)}&embedded=true&view=FitH`
+          }
         } else {
           // For external URLs (like Google Docs), use the helper function
           docEmbedUrl = getGoogleDocsEmbedUrl(module.document_url)
