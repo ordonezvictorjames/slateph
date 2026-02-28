@@ -3023,48 +3023,6 @@ export default function CourseManagementPage() {
                 </div>
               )}
 
-              {/* Conference URL field - only show when content type is online_conference */}
-              {newModule.content_type === 'online_conference' && (
-                <div>
-                  <label className="block text-xs font-medium text-black mb-1">
-                    Google Meet Link
-                    <span className="text-xs text-gray-500 block mt-1">
-                      Paste your Google Meet conference link
-                    </span>
-                  </label>
-                  <input
-                    type="url"
-                    value={newModule.conference_url || ''}
-                    onChange={(e) => setNewModule(prev => ({ ...prev, conference_url: e.target.value }))}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-black focus:border-black"
-                    placeholder="https://meet.google.com/..."
-                  />
-                  <div className="text-xs text-gray-500 mt-1">
-                    💡 Tip: You can add the conference link now or update it later
-                  </div>
-                </div>
-              )}
-
-              {/* Text Content field - only show when content type is text */}
-              {newModule.content_type === 'text' && (
-                <div>
-                  <label className="block text-xs font-medium text-black mb-1">
-                    Text Content *
-                    <span className="text-xs text-gray-500 block mt-1">
-                      Enter the lesson content or instructions
-                    </span>
-                  </label>
-                  <textarea
-                    required={newModule.content_type === 'text'}
-                    value={newModule.text_content || ''}
-                    onChange={(e) => setNewModule(prev => ({ ...prev, text_content: e.target.value }))}
-                    rows={6}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-black focus:border-black"
-                    placeholder="Enter your lesson content here..."
-                  />
-                </div>
-              )}
-
               {/* Video URL field - only show when content type is video */}
               {newModule.content_type === 'video' && (
                 <div>
@@ -3312,48 +3270,6 @@ export default function CourseManagementPage() {
                   <div className="text-xs text-gray-500 mt-1">
                     💡 Tip: Make sure your Canva presentation is set to "Anyone with the link can view"
                   </div>
-                </div>
-              )}
-
-              {/* Conference URL field - only show when content type is online_conference */}
-              {newModule.content_type === 'online_conference' && (
-                <div>
-                  <label className="block text-xs font-medium text-black mb-1">
-                    Google Meet Link
-                    <span className="text-xs text-gray-500 block mt-1">
-                      Paste your Google Meet conference link
-                    </span>
-                  </label>
-                  <input
-                    type="url"
-                    value={newModule.conference_url || ''}
-                    onChange={(e) => setNewModule(prev => ({ ...prev, conference_url: e.target.value }))}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-black focus:border-black"
-                    placeholder="https://meet.google.com/..."
-                  />
-                  <div className="text-xs text-gray-500 mt-1">
-                    💡 Tip: You can add the conference link now or update it later
-                  </div>
-                </div>
-              )}
-
-              {/* Text Content field - only show when content type is text */}
-              {newModule.content_type === 'text' && (
-                <div>
-                  <label className="block text-xs font-medium text-black mb-1">
-                    Text Content *
-                    <span className="text-xs text-gray-500 block mt-1">
-                      Enter the lesson content or instructions
-                    </span>
-                  </label>
-                  <textarea
-                    required={newModule.content_type === 'text'}
-                    value={newModule.text_content || ''}
-                    onChange={(e) => setNewModule(prev => ({ ...prev, text_content: e.target.value }))}
-                    rows={6}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-black focus:border-black"
-                    placeholder="Enter your lesson content here..."
-                  />
                 </div>
               )}
 
