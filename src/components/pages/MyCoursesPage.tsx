@@ -62,6 +62,7 @@ export default function MyCoursesPage() {
   const [courses, setCourses] = useState<Course[]>([])
   const [subjects, setSubjects] = useState<Subject[]>([])
   const [modules, setModules] = useState<Module[]>([])
+  const [resources, setResources] = useState<any[]>([])
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null)
   const [currentView, setCurrentView] = useState<ViewType>('courses')
@@ -170,6 +171,29 @@ export default function MyCoursesPage() {
     }
   }
 
+  const fetchResources = async (courseId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('subject_resources')
+        .select(`
+          *,
+          subject:subjects!inner(course_id)
+        `)
+        .eq('subject.course_id', courseId)
+        .eq('status', 'active')
+        .order('order_index', { ascending: true })
+
+      if (error) {
+        console.error('Error fetching resources:', error)
+        return
+      }
+
+      setResources(data || [])
+    } catch (error) {
+      console.error('Error fetching resources:', error)
+    }
+  }
+
   const fetchModules = async (subjectId: string) => {
     try {
       const { data, error } = await supabase
@@ -198,6 +222,7 @@ export default function MyCoursesPage() {
     setSelectedCourse(course)
     setCurrentView('subjects')
     await fetchSubjects(course.id)
+    await fetchResources(course.id)
   }
 
   const handleSubjectSelect = async (subject: Subject) => {
@@ -487,37 +512,42 @@ export default function MyCoursesPage() {
 
       {/* Subjects View */}
       {currentView === 'subjects' && selectedCourse && (
-        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={handleBackToCourses}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  title="Back to courses"
-                >
-                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-                <h2 className="text-lg font-semibold text-black">Subjects in {selectedCourse.title}</h2>
-                <span className="px-2 py-1 bg-blue-100 text-blue-600 text-xs font-medium rounded-full">
-                  {subjects.length} subject{subjects.length !== 1 ? 's' : ''}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="p-6">
-            {subjects.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                  <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
+        <div className="space-y-6">
+          {/* Grid Layout: Subject Cards + Sidebar */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Subject Cards Container */}
+            <div className="lg:col-span-2">
+              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={handleBackToCourses}
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        title="Back to courses"
+                      >
+                        <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                      </button>
+                      <h2 className="text-lg font-semibold text-black">Subjects in {selectedCourse.title}</h2>
+                      <span className="px-2 py-1 bg-blue-100 text-blue-600 text-xs font-medium rounded-full">
+                        {subjects.length} subject{subjects.length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <h3 className="text-lg font-medium text-black mb-2">No subjects yet</h3>
-                <p className="text-gray-500">This course doesn't have any subjects yet</p>
+
+                <div className="p-6">
+                  {subjects.length === 0 ? (
+                    <div className="text-center py-12">
+                      <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                        <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                      </div>
+                      <h3 className="text-lg font-medium text-black mb-2">No subjects yet</h3>
+                      <p className="text-gray-500">This course doesn't have any subjects yet</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -581,6 +611,93 @@ export default function MyCoursesPage() {
                 ))}
               </div>
             )}
+                </div>
+              </div>
+            </div>
+
+            {/* Sidebar Container */}
+            <div className="lg:col-span-1">
+              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden h-full">
+                <div className="p-6">
+                  {/* Stats */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                        <span className="text-sm text-gray-600">Total Subjects</span>
+                      </div>
+                      <span className="text-xl font-bold text-gray-900">{subjects.length}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-sm text-gray-600">Active</span>
+                      </div>
+                      <span className="text-xl font-bold text-green-700">
+                        {subjects.filter(s => s.status === 'active').length}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-sm text-gray-600">Draft</span>
+                      </div>
+                      <span className="text-xl font-bold text-yellow-700">
+                        {subjects.filter(s => s.status === 'draft').length}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-sm text-gray-600">Inactive</span>
+                      </div>
+                      <span className="text-xl font-bold text-red-700">
+                        {subjects.filter(s => s.status === 'inactive').length}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Resources Section */}
+                  <div className="mt-6 pt-6 border-t border-gray-200">
+                    <h4 className="text-sm font-semibold text-gray-900 mb-3">Resources</h4>
+                    <div className="space-y-2">
+                      {resources.length === 0 ? (
+                        <p className="text-xs text-gray-500 italic">No resources available for this course</p>
+                      ) : (
+                        resources.map((resource) => (
+                          <a
+                            key={resource.id}
+                            href={resource.resource_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 p-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors group"
+                          >
+                            <svg className="w-4 h-4 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                            </svg>
+                            <span className="text-sm text-blue-700 font-medium flex-1 truncate">{resource.title}</span>
+                            <svg className="w-3.5 h-3.5 text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                          </a>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
