@@ -247,6 +247,57 @@ export default function CourseManagementPage() {
     }
   }
 
+  // Function to upload Presentation files (PPT, PPTX, PDF)
+  const uploadPresentationFile = async (file: File): Promise<string | null> => {
+    try {
+      setUploadingFile(true)
+      
+      // Create a unique filename
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+      const filePath = `module-documents/${fileName}`
+
+      // Determine content type
+      let contentType = 'application/octet-stream'
+      if (fileExt === 'ppt') {
+        contentType = 'application/vnd.ms-powerpoint'
+      } else if (fileExt === 'pptx') {
+        contentType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+      } else if (fileExt === 'pdf') {
+        contentType = 'application/pdf'
+      }
+
+      // Upload file to Supabase Storage
+      const { data, error } = await supabase.storage
+        .from('documents')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType
+        })
+
+      if (error) {
+        console.error('Error uploading presentation:', error)
+        showError('Upload Error', error.message)
+        return null
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('documents')
+        .getPublicUrl(filePath)
+
+      console.log('Presentation uploaded successfully:', publicUrl)
+      return publicUrl
+    } catch (error) {
+      console.error('Error uploading presentation:', error)
+      showError('Upload Error', 'Failed to upload presentation')
+      return null
+    } finally {
+      setUploadingFile(false)
+    }
+  }
+
   // Helper function to get button background color
   const getButtonBg = () => '#3b82f6'
   
