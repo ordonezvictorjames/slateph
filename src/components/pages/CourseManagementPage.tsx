@@ -1994,47 +1994,47 @@ export default function CourseManagementPage() {
                   {/* View Toggle */}
                   <div className="flex gap-2">
                     <button
-                      onClick={() => setViewMode('list')}
-                      className={`px-3 py-2 rounded-lg border transition-colors flex items-center gap-2 ${
-                        viewMode === 'list'
-                          ? 'bg-black text-white border-black'
-                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                      }`}
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => setViewMode('card')}
-                      className={`px-3 py-2 rounded-lg border transition-colors flex items-center gap-2 ${
-                        viewMode === 'card'
-                          ? 'bg-black text-white border-black'
-                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                      }`}
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                      </svg>
-                    </button>
+                          onClick={() => setViewMode('list')}
+                          className={`px-3 py-2 rounded-lg border transition-colors flex items-center gap-2 ${
+                            viewMode === 'list'
+                              ? 'bg-black text-white border-black'
+                              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => setViewMode('card')}
+                          className={`px-3 py-2 rounded-lg border transition-colors flex items-center gap-2 ${
+                            viewMode === 'card'
+                              ? 'bg-black text-white border-black'
+                              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                          </svg>
+                        </button>
+                      </div>
+                      {courses.length > 0 && (
+                        <button 
+                          onClick={() => setShowAddCourseModal(true)}
+                          className="px-4 py-2 text-white rounded-lg transition-colors flex items-center space-x-2"
+                          style={{ backgroundColor: getButtonBg() }}
+                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
+                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                          </svg>
+                          <span>Add Course</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  {courses.length > 0 && (
-                    <button 
-                      onClick={() => setShowAddCourseModal(true)}
-                      className="px-4 py-2 text-white rounded-lg transition-colors flex items-center space-x-2"
-                      style={{ backgroundColor: getButtonBg() }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                      </svg>
-                      <span>Add Course</span>
-                    </button>
-                  )}
                 </div>
-              </div>
-            </div>
 
           <div className="p-6">
             {courses.length === 0 ? (
@@ -2304,118 +2304,221 @@ export default function CourseManagementPage() {
             </div>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-          <div className="p-6">
-            {subjects.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                  <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No subjects yet</h3>
-                <p className="text-gray-600 mb-4">Start building your course by adding subjects to organize your content</p>
-                <button 
-                  onClick={() => setShowAddSubjectModal(true)}
-                  className="px-4 py-2 text-white rounded-lg transition-colors"
-                  style={{ backgroundColor: getButtonBg() }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
-                >
-                  Add Subject
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {subjects.map((subject, index) => (
-                  <div
-                    key={subject.id}
-                    className="bg-white border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-md transition-all duration-200"
-                  >
-                    <div className="p-4">
-                      <div className="flex items-center gap-4">
-                        {/* Order Number */}
-                        <div className="flex-shrink-0 w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                          <span className="text-xl font-bold text-gray-700">{subject.order_index}</span>
-                        </div>
-                        
-                        {/* Subject Info */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-3 mb-2">
-                            <h3 className="text-lg font-bold text-gray-900 truncate">
-                              {subject.title}
-                            </h3>
-                            <span className={`flex-shrink-0 inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${
-                              subject.status === 'active' ? 'bg-green-100 text-green-700' :
-                              subject.status === 'inactive' ? 'bg-red-100 text-red-700' :
-                              'bg-yellow-100 text-yellow-700'
-                            }`}>
-                              {subject.status.charAt(0).toUpperCase() + subject.status.slice(1)}
-                            </span>
-                          </div>
-                          
-                          {subject.description && (
-                            <p className="text-sm text-gray-600 mb-3 line-clamp-1">
-                              {subject.description}
-                            </p>
-                          )}
-                          
-                          <div className="flex flex-wrap items-center gap-4 text-sm">
-                            {/* Instructor */}
-                            <div className="flex items-center gap-2">
-                              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                              </svg>
-                              <span className="text-gray-500">Instructor:</span>
-                              <span className={`font-semibold ${
-                                subject.trainee_name === 'Unassigned' ? 'text-gray-400 italic' : 'text-gray-900'
-                              }`}>
-                                {subject.trainee_name}
-                              </span>
+          {/* Grid Layout: Subject Cards + New Container */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Subject Cards Container */}
+            <div className="lg:col-span-2">
+              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+                <div className="p-6">
+                  {subjects.length === 0 ? (
+                    <div className="text-center py-12">
+                      <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                        <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">No subjects yet</h3>
+                      <p className="text-gray-600 mb-4">Start building your course by adding subjects to organize your content</p>
+                      <button 
+                        onClick={() => setShowAddSubjectModal(true)}
+                        className="px-4 py-2 text-white rounded-lg transition-colors"
+                        style={{ backgroundColor: getButtonBg() }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
+                      >
+                        Add Subject
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {subjects.map((subject, index) => (
+                        <div
+                          key={subject.id}
+                          className="bg-white border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-md transition-all duration-200"
+                        >
+                          <div className="p-4">
+                            <div className="flex items-center gap-4">
+                              {/* Order Number */}
+                              <div className="flex-shrink-0 w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                                <span className="text-xl font-bold text-gray-700">{subject.order_index}</span>
+                              </div>
+                              
+                              {/* Subject Info */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-3 mb-2">
+                                  <h3 className="text-lg font-bold text-gray-900 truncate">
+                                    {subject.title}
+                                  </h3>
+                                  <span className={`flex-shrink-0 inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${
+                                    subject.status === 'active' ? 'bg-green-100 text-green-700' :
+                                    subject.status === 'inactive' ? 'bg-red-100 text-red-700' :
+                                    'bg-yellow-100 text-yellow-700'
+                                  }`}>
+                                    {subject.status.charAt(0).toUpperCase() + subject.status.slice(1)}
+                                  </span>
+                                </div>
+                                
+                                {subject.description && (
+                                  <p className="text-sm text-gray-600 mb-3 line-clamp-1">
+                                    {subject.description}
+                                  </p>
+                                )}
+                                
+                                <div className="flex flex-wrap items-center gap-4 text-sm">
+                                  {/* Instructor */}
+                                  <div className="flex items-center gap-2">
+                                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
+                                    <span className="text-gray-500">Instructor:</span>
+                                    <span className={`font-semibold ${
+                                      subject.trainee_name === 'Unassigned' ? 'text-gray-400 italic' : 'text-gray-900'
+                                    }`}>
+                                      {subject.trainee_name}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Action Buttons */}
+                              <div className="flex-shrink-0 flex items-center gap-2">
+                                <button 
+                                  onClick={() => handleSubjectSelect(subject)}
+                                  className="px-4 py-2 text-white rounded-lg font-medium text-sm transition-colors flex items-center gap-2"
+                                  style={{ backgroundColor: getButtonBg() }}
+                                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
+                                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                  </svg>
+                                  <span>Modules</span>
+                                </button>
+                                <button
+                                  onClick={() => handleEditSubject(subject)}
+                                  className="p-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+                                  title="Edit subject"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                  </svg>
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteSubject(subject)}
+                                  className="p-2 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg transition-colors"
+                                  title="Delete subject"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                </button>
+                              </div>
                             </div>
                           </div>
                         </div>
-                        
-                        {/* Action Buttons */}
-                        <div className="flex-shrink-0 flex items-center gap-2">
-                          <button 
-                            onClick={() => handleSubjectSelect(subject)}
-                            className="px-4 py-2 text-white rounded-lg font-medium text-sm transition-colors flex items-center gap-2"
-                            style={{ backgroundColor: getButtonBg() }}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                            </svg>
-                            <span>Modules</span>
-                          </button>
-                          <button
-                            onClick={() => handleEditSubject(subject)}
-                            className="p-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
-                            title="Edit subject"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                          </button>
-                          <button
-                            onClick={() => handleDeleteSubject(subject)}
-                            className="p-2 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg transition-colors"
-                            title="Delete subject"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* New Container Beside Subject Cards */}
+            <div className="lg:col-span-1">
+              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden h-full">
+                <div className="p-6">
+                  {/* Quick Actions */}
+                  <div className="mb-6">
+                    <div className="space-y-2">
+                      <button
+                        onClick={() => setShowAddSubjectModal(true)}
+                        className="w-full px-4 py-2 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+                        style={{ backgroundColor: getButtonBg() }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        <span>Add Subject</span>
+                      </button>
                     </div>
                   </div>
-                ))}
+
+                  {/* Stats */}
+                  <div className="space-y-4 pt-6 border-t border-gray-200">
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                        <span className="text-sm text-gray-600">Total Subjects</span>
+                      </div>
+                      <span className="text-xl font-bold text-gray-900">{subjects.length}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-sm text-gray-600">Active</span>
+                      </div>
+                      <span className="text-xl font-bold text-green-700">
+                        {subjects.filter(s => s.status === 'active').length}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-sm text-gray-600">Draft</span>
+                      </div>
+                      <span className="text-xl font-bold text-yellow-700">
+                        {subjects.filter(s => s.status === 'draft').length}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-sm text-gray-600">Inactive</span>
+                      </div>
+                      <span className="text-xl font-bold text-red-700">
+                        {subjects.filter(s => s.status === 'inactive').length}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Resources Title */}
+                  <div className="mt-6 pt-6 border-t border-gray-200">
+                    <h4 className="text-sm font-semibold text-gray-900 mb-3">Resources</h4>
+                    <div className="space-y-2">
+                      <input
+                        type="url"
+                        placeholder="Enter resource link..."
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
+                      />
+                      <button
+                        className="w-full px-4 py-2 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+                        style={{ backgroundColor: getButtonBg() }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <span>Upload Resource</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
-            )}
-          </div>
+            </div>
           </div>
         </div>
       )}
