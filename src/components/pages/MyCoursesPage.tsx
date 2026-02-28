@@ -39,7 +39,7 @@ interface Module {
   subject_id: string
   title: string
   description: string
-  content_type: 'video' | 'text' | 'online_document' | 'pdf_document' | 'online_conference' | 'canva_presentation'
+  content_type: 'video' | 'text' | 'canva_presentation' | 'online_conference' | 'online_document' | 'pdf_document' | 'slide_presentation'
   content_url?: string
   canva_url?: string
   conference_url?: string

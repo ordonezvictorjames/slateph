@@ -7,7 +7,7 @@ interface Module {
   subject_id: string
   title: string
   description: string
-  content_type: 'video' | 'text' | 'online_conference' | 'online_document' | 'pdf_document' | 'canva_presentation'
+  content_type: 'video' | 'text' | 'canva_presentation' | 'online_conference' | 'online_document' | 'pdf_document' | 'slide_presentation'
   order_index: number
   status: 'active' | 'inactive' | 'draft'
   duration_minutes?: number

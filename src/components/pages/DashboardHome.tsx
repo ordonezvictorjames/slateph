@@ -1487,7 +1487,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                                 </button>
                               ) : userRole === 'trainee' ? (
                                 <button 
-                                  onClick={() => onNavigate('courses')}
+                                  onClick={() => onNavigate('my-courses')}
                                   className="w-full px-4 py-3 text-white rounded-xl font-semibold text-sm transition-colors duration-200 flex items-center justify-center space-x-2"
                                   style={{ backgroundColor: getButtonBg() }}
                                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
