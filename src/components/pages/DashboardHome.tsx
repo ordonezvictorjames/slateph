@@ -61,6 +61,9 @@ interface DashboardStats {
 
 interface UserStats {
   totaltrainees: number
+  totalScholars: number
+  totalInstructors: number
+  totalDevelopers: number
   totalAdmins: number
 }
 
@@ -412,7 +415,7 @@ function RecentActivityList() {
   }
 
   return (
-    <div className="space-y-3 overflow-y-auto" style={{ maxHeight: '260px' }}>
+    <div className="space-y-3 overflow-y-auto" style={{ maxHeight: '433px' }}>
       {activities.map((activity) => (
         <div
           key={activity.id}
@@ -470,6 +473,9 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
   const [showChangelogModal, setShowChangelogModal] = useState(false)
   const [userStats, setUserStats] = useState<UserStats>({
     totaltrainees: 0,
+    totalScholars: 0,
+    totalInstructors: 0,
+    totalDevelopers: 0,
     totalAdmins: 0
   })
   const [pendingTasks, setPendingTasks] = useState<{
@@ -941,14 +947,23 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
       // Fetch user statistics by role
       const [
         { count: totaltrainees },
+        { count: totalScholars },
+        { count: totalInstructors },
+        { count: totalDevelopers },
         { count: totalAdmins }
       ] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'trainee'),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'tesda_scholar'),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'instructor'),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'developer'),
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'admin')
       ])
 
       setUserStats({
         totaltrainees: totaltrainees || 0,
+        totalScholars: totalScholars || 0,
+        totalInstructors: totalInstructors || 0,
+        totalDevelopers: totalDevelopers || 0,
         totalAdmins: totalAdmins || 0
       })
 
@@ -1605,7 +1620,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {/* trainees Card */}
+                    {/* Trainees Card */}
                     <div className="bg-white rounded-xl p-4 border border-gray-200">
                       <div className="flex items-center space-x-3 mb-3">
                         <div className="p-2 bg-blue-500 rounded-lg">
@@ -1615,10 +1630,10 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                         </div>
                         <div className="text-2xl font-bold text-black">{userStats.totaltrainees}</div>
                       </div>
-                      <div className="text-sm text-gray-600 font-medium">trainees</div>
+                      <div className="text-sm text-gray-600 font-medium">Trainees</div>
                     </div>
 
-                    {/* trainees Card */}
+                    {/* TESDA Scholars Card */}
                     <div className="bg-white rounded-xl p-4 border border-gray-200">
                       <div className="flex items-center space-x-3 mb-3">
                         <div className="p-2 bg-yellow-500 rounded-lg">
@@ -1626,12 +1641,12 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                           </svg>
                         </div>
-                        <div className="text-2xl font-bold text-black">{userStats.totaltrainees}</div>
+                        <div className="text-2xl font-bold text-black">{userStats.totalScholars}</div>
                       </div>
-                      <div className="text-sm text-gray-600 font-medium">trainees</div>
+                      <div className="text-sm text-gray-600 font-medium">TESDA Scholars</div>
                     </div>
 
-                    {/* trainees Card */}
+                    {/* Instructors Card */}
                     <div className="bg-white rounded-xl p-4 border border-gray-200">
                       <div className="flex items-center space-x-3 mb-3">
                         <div className="p-2 bg-purple-500 rounded-lg">
@@ -1639,23 +1654,33 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                           </svg>
                         </div>
-                        <div className="text-2xl font-bold text-black">{userStats.totaltrainees}</div>
+                        <div className="text-2xl font-bold text-black">{userStats.totalInstructors}</div>
                       </div>
-                      <div className="text-sm text-gray-600 font-medium">trainees</div>
+                      <div className="text-sm text-gray-600 font-medium">Instructors</div>
                     </div>
                   </div>
 
-                  {/* Admin count (smaller, below the main cards) */}
-                  {userStats.totalAdmins > 0 && (
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      <div className="flex items-center justify-center space-x-2 text-gray-600">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                        </svg>
-                        <span className="text-sm font-medium">{userStats.totalAdmins} Administrator{userStats.totalAdmins !== 1 ? 's' : ''}</span>
-                      </div>
+                  {/* Admin and Developer count (smaller, below the main cards) */}
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <div className="grid grid-cols-2 gap-4">
+                      {userStats.totalAdmins > 0 && (
+                        <div className="flex items-center justify-center space-x-2 text-gray-600">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                          </svg>
+                          <span className="text-sm font-medium">{userStats.totalAdmins} Admin{userStats.totalAdmins !== 1 ? 's' : ''}</span>
+                        </div>
+                      )}
+                      {userStats.totalDevelopers > 0 && (
+                        <div className="flex items-center justify-center space-x-2 text-gray-600">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                          </svg>
+                          <span className="text-sm font-medium">{userStats.totalDevelopers} Developer{userStats.totalDevelopers !== 1 ? 's' : ''}</span>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
 
                 {/* Courses Card */}
@@ -2117,7 +2142,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             </div>
 
             {/* Recent Activity */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col" style={{ height: '355px', marginBottom: '24px' }}>
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col" style={{ height: '545px' }}>
 
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-bold text-gray-800">Recent Activity</h3>
