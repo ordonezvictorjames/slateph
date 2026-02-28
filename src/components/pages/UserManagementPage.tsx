@@ -595,7 +595,7 @@ export default function UserManagementPage() {
   return (
     <div className="p-8">
       {/* Welcome Banner */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 overflow-visible relative min-h-[120px] mb-6">
+      <div className="overflow-visible relative min-h-[80px] mb-4 mt-6">
         <div className="flex items-center justify-between">
           <div className="z-10 pr-4">
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
@@ -607,27 +607,13 @@ export default function UserManagementPage() {
           </div>
           
           {/* Book Illustration - Overlapping */}
-          <div className="hidden md:block absolute -top-16 w-48 h-48 z-0" style={{ right: '5px' }}>
+          <div className="hidden md:block absolute -top-16 w-40 h-40 z-0" style={{ right: '5px' }}>
             <img 
               src="/book.png" 
               alt="Book illustration" 
-              className="w-full h-full object-contain opacity-90"
+              className="w-full h-full object-contain"
             />
           </div>
-
-          {/* Add User Button */}
-          <button 
-            onClick={() => {
-              resetForm()
-              setShowAddModal(true)
-            }}
-            className="z-10 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors flex items-center space-x-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            <span>Add User</span>
-          </button>
         </div>
       </div>
 
