@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { logCourseCreation, logActivity } from '@/lib/activityLogger'
 import { useToast } from '@/contexts/ToastContext'
 import { Loading, ButtonLoading } from '@/components/ui/loading'
+import LessonViewer from '@/components/LessonViewer'
 
 interface Course {
   id: string
@@ -3711,29 +3712,15 @@ export default function CourseManagementPage() {
         </div>
       )}
 
-      {/* Presentation Modal */}
-      {showPresentationModal && currentPresentationModule && (
-        <div className="fixed inset-0 bg-black z-50">
-          {/* Floating Close Button */}
-          <button 
-            onClick={() => {
-              setShowPresentationModal(false)
-              setCurrentPresentationModule(null)
-            }}
-            className="absolute top-4 right-4 z-10 p-3 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white rounded-full transition-all shadow-lg"
-            title="Close presentation"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-
-          {/* Fullscreen Content */}
-          <div className="w-full h-full">
-            {renderPresentationContent(currentPresentationModule)}
-          </div>
-        </div>
-      )}
+      {/* Lesson Viewer Modal */}
+      <LessonViewer
+        module={currentPresentationModule!}
+        isOpen={showPresentationModal}
+        onClose={() => {
+          setShowPresentationModal(false)
+          setCurrentPresentationModule(null)
+        }}
+      />
 
       {/* Enroll trainees Modal */}
       {showEnrolltraineesModal && selectedCourseForEnrollment && (

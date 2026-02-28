@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { Loading } from '@/components/ui/loading'
+import LessonViewer from '@/components/LessonViewer'
 
 interface Course {
   id: string
@@ -81,24 +82,24 @@ export default function MyCoursesPage() {
 
       let courseIds: string[] = []
 
-      if (userRole === 'trainee') {
-        // trainees see courses where they are assigned to at least one subject
-        const { data: traineeSubjects, error: subjectsError } = await supabase
+      if (userRole === 'instructor') {
+        // Instructors see courses where they are assigned to at least one subject
+        const { data: instructorSubjects, error: subjectsError } = await supabase
           .from('subjects')
           .select('course_id')
-          .eq('trainee_id', user?.id)
+          .eq('instructor_id', user?.id)
 
         if (subjectsError) {
-          console.error('Error fetching trainee subjects:', subjectsError)
+          console.error('Error fetching instructor subjects:', subjectsError)
           setLoading(false)
           return
         }
 
         // Get unique course IDs
-        const courseIdsSet = new Set<string>(traineeSubjects?.map((s: { course_id: string }) => s.course_id) || [])
+        const courseIdsSet = new Set<string>(instructorSubjects?.map((s: { course_id: string }) => s.course_id) || [])
         courseIds = Array.from(courseIdsSet)
       } else {
-        // trainees see courses they are enrolled in
+        // Trainees and TESDA scholars see courses they are enrolled in
         const { data: enrollments, error: enrollmentError } = await supabase
           .from('course_enrollments')
           .select('course_id')
@@ -226,183 +227,6 @@ export default function MyCoursesPage() {
     setShowPresentationModal(true)
   }
 
-  const getCanvaEmbedUrl = (url: string) => {
-    if (url.includes('/design/')) {
-      const designId = url.split('/design/')[1].split('/')[0]
-      return `https://www.canva.com/design/${designId}/view?embed`
-    }
-    return url
-  }
-
-  const renderPresentationContent = (module: Module) => {
-    switch (module.content_type) {
-      case 'canva_presentation':
-        if (module.canva_url) {
-          const embedUrl = getCanvaEmbedUrl(module.canva_url)
-          return (
-            <div className="w-full h-full">
-              <iframe
-                src={embedUrl}
-                className="w-full h-full border-0 rounded-lg"
-                allowFullScreen
-                title={`${module.title} - Canva Presentation`}
-              />
-            </div>
-          )
-        }
-        return (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
-                <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-black mb-2">No Presentation URL</h3>
-              <p className="text-gray-600">This Canva presentation module doesn't have a valid URL.</p>
-            </div>
-          </div>
-        )
-      
-      case 'video':
-        if (module.content_url) {
-          return (
-            <div className="w-full h-full">
-              <iframe
-                src={module.content_url}
-                className="w-full h-full border-0 rounded-lg"
-                allowFullScreen
-                title={`${module.title} - Video`}
-              />
-            </div>
-          )
-        }
-        return (
-          <div className="w-full h-full flex items-center justify-center">
-            <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
-                <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-black mb-2">No Video URL</h3>
-              <p className="text-gray-600">This video module doesn't have a valid URL.</p>
-            </div>
-          </div>
-        )
-      
-      case 'online_document':
-      case 'pdf_document':
-        if (module.content_url) {
-          return (
-            <div className="w-full h-full flex items-center justify-center">
-              <div className="text-center">
-                <div className="w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
-                  <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold text-black mb-2">Document</h3>
-                <p className="text-gray-600 mb-4">{module.description}</p>
-                <a
-                  href={module.content_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center space-x-2 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  <span>Download Document</span>
-                </a>
-              </div>
-            </div>
-          )
-        }
-        return (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
-                <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-black mb-2">No Document URL</h3>
-              <p className="text-gray-600">This document module doesn't have a valid URL.</p>
-            </div>
-          </div>
-        )
-      
-      case 'online_conference':
-        // Auto-redirect to conference URL if available
-        if (module.conference_url) {
-          window.open(module.conference_url, '_blank')
-          return (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-50 to-blue-50">
-              <div className="text-center max-w-md px-6">
-                <div className="w-20 h-20 mx-auto mb-6 bg-purple-100 rounded-full flex items-center justify-center">
-                  <svg className="w-10 h-10 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <h3 className="text-2xl font-semibold text-black mb-4">Redirecting to Conference...</h3>
-                <p className="text-gray-600 mb-6">{module.description}</p>
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-                  <p className="text-sm text-green-700">
-                    ✓ A new tab has been opened with your conference link.
-                  </p>
-                </div>
-                <a 
-                  href={module.conference_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
-                >
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                  Open Conference Again
-                </a>
-              </div>
-            </div>
-          )
-        }
-        return (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-50 to-blue-50">
-            <div className="text-center max-w-md px-6">
-              <div className="w-20 h-20 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
-                <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <h3 className="text-2xl font-semibold text-black mb-4">Online Conference</h3>
-              <p className="text-gray-600 mb-6">{module.description}</p>
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <p className="text-sm text-yellow-700">
-                  Conference link not available yet. Please check back later.
-                </p>
-              </div>
-            </div>
-          </div>
-        )
-      
-      default:
-        return (
-          <div className="w-full h-full flex items-center justify-center">
-            <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-black mb-2">Content Type Not Supported</h3>
-              <p className="text-gray-600">{module.description}</p>
-            </div>
-          </div>
-        )
-    }
-  }
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
@@ -455,56 +279,126 @@ export default function MyCoursesPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loading size="lg" />
+      <div className="p-8">
+        <div className="flex items-center justify-center h-64">
+          <Loading size="lg" />
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-black">My Courses</h1>
-          <p className="text-gray-600 mt-1">
-            {user?.profile?.role === 'trainee' 
-              ? 'View courses where you are assigned as an trainee' 
-              : 'View your enrolled courses, subjects, and modules'}
-          </p>
-        </div>
-      </div>
-
-      {/* Breadcrumb Navigation */}
+    <div className="p-8">
+      {/* Breadcrumb Navigation - Above banner for subjects and modules views */}
       {currentView !== 'courses' && (
-        <div className="flex items-center space-x-2 text-sm">
-          <button
-            onClick={handleBackToCourses}
-            className="text-blue-600 hover:text-blue-800 hover:underline"
-          >
-            My Courses
-          </button>
-          {currentView === 'subjects' && selectedCourse && (
+        <div className="flex items-center space-x-2 text-sm text-gray-500 mb-6">
+          {selectedCourse && (
             <>
-              <span className="text-gray-400">/</span>
-              <span className="text-gray-900 font-medium">{selectedCourse.title}</span>
-            </>
-          )}
-          {currentView === 'modules' && selectedCourse && selectedSubject && (
-            <>
-              <span className="text-gray-400">/</span>
-              <button
+              <button 
+                onClick={handleBackToCourses}
+                className="hover:text-gray-700"
+              >
+                My Courses
+              </button>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+              <button 
                 onClick={handleBackToSubjects}
-                className="text-blue-600 hover:text-blue-800 hover:underline"
+                className={`hover:text-gray-700 ${currentView === 'subjects' ? 'text-black font-medium' : ''}`}
               >
                 {selectedCourse.title}
               </button>
-              <span className="text-gray-400">/</span>
-              <span className="text-gray-900 font-medium">{selectedSubject.title}</span>
+            </>
+          )}
+          {selectedSubject && (
+            <>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+              <span className="text-black font-medium">{selectedSubject.title}</span>
             </>
           )}
         </div>
       )}
+
+      <div className="space-y-6">
+        {/* Welcome Banner - Show on all views */}
+        {currentView === 'courses' && (
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 overflow-visible relative min-h-[120px]">
+            <div className="flex items-center justify-between">
+              <div className="z-10 pr-4">
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+                  My Courses
+                </h2>
+                <p className="text-gray-600">
+                  {user?.profile?.role === 'instructor' 
+                    ? 'View courses where you are assigned as an instructor' 
+                    : 'View your enrolled courses, subjects, and modules'}
+                </p>
+              </div>
+              
+              {/* Book Illustration - Overlapping */}
+              <div className="hidden md:block absolute -top-16 w-48 h-48 z-0" style={{ right: '5px' }}>
+                <img 
+                  src="/book.png" 
+                  alt="Book illustration" 
+                  className="w-full h-full object-contain opacity-90"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Subjects View Banner */}
+        {currentView === 'subjects' && selectedCourse && (
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 overflow-visible relative min-h-[120px]">
+            <div className="flex items-center justify-between">
+              <div className="z-10 pr-4">
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+                  Subjects
+                </h2>
+                <p className="text-gray-600">
+                  View subjects in <span className="font-semibold text-gray-900">{selectedCourse.title}</span>
+                </p>
+              </div>
+              
+              {/* Book Illustration - Overlapping */}
+              <div className="hidden md:block absolute -top-16 w-48 h-48 z-0" style={{ right: '5px' }}>
+                <img 
+                  src="/book.png" 
+                  alt="Book illustration" 
+                  className="w-full h-full object-contain opacity-90"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modules View Banner */}
+        {currentView === 'modules' && selectedSubject && (
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 overflow-visible relative min-h-[120px]">
+            <div className="flex items-center justify-between">
+              <div className="z-10 pr-4">
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+                  Modules
+                </h2>
+                <p className="text-gray-600">
+                  Learning modules for <span className="font-semibold text-gray-900">{selectedSubject.title}</span>
+                </p>
+              </div>
+              
+              {/* Book Illustration - Overlapping */}
+              <div className="hidden md:block absolute -top-16 w-48 h-48 z-0" style={{ right: '5px' }}>
+                <img 
+                  src="/book.png" 
+                  alt="Book illustration" 
+                  className="w-full h-full object-contain opacity-90"
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
       {/* Courses View */}
       {currentView === 'courses' && (
@@ -726,65 +620,111 @@ export default function MyCoursesPage() {
                 <p className="text-gray-500">This subject doesn't have any modules yet</p>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {modules.map((module, index) => (
                   <div
                     key={module.id}
-                    className="bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all duration-200 overflow-hidden"
+                    className="group bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col"
                   >
-                    <div className="p-4 flex items-center gap-4">
-                      {/* Module Number */}
-                      <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 bg-gray-100 rounded-lg">
-                        <span className="text-xl font-bold text-gray-900">{index + 1}</span>
+                    {/* Module Header with Gradient Background */}
+                    <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 p-5 border-b border-gray-200">
+                      {/* Module Number and Status Row */}
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          {/* Module Number Badge */}
+                          <div className="flex items-center justify-center w-10 h-10 bg-white border-2 border-gray-300 rounded-lg shadow-sm">
+                            <span className="text-lg font-bold text-gray-700">{index + 1}</span>
+                          </div>
+                          {/* Content Type Icon */}
+                          <div className="flex items-center justify-center w-10 h-10 bg-white border border-gray-200 rounded-lg">
+                            {getContentTypeIcon(module.content_type)}
+                          </div>
+                        </div>
+                        
+                        {/* Status Badge */}
+                        {module.status && (
+                          <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-md ${
+                            module.status === 'active' ? 'bg-green-100 text-green-700 border border-green-200' :
+                            module.status === 'inactive' ? 'bg-red-100 text-red-700 border border-red-200' :
+                            'bg-yellow-100 text-yellow-700 border border-yellow-200'
+                          }`}>
+                            {module.status.charAt(0).toUpperCase() + module.status.slice(1)}
+                          </span>
+                        )}
                       </div>
                       
-                      {/* Module Info */}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-1 truncate">
-                          {module.title}
-                        </h3>
-                        <p className="text-sm text-gray-600 line-clamp-2 mb-2">
-                          {module.description}
-                        </p>
-                        <div className="flex items-center gap-3 flex-wrap">
-                          {module.status && (
-                            <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${
-                              module.status === 'active' ? 'bg-green-100 text-green-700' :
-                              module.status === 'inactive' ? 'bg-red-100 text-red-700' :
-                              'bg-yellow-100 text-yellow-700'
-                            }`}>
-                              {module.status.charAt(0).toUpperCase() + module.status.slice(1)}
-                            </span>
-                          )}
-                          <div className="flex items-center gap-1.5 text-sm text-gray-700">
-                            {getContentTypeIcon(module.content_type)}
-                            <span className="font-medium capitalize">
-                              {module.content_type === 'canva_presentation' ? 'Canva' : module.content_type.replace('_', ' ')}
-                            </span>
-                          </div>
-                          {module.duration_minutes && (
-                            <div className="flex items-center gap-1.5 text-sm text-gray-500">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      {/* Module Title */}
+                      <h3 className="text-lg font-bold text-gray-900 line-clamp-2 leading-tight">
+                        {module.title}
+                      </h3>
+                    </div>
+
+                    {/* Document/Slide Thumbnail Preview */}
+                    {(module.content_type === 'pdf_document' || module.content_type === 'slide_presentation' || module.content_type === 'online_document') && module.document_url && (
+                      <div className="relative w-full h-32 bg-gradient-to-br from-blue-50 to-indigo-50 border-b border-gray-200 overflow-hidden flex items-center justify-center">
+                        <div className="text-center">
+                          <div className="flex justify-center mb-2">
+                            {module.content_type === 'pdf_document' ? (
+                              <svg className="w-12 h-12 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" />
+                                <path d="M14 2v6h6" />
+                                <text x="7" y="17" fontSize="6" fill="white" fontWeight="bold">PDF</text>
                               </svg>
-                              <span>{module.duration_minutes} min</span>
-                            </div>
-                          )}
+                            ) : module.content_type === 'slide_presentation' ? (
+                              <svg className="w-12 h-12 text-orange-500" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" />
+                                <path d="M14 2v6h6" />
+                                <text x="6" y="17" fontSize="6" fill="white" fontWeight="bold">PPT</text>
+                              </svg>
+                            ) : (
+                              <svg className="w-12 h-12 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" />
+                                <path d="M14 2v6h6" />
+                                <text x="6" y="17" fontSize="6" fill="white" fontWeight="bold">DOC</text>
+                              </svg>
+                            )}
+                          </div>
+                          <p className="text-xs font-medium text-gray-600 px-4">
+                            {module.content_type === 'pdf_document' ? 'PDF Document' : 
+                             module.content_type === 'slide_presentation' ? 'Slide Presentation' : 'Online Document'}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">✓ File uploaded</p>
+                        </div>
+                        <div className="absolute bottom-2 right-2 bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-semibold flex items-center gap-1">
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                          Saved
                         </div>
                       </div>
-                      
-                      {/* Action Button */}
-                      <div className="flex-shrink-0">
-                        <button
-                          onClick={() => handleStartLesson(module)}
-                          className="px-4 py-2 bg-black text-white rounded-lg font-medium text-sm hover:bg-gray-800 transition-colors flex items-center gap-2"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          <span>Start Lesson</span>
-                        </button>
+                    )}
+                    
+                    {/* Module Content */}
+                    <div className="p-5 flex flex-col flex-1">
+                      {/* Module Info */}
+                      <div className="mt-auto space-y-3">
+                        {/* Duration Badge */}
+                        {module.duration_minutes && (
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span className="font-medium">{module.duration_minutes} minutes</span>
+                          </div>
+                        )}
+
+                        {/* Action Button */}
+                        <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
+                          <button
+                            onClick={() => handleStartLesson(module)}
+                            className="flex-1 px-4 py-2.5 bg-black text-white rounded-lg font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:bg-gray-800 hover:shadow-md"
+                          >
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M8 5v14l11-7z" />
+                            </svg>
+                            <span>Start</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -795,72 +735,16 @@ export default function MyCoursesPage() {
         </div>
       )}
 
-      {/* Presentation Modal - Full Screen */}
-      {showPresentationModal && currentPresentationModule && (
-        <div className="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-50">
-          <div className="w-full h-full flex flex-col">
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 bg-black bg-opacity-50 backdrop-blur-sm">
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  {getContentTypeIcon(currentPresentationModule.content_type)}
-                  <h2 className="text-xl font-semibold text-white">{currentPresentationModule.title}</h2>
-                </div>
-                <span className="px-3 py-1 bg-white bg-opacity-20 text-white text-sm rounded-full">
-                  {currentPresentationModule.content_type === 'canva_presentation' ? 'Canva Presentation' : currentPresentationModule.content_type}
-                </span>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                {currentPresentationModule.duration_minutes && (
-                  <span className="text-white text-sm bg-white bg-opacity-20 px-3 py-1 rounded-full">
-                    {currentPresentationModule.duration_minutes} min
-                  </span>
-                )}
-                <button 
-                  onClick={() => {
-                    setShowPresentationModal(false)
-                    setCurrentPresentationModule(null)
-                  }}
-                  className="p-2 text-white hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
-                  title="Close presentation"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="flex-1 p-4">
-              <div className="w-full h-full bg-white rounded-lg overflow-hidden">
-                {renderPresentationContent(currentPresentationModule)}
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="p-4 bg-black bg-opacity-50 backdrop-blur-sm">
-              <div className="flex items-center justify-between">
-                <div className="text-white text-sm">
-                  <p className="opacity-75">{currentPresentationModule.description}</p>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <button 
-                    onClick={() => {
-                      setShowPresentationModal(false)
-                      setCurrentPresentationModule(null)
-                    }}
-                    className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-                  >
-                    Close Lesson
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Lesson Viewer Modal */}
+      <LessonViewer
+        module={currentPresentationModule!}
+        isOpen={showPresentationModal}
+        onClose={() => {
+          setShowPresentationModal(false)
+          setCurrentPresentationModule(null)
+        }}
+      />
+      </div>
     </div>
   )
 }

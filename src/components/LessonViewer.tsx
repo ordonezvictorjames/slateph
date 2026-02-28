@@ -32,8 +32,29 @@ export default function LessonViewer({ module, isOpen, onClose }: LessonViewerPr
       if (module.content_type === 'online_conference' && module.conference_url) {
         window.open(module.conference_url, '_blank')
       }
+      // Hide body scrollbar when viewer is open
+      document.body.style.overflow = 'hidden'
+    }
+    
+    return () => {
+      // Restore body scrollbar when viewer closes
+      document.body.style.overflow = 'unset'
     }
   }, [isOpen, module])
+
+  // Add ESC key handler
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose()
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape)
+      return () => document.removeEventListener('keydown', handleEscape)
+    }
+  }, [isOpen, onClose])
 
   if (!isOpen) return null
 
@@ -96,7 +117,7 @@ export default function LessonViewer({ module, isOpen, onClose }: LessonViewerPr
         }
 
         return (
-          <div className="w-full h-full bg-black flex items-center justify-center">
+          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
             <div className="w-full max-w-6xl aspect-video">
               <iframe
                 src={videoEmbedUrl}
@@ -156,14 +177,14 @@ export default function LessonViewer({ module, isOpen, onClose }: LessonViewerPr
         
         // Choose viewer based on content type
         let docEmbedUrl = module.document_url
+        
         if (isSupabaseStorage) {
           if (module.content_type === 'slide_presentation') {
             // Use Microsoft Office Online Viewer for PowerPoint files (better slide navigation)
             docEmbedUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(module.document_url)}`
           } else {
             // Use Google Docs Viewer for PDFs and other documents
-            // view=FitH sets the default view to fit width
-            docEmbedUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(module.document_url)}&embedded=true&view=FitH`
+            docEmbedUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(module.document_url)}&embedded=true`
           }
         } else {
           // For external URLs (like Google Docs), use the helper function
@@ -171,14 +192,12 @@ export default function LessonViewer({ module, isOpen, onClose }: LessonViewerPr
         }
 
         return (
-          <div className="w-full h-full bg-gray-100 flex items-center justify-center p-4">
-            <div className="w-full h-full max-w-6xl bg-white rounded-lg shadow-lg overflow-hidden">
-              <iframe
-                src={docEmbedUrl}
-                className="w-full h-full border-0"
-                title={module.title}
-              />
-            </div>
+          <div className="w-full h-full">
+            <iframe
+              src={docEmbedUrl}
+              className="w-full h-full border-0"
+              title={module.title}
+            />
           </div>
         )
 
@@ -276,46 +295,27 @@ export default function LessonViewer({ module, isOpen, onClose }: LessonViewerPr
   }
 
   return (
-    <div className="fixed inset-0 bg-black/95 z-50 flex flex-col">
-      {/* Header */}
-      <div className="flex-shrink-0 bg-gray-900/50 backdrop-blur-sm border-b border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3 min-w-0">
-            <h2 className="text-lg font-semibold text-white truncate">{module.title}</h2>
-            {module.duration_minutes && (
-              <span className="flex-shrink-0 px-2 py-1 bg-white/10 text-white text-xs rounded-full">
-                {module.duration_minutes} min
-              </span>
-            )}
-          </div>
-          <button
-            onClick={onClose}
-            className="flex-shrink-0 p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-            title="Close"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-      </div>
+    <div 
+      className="fixed inset-0 bg-white z-50 overflow-hidden"
+      style={{ overflow: 'hidden', margin: 0, padding: 0 }}
+    >
+      {/* Close Button Overlay */}
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 z-[60] p-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors shadow-lg"
+        title="Close (ESC)"
+      >
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
 
       {/* Content */}
-      <div className="flex-1 overflow-hidden">
+      <div 
+        className="w-full h-full overflow-hidden"
+        style={{ overflow: 'hidden' }}
+      >
         {renderContent()}
-      </div>
-
-      {/* Footer */}
-      <div className="flex-shrink-0 bg-gray-900/50 backdrop-blur-sm border-t border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <p className="text-sm text-gray-400 truncate">{module.description}</p>
-          <button
-            onClick={onClose}
-            className="flex-shrink-0 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors text-sm font-medium"
-          >
-            Close
-          </button>
-        </div>
       </div>
     </div>
   )

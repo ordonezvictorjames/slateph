@@ -1768,8 +1768,8 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             </div>
             )}
 
-            {/* My Classes - For trainees */}
-            {userRole === 'trainee' && (
+            {/* My Teaching Overview - For Instructors */}
+            {userRole === 'instructor' && (
             <div>
               <div className="flex items-center justify-between mb-4 md:mb-6">
                 <h2 className="text-lg md:text-xl font-bold text-black">My Teaching Overview</h2>
@@ -1789,7 +1789,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                   <div className="text-sm text-gray-600 font-medium">My Courses</div>
                 </div>
 
-                {/* Total trainees */}
+                {/* Total Students */}
                 <div className="bg-white rounded-xl p-6 border border-gray-200">
                   <div className="flex items-center space-x-3 mb-3">
                     <div className="p-3 bg-black rounded-lg">
