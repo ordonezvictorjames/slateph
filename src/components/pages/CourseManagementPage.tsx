@@ -1627,22 +1627,46 @@ export default function CourseManagementPage() {
       
       case 'online_document':
       case 'pdf_document':
-        return (
-          <div className="w-full h-full p-8 overflow-y-auto">
-            <div className="max-w-4xl mx-auto">
-              <div className="bg-white rounded-lg p-8">
-                <h1 className="text-3xl font-bold text-black mb-6">{module.title}</h1>
-                <div className="flex items-center mb-6 p-4 bg-gray-100 rounded-lg">
-                  <svg className="w-8 h-8 text-gray-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                  </svg>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">Document Resource</h3>
-                    <p className="text-gray-600">{module.description}</p>
+      case 'slide_presentation':
+        if (!module.document_url) {
+          return (
+            <div className="w-full h-full p-8 overflow-y-auto">
+              <div className="max-w-4xl mx-auto">
+                <div className="bg-white rounded-lg p-8">
+                  <h1 className="text-3xl font-bold text-black mb-6">{module.title}</h1>
+                  <div className="flex items-center mb-6 p-4 bg-red-50 rounded-lg border border-red-200">
+                    <svg className="w-8 h-8 text-red-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <div>
+                      <h3 className="text-lg font-semibold text-red-900">No Document</h3>
+                      <p className="text-red-700">This module doesn't have a document attached.</p>
+                    </div>
                   </div>
                 </div>
-                <p className="text-gray-600">Document viewer and download functionality coming soon!</p>
               </div>
+            </div>
+          )
+        }
+
+        const isSupabaseStorage = module.document_url.includes('supabase.co/storage')
+        
+        // For Supabase storage files, use Google Docs Viewer to prevent downloads
+        let docEmbedUrl = module.document_url
+        if (isSupabaseStorage) {
+          // Use Google Docs Viewer for PDFs and Office files to prevent downloads
+          docEmbedUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(module.document_url)}&embedded=true`
+        }
+
+        return (
+          <div className="w-full h-full bg-gray-900 flex items-center justify-center p-4">
+            <div className="w-full h-full max-w-7xl bg-white rounded-lg shadow-2xl overflow-hidden">
+              <iframe
+                src={docEmbedUrl}
+                className="w-full h-full border-0"
+                title={module.title}
+                allow="fullscreen"
+              />
             </div>
           </div>
         )

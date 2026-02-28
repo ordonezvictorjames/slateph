@@ -153,7 +153,16 @@ export default function LessonViewer({ module, isOpen, onClose }: LessonViewerPr
         }
 
         const isSupabaseStorage = module.document_url.includes('supabase.co/storage')
-        const docEmbedUrl = isSupabaseStorage ? `${module.document_url}#toolbar=0` : getGoogleDocsEmbedUrl(module.document_url)
+        
+        // For Supabase storage files, use Google Docs Viewer to prevent downloads
+        let docEmbedUrl = module.document_url
+        if (isSupabaseStorage) {
+          // Use Google Docs Viewer for PDFs and Office files to prevent downloads
+          docEmbedUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(module.document_url)}&embedded=true`
+        } else {
+          // For external URLs (like Google Docs), use the helper function
+          docEmbedUrl = getGoogleDocsEmbedUrl(module.document_url)
+        }
 
         return (
           <div className="w-full h-full bg-gray-100 flex items-center justify-center p-4">
