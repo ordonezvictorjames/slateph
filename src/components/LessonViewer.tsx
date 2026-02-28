@@ -290,9 +290,13 @@ export default function LessonViewer({ module, isOpen, onClose }: LessonViewerPr
       
       case 'online_document':
       case 'pdf_document':
-        console.log('Document module data:', module)
+      case 'slide_presentation':
+        console.log('=== DOCUMENT/PRESENTATION MODULE DEBUG ===')
+        console.log('Full module data:', JSON.stringify(module, null, 2))
         console.log('Document URL:', module.document_url)
         console.log('Content type:', module.content_type)
+        console.log('==========================================')
+        
         if (module.document_url) {
           // Helper function to get Google Docs embed URL
           const getGoogleDocsEmbedUrl = (url: string) => {
@@ -321,24 +325,26 @@ export default function LessonViewer({ module, isOpen, onClose }: LessonViewerPr
 
           const embedUrl = getGoogleDocsEmbedUrl(module.document_url)
           const isSupabaseStorage = module.document_url.includes('supabase.co/storage')
+          const contentTypeLabel = module.content_type === 'slide_presentation' ? 'Slide Presentation' : 
+                                   module.content_type === 'pdf_document' ? 'PDF Document' : 'Document'
 
           return (
             <div className="w-full h-full flex flex-col bg-gray-100">
               <div className="flex-1 flex items-center justify-center p-4">
                 <div className="w-full h-full max-w-6xl bg-white rounded-lg shadow-lg overflow-hidden">
-                  {module.content_type === 'pdf_document' && isSupabaseStorage ? (
-                    // Use iframe for Supabase Storage PDFs with #toolbar=0 to hide toolbar
+                  {(module.content_type === 'pdf_document' || module.content_type === 'slide_presentation') && isSupabaseStorage ? (
+                    // Use iframe for Supabase Storage PDFs and presentations with #toolbar=0 to hide toolbar
                     <iframe
                       src={`${module.document_url}#toolbar=0`}
                       className="w-full h-full border-0"
-                      title={`${module.title} - PDF Document`}
+                      title={`${module.title} - ${contentTypeLabel}`}
                     />
                   ) : (
                     // Use iframe for Google Docs and other documents
                     <iframe
                       src={embedUrl}
                       className="w-full h-full border-0"
-                      title={`${module.title} - Document`}
+                      title={`${module.title} - ${contentTypeLabel}`}
                     />
                   )}
                 </div>

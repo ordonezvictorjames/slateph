@@ -2419,7 +2419,6 @@ export default function CourseManagementPage() {
                             <span className="text-gray-500">Type:</span>
                             <span className="font-semibold text-gray-900 capitalize flex items-center gap-1">
                               {getContentTypeIcon(module.content_type)}
-                              {module.content_type === 'canva_presentation' ? 'Canva' : module.content_type.replace('_', ' ')}
                             </span>
                           </div>
                           {module.duration_minutes && (
@@ -2848,10 +2847,9 @@ export default function CourseManagementPage() {
                     onChange={(e) => setNewModule(prev => ({ ...prev, content_type: e.target.value as any }))}
                     className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-black focus:border-black"
                   >
-                    <option value="text">Text</option>
                     <option value="video">Video</option>
                     <option value="canva_presentation">Canva Presentation</option>
-                    <option value="online_conference">Online Conference</option>
+                    <option value="slide_presentation">Slide Presentation</option>
                     <option value="online_document">Online Document</option>
                     <option value="pdf_document">Document</option>
                   </select>
@@ -3108,10 +3106,9 @@ export default function CourseManagementPage() {
                     onChange={(e) => setNewModule(prev => ({ ...prev, content_type: e.target.value as any }))}
                     className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-black focus:border-black"
                   >
-                    <option value="text">Text</option>
                     <option value="video">Video</option>
                     <option value="canva_presentation">Canva Presentation</option>
-                    <option value="online_conference">Online Conference</option>
+                    <option value="slide_presentation">Slide Presentation</option>
                     <option value="online_document">Online Document</option>
                     <option value="pdf_document">Document</option>
                   </select>
