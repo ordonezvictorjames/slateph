@@ -9,7 +9,7 @@ interface Module {
   description: string
   content_type: 'video' | 'text' | 'canva_presentation' | 'online_conference' | 'online_document' | 'pdf_document' | 'slide_presentation'
   order_index: number
-  status: 'active' | 'inactive' | 'draft'
+  status?: 'active' | 'inactive' | 'draft'
   duration_minutes?: number
   canva_url?: string
   conference_url?: string
