@@ -203,6 +203,12 @@ export default function MyCoursesPage() {
   }
 
   const handleSubjectSelect = async (subject: Subject) => {
+    // Check if subject is locked and user is trainee/scholar
+    if ((subject as any).is_locked && user?.profile?.role && ['trainee', 'tesda_scholar'].includes(user.profile.role)) {
+      alert('This subject is currently locked. Please contact your instructor to unlock it.')
+      return
+    }
+    
     setSelectedSubject(subject)
     setCurrentView('modules')
     await fetchModules(subject.id)
@@ -552,8 +558,20 @@ export default function MyCoursesPage() {
                 {subjects.map((subject) => (
                   <div
                     key={subject.id}
-                    className="bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all duration-200 overflow-hidden"
+                    className="bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all duration-200 overflow-hidden relative"
                   >
+                    {/* Lock indicator for trainee/scholar users */}
+                    {(subject as any).is_locked && user?.profile?.role && ['trainee', 'tesda_scholar'].includes(user.profile.role) && (
+                      <>
+                        <div className="absolute top-3 right-3 bg-red-500 text-white p-2 rounded-full shadow-lg z-10">
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <div className="absolute inset-0 bg-gray-900 bg-opacity-20 rounded-xl pointer-events-none"></div>
+                      </>
+                    )}
+                    
                     <div className="p-4 flex items-center gap-4">
                       {/* Subject Number */}
                       <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 bg-gray-100 rounded-lg">

@@ -77,6 +77,7 @@ interface NewSubject {
   order_index: number
   status: 'active' | 'inactive' | 'draft'
   enrollment_type: 'trainee' | 'tesda_scholar' | 'both'
+  is_locked?: boolean
 }
 
 interface NewCourseModule {
@@ -176,7 +177,8 @@ export default function CourseManagementPage() {
     instructor_id: '',
     order_index: 1,
     status: 'draft',
-    enrollment_type: 'trainee'
+    enrollment_type: 'trainee',
+    is_locked: false
   })
 
   const [newModule, setNewModule] = useState<NewCourseModule>({
@@ -941,7 +943,8 @@ export default function CourseManagementPage() {
           instructor_id: newSubject.instructor_id || null,
           status: newSubject.status,
           enrollment_type: newSubject.enrollment_type,
-          order_index: targetOrderIndex
+          order_index: targetOrderIndex,
+          is_locked: newSubject.is_locked || false
         }])
 
       if (error) {
@@ -1351,7 +1354,8 @@ export default function CourseManagementPage() {
       instructor_id: subject.instructor_id || '',
       order_index: subject.order_index,
       status: subject.status,
-      enrollment_type: subject.enrollment_type
+      enrollment_type: subject.enrollment_type,
+      is_locked: (subject as any).is_locked || false
     })
     setShowEditSubjectModal(true)
   }
@@ -1410,7 +1414,8 @@ export default function CourseManagementPage() {
           instructor_id: newSubject.instructor_id || null,
           status: newSubject.status,
           enrollment_type: newSubject.enrollment_type,
-          order_index: newSubject.order_index
+          order_index: newSubject.order_index,
+          is_locked: newSubject.is_locked || false
         })
         .eq('id', editingSubject.id)
 
@@ -3217,6 +3222,40 @@ export default function CourseManagementPage() {
                 </div>
               </div>
 
+              <div className="mt-4">
+                <label className="block text-xs font-medium text-black mb-2">Access Control</label>
+                <button
+                  type="button"
+                  onClick={() => setNewSubject(prev => ({ ...prev, is_locked: !prev.is_locked }))}
+                  className={`w-full px-4 py-3 text-sm border rounded-lg transition-colors flex items-center justify-center gap-2 font-medium ${
+                    newSubject.is_locked 
+                      ? 'bg-red-50 border-red-300 text-red-700 hover:bg-red-100' 
+                      : 'bg-green-50 border-green-300 text-green-700 hover:bg-green-100'
+                  }`}
+                >
+                  {newSubject.is_locked ? (
+                    <>
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                      </svg>
+                      <span>Locked - Trainees Cannot Access</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 015.905-.75 1 1 0 001.937-.5A5.002 5.002 0 0010 2z" />
+                      </svg>
+                      <span>Unlocked - Trainees Can Access</span>
+                    </>
+                  )}
+                </button>
+                <p className="text-xs text-gray-500 mt-2">
+                  {newSubject.is_locked 
+                    ? 'This subject is locked. Only admin, developer, and instructor can access it.' 
+                    : 'This subject is unlocked. All users including trainees and scholars can access it.'}
+                </p>
+              </div>
+
               <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
                 <button
                   type="button"
@@ -3316,6 +3355,40 @@ export default function CourseManagementPage() {
                     ))}
                   </select>
                 </div>
+              </div>
+
+              <div className="mt-4">
+                <label className="block text-xs font-medium text-black mb-2">Access Control</label>
+                <button
+                  type="button"
+                  onClick={() => setNewSubject(prev => ({ ...prev, is_locked: !prev.is_locked }))}
+                  className={`w-full px-4 py-3 text-sm border rounded-lg transition-colors flex items-center justify-center gap-2 font-medium ${
+                    newSubject.is_locked 
+                      ? 'bg-red-50 border-red-300 text-red-700 hover:bg-red-100' 
+                      : 'bg-green-50 border-green-300 text-green-700 hover:bg-green-100'
+                  }`}
+                >
+                  {newSubject.is_locked ? (
+                    <>
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                      </svg>
+                      <span>Locked - Trainees Cannot Access</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 015.905-.75 1 1 0 001.937-.5A5.002 5.002 0 0010 2z" />
+                      </svg>
+                      <span>Unlocked - Trainees Can Access</span>
+                    </>
+                  )}
+                </button>
+                <p className="text-xs text-gray-500 mt-2">
+                  {newSubject.is_locked 
+                    ? 'This subject is locked. Only admin, developer, and instructor can access it.' 
+                    : 'This subject is unlocked. All users including trainees and scholars can access it.'}
+                </p>
               </div>
 
               <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
