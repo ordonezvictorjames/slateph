@@ -455,7 +455,7 @@ export default function TasksPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'bg-orange-100 text-orange-700'
-      case 'ongoing': return 'bg-blue-100 text-blue-700'
+      case 'ongoing': return 'bg-[#588157]/20 text-[#588157]'
       case 'finished': return 'bg-green-100 text-green-700'
       default: return 'bg-gray-100 text-gray-700'
     }
@@ -531,7 +531,7 @@ export default function TasksPage() {
           >
             Unassigned Instructors
             {unassignedInstructors.length > 0 && (
-              <span className="ml-2 bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs font-semibold">
+              <span className="ml-2 bg-[#588157]/20 text-[#588157] px-2 py-0.5 rounded-full text-xs font-semibold">
                 {unassignedInstructors.length}
               </span>
             )}
@@ -658,7 +658,7 @@ export default function TasksPage() {
                   {unassignedInstructors.map((instructor) => (
                     <tr key={`instructor-${instructor.id}`} className="hover:bg-gray-50">
                       <td className="px-6 py-3 whitespace-nowrap">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#588157]/20 text-[#588157]">
                           Unassigned Instructor
                         </span>
                       </td>
@@ -1134,7 +1134,7 @@ export default function TasksPage() {
               <button
                 onClick={handleEnrolltrainee}
                 disabled={!selectedCourse || processing}
-                className="flex-1 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 bg-[#588157] text-white rounded-lg hover:bg-[#3a5a40] font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {processing ? 'Enrolling...' : 'Enroll'}
               </button>
@@ -1178,7 +1178,7 @@ export default function TasksPage() {
               <button
                 onClick={handleAssigntrainee}
                 disabled={!selectedCourse || processing}
-                className="flex-1 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 bg-[#588157] text-white rounded-lg hover:bg-[#3a5a40] font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {processing ? 'Assigning...' : 'Assign'}
               </button>

@@ -12,7 +12,7 @@ export const getRoleColor = (role: string): string => {
     case 'trainee':
       return 'bg-orange-100 text-orange-800'
     case 'tesda_scholar':
-      return 'bg-blue-100 text-blue-800'
+      return 'bg-[#588157]/20 text-[#588157]'
     case 'developer':
       return 'bg-red-100 text-red-800'
     default:

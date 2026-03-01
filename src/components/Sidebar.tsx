@@ -548,32 +548,27 @@ export default function Sidebar({ currentPage, onPageChange }: SidebarProps) {
             )
           })}
         </div>
-      </nav>
 
-      {/* Feedback Card */}
-      {(isHovered || isMobileOpen) && (
-        <div className="px-2 pb-3">
-          <div className="relative pt-12">
-            {/* Overlapping Image */}
-            <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 z-10">
-              <img 
-                src="/book.png" 
-                alt="Feedback" 
-                className="w-[85px] h-[85px] object-contain drop-shadow-lg"
-              />
-            </div>
-            {/* Card Content */}
-            <div className="p-4 pt-5">
-              <button 
-                onClick={() => onPageChange('feature-requests')}
-                className="w-full bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white text-xs font-semibold py-2.5 px-4 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
-              >
-                Feedback
-              </button>
-            </div>
-          </div>
+        {/* Logout Button */}
+        <div className="mt-2 pb-3">
+          <button 
+            onClick={async () => {
+              await signOut()
+              window.location.href = '/'
+            }}
+            className={`w-full flex items-center ${(isHovered || isMobileOpen) ? 'px-3 py-2' : 'justify-center px-3 py-2'} rounded-lg transition-all duration-200 hover:bg-red-50`}
+            style={{ color: '#ef4444' }}
+            title="Logout"
+          >
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            {(isHovered || isMobileOpen) && (
+              <span className="ml-3 text-xs font-semibold whitespace-nowrap">Logout</span>
+            )}
+          </button>
         </div>
-      )}
+      </nav>
       </div>
     </>
   )

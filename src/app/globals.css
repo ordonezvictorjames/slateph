@@ -1,6 +1,99 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  /* Root Variables - Books & Plants Theme */
+  :root {
+    --color-fern-primary: #588157;
+    --color-hunter-dark: #3a5a40;
+    --color-dust-light: #f8f7f5;
+    --color-pine-dark: #344e41;
+    --color-sage-accent: #a3b18a;
+    --shadow-soft: 0 2px 15px -3px rgba(88, 129, 87, 0.1);
+    --radius-card: 1.5rem;
+  }
+
+  /* Base Typography */
+  body {
+    @apply font-sans text-pine-800 bg-dust-50;
+    font-feature-settings: 'kern' 1, 'liga' 1;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-bold text-hunter-900;
+  }
+
+  /* Smooth Scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  /* Card Components - Book-inspired */
+  .card-book {
+    @apply bg-white rounded-2xl shadow-soft border border-fern-100 p-6 transition-all duration-300;
+  }
+
+  .card-book:hover {
+    @apply shadow-soft-lg border-fern-200 transform -translate-y-1;
+  }
+
+  /* Button Variants - Nature Theme */
+  .btn-fern {
+    @apply bg-gradient-fern text-white font-semibold px-6 py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105;
+  }
+
+  .btn-sage {
+    @apply bg-sage-100 text-hunter-800 font-semibold px-6 py-3 rounded-xl hover:bg-sage-200 transition-all duration-200;
+  }
+
+  .btn-dust {
+    @apply bg-dust-200 text-pine-900 font-semibold px-6 py-3 rounded-xl hover:bg-dust-300 transition-all duration-200;
+  }
+
+  /* Badge Components */
+  .badge-fern {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-fern-100 text-fern-700 border border-fern-200;
+  }
+
+  .badge-sage {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-sage-100 text-sage-700 border border-sage-200;
+  }
+
+  /* Input Fields - Natural Style */
+  .input-natural {
+    @apply w-full px-4 py-3 rounded-xl border-2 border-dust-300 bg-white focus:border-fern-500 focus:ring-2 focus:ring-fern-100 transition-all duration-200;
+  }
+
+  /* Paper Texture Background */
+  .bg-paper {
+    @apply bg-white bg-paper-texture;
+  }
+
+  /* Plant Decoration Elements */
+  .plant-accent {
+    @apply relative;
+  }
+
+  .plant-accent::before {
+    content: '🌿';
+    @apply absolute -top-2 -left-2 text-2xl opacity-20;
+  }
+
+  /* Book Spine Effect */
+  .book-spine {
+    @apply relative pl-4;
+  }
+
+  .book-spine::before {
+    content: '';
+    @apply absolute left-0 top-0 bottom-0 w-1 bg-gradient-fern rounded-full;
+  }
+}
 
 /* Custom scrollbar styles for better cross-browser compatibility */
 * {

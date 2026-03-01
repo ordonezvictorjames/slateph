@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { Loading } from '@/components/ui/loading'
+import { BookCard, BookCardHeader, BookCardContent, BookCardFooter } from '@/components/ui/book-card'
+import { Badge } from '@/components/ui/badge'
+import { NatureButton } from '@/components/ui/nature-button'
 import LessonViewer from '@/components/LessonViewer'
 
 interface Course {
@@ -275,7 +278,7 @@ export default function MyCoursesPage() {
   }
 
   const getEnrollmentTypeDisplay = (type: string) => {
-    return [{ text: 'trainee', color: 'bg-blue-100 text-blue-700' }]
+    return [{ text: 'trainee', color: 'bg-[#475569]/20 text-[#475569]' }]
   }
 
   const getContentTypeIcon = (contentType: string) => {
@@ -440,10 +443,10 @@ export default function MyCoursesPage() {
           <div className="px-6 py-4 border-b border-gray-100">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <h2 className="text-lg font-semibold text-black">Enrolled Courses</h2>
-                <span className="px-2 py-1 bg-blue-100 text-blue-600 text-xs font-medium rounded-full">
+                <h2 className="text-lg font-semibold text-earth-900">Enrolled Courses</h2>
+                <Badge variant="leaf" size="md">
                   {courses.length} course{courses.length !== 1 ? 's' : ''}
-                </span>
+                </Badge>
               </div>
             </div>
           </div>
@@ -468,50 +471,62 @@ export default function MyCoursesPage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {courses.map((course) => (
-                  <div 
-                    key={course.id} 
-                    className="group relative bg-white rounded-2xl border border-gray-200 hover:border-gray-300 hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col h-full"
-                  >
-                    <div className="h-2 w-full bg-white border-b border-gray-200 flex-shrink-0" />
+                  <BookCard key={course.id} hover spine>
+                    <BookCardHeader 
+                      icon={
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                      }
+                    >
+                      {course.title}
+                    </BookCardHeader>
                     
-                    <div className="p-6 flex flex-col flex-1">
-                      <div className="flex-1">
-                        <h3 className="font-bold text-lg text-gray-900 mb-2 line-clamp-2 group-hover:text-black transition-colors">
-                          {course.title}
-                        </h3>
-                        <p className="text-sm text-gray-600 mb-2 line-clamp-3 leading-relaxed">
-                          {course.description}
-                        </p>
-                        <div className="flex items-center space-x-2 mb-2">
-                          <span className="text-xs text-gray-500">{course.course_group}</span>
-                          <span className="text-gray-300">•</span>
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {course.course_type === 'academic' ? 'Academic' : course.course_type === 'tesda' ? 'TESDA' : 'UpSkill'}
-                          </span>
-                        </div>
+                    <BookCardContent>
+                      <p className="text-sm text-earth-600 mb-3 line-clamp-3 leading-relaxed">
+                        {course.description}
+                      </p>
+                      
+                      <div className="flex items-center space-x-2 mb-3 text-xs text-earth-500">
+                        <span>{course.course_group}</span>
+                        <span>•</span>
+                        <Badge variant="wood" size="sm">
+                          {course.course_type === 'academic' ? 'Academic' : course.course_type === 'tesda' ? 'TESDA' : 'UpSkill'}
+                        </Badge>
                       </div>
                       
-                      <div className="flex items-center flex-wrap gap-2 mb-4">
-                        <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${getStatusColor(course.status)}`}>
+                      <div className="flex items-center flex-wrap gap-2">
+                        <Badge 
+                          variant={course.status === 'active' ? 'success' : course.status === 'inactive' ? 'error' : 'warning'}
+                          size="sm"
+                        >
                           {course.status.charAt(0).toUpperCase() + course.status.slice(1)}
-                        </span>
+                        </Badge>
                         {getEnrollmentTypeDisplay(course.enrollment_type).map((display, idx) => (
-                          <span key={idx} className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${display.color}`}>
+                          <Badge key={idx} variant="leaf" size="sm">
                             {display.text}
-                          </span>
+                          </Badge>
                         ))}
                       </div>
-                      
-                      <div className="mt-auto">
-                        <button 
-                          onClick={() => handleCourseSelect(course)}
-                          className="w-full px-4 py-3 bg-black text-white rounded-xl font-semibold text-sm transition-all duration-200 hover:bg-gray-800 hover:shadow-lg transform hover:-translate-y-0.5"
-                        >
-                          View Subjects
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                    </BookCardContent>
+                    
+                    <BookCardFooter>
+                      <NatureButton 
+                        size="sm" 
+                        variant="leaf"
+                        className="w-full"
+                        onClick={() => handleCourseSelect(course)}
+                        icon={
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        }
+                        iconPosition="right"
+                      >
+                        View Subjects
+                      </NatureButton>
+                    </BookCardFooter>
+                  </BookCard>
                 ))}
               </div>
             )}
@@ -539,10 +554,10 @@ export default function MyCoursesPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
                       </button>
-                      <h2 className="text-lg font-semibold text-black">Subjects in {selectedCourse.title}</h2>
-                      <span className="px-2 py-1 bg-blue-100 text-blue-600 text-xs font-medium rounded-full">
+                      <h2 className="text-lg font-semibold text-earth-900">Subjects in {selectedCourse.title}</h2>
+                      <Badge variant="leaf" size="md">
                         {subjects.length} subject{subjects.length !== 1 ? 's' : ''}
-                      </span>
+                      </Badge>
                     </div>
                   </div>
                 </div>
@@ -563,20 +578,20 @@ export default function MyCoursesPage() {
                 {subjects.map((subject) => (
                   <div
                     key={subject.id}
-                    className="bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all duration-200 overflow-hidden"
+                    className="bg-white rounded-xl border-2 border-leaf-100 hover:border-leaf-300 hover:shadow-soft transition-all duration-200 overflow-hidden"
                   >
                     <div className="p-4 flex items-center gap-4">
                       {/* Subject Number */}
-                      <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 bg-gray-100 rounded-lg">
-                        <span className="text-xl font-bold text-gray-900">{subject.order_index}</span>
+                      <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 bg-leaf-100 rounded-lg border-2 border-leaf-200">
+                        <span className="text-xl font-bold text-leaf-700">{subject.order_index}</span>
                       </div>
                       
                       {/* Subject Info */}
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-1 truncate">
+                        <h3 className="text-lg font-semibold text-earth-900 mb-1 truncate">
                           {subject.title}
                         </h3>
-                        <p className="text-sm text-gray-600 line-clamp-2 mb-2">
+                        <p className="text-sm text-earth-600 line-clamp-2 mb-2">
                           {subject.description}
                         </p>
                         <div className="flex items-center gap-3 flex-wrap">
@@ -607,7 +622,7 @@ export default function MyCoursesPage() {
                       <div className="flex-shrink-0">
                         <button 
                           onClick={() => handleSubjectSelect(subject)}
-                          className="px-4 py-2 bg-black text-white rounded-lg font-medium text-sm hover:bg-gray-800 transition-colors flex items-center gap-2"
+                          className="px-4 py-2 bg-gradient-leaf text-white rounded-lg font-medium text-sm hover:shadow-lg transition-all duration-200 hover:scale-105 flex items-center gap-2"
                         >
                           <span>View Modules</span>
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -631,46 +646,46 @@ export default function MyCoursesPage() {
                 <div className="p-6">
                   {/* Stats - Only show for admin, developer, instructor */}
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center justify-between p-3 bg-leaf-50 rounded-lg border border-leaf-100">
                       <div className="flex items-center gap-2">
-                        <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-5 h-5 text-leaf-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                         </svg>
-                        <span className="text-sm text-gray-600">Total Subjects</span>
+                        <span className="text-sm text-earth-700 font-medium">Total Subjects</span>
                       </div>
-                      <span className="text-xl font-bold text-gray-900">{subjects.length}</span>
+                      <span className="text-xl font-bold text-leaf-700">{subjects.length}</span>
                     </div>
 
-                    <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                    <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-100">
                       <div className="flex items-center gap-2">
                         <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        <span className="text-sm text-gray-600">Active</span>
+                        <span className="text-sm text-earth-700 font-medium">Active</span>
                       </div>
                       <span className="text-xl font-bold text-green-700">
                         {subjects.filter(s => s.status === 'active').length}
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                    <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg border border-yellow-100">
                       <div className="flex items-center gap-2">
                         <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        <span className="text-sm text-gray-600">Draft</span>
+                        <span className="text-sm text-earth-700 font-medium">Draft</span>
                       </div>
                       <span className="text-xl font-bold text-yellow-700">
                         {subjects.filter(s => s.status === 'draft').length}
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                    <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-100">
                       <div className="flex items-center gap-2">
                         <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        <span className="text-sm text-gray-600">Inactive</span>
+                        <span className="text-sm text-earth-700 font-medium">Inactive</span>
                       </div>
                       <span className="text-xl font-bold text-red-700">
                         {subjects.filter(s => s.status === 'inactive').length}
@@ -706,7 +721,7 @@ export default function MyCoursesPage() {
                         </svg>
                       </button>
                       <h2 className="text-lg font-semibold text-black">Modules in {selectedSubject.title}</h2>
-                      <span className="px-2 py-1 bg-blue-100 text-blue-600 text-xs font-medium rounded-full">
+                      <span className="px-2 py-1 bg-[#475569]/20 text-[#475569] text-xs font-medium rounded-full">
                         {modules.length} module{modules.length !== 1 ? 's' : ''}
                       </span>
                     </div>
@@ -822,7 +837,7 @@ export default function MyCoursesPage() {
                         <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
                           <button
                             onClick={() => handleStartLesson(module)}
-                            className="flex-1 px-4 py-2.5 bg-black text-white rounded-lg font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:bg-gray-800 hover:shadow-md"
+                            className="flex-1 px-4 py-2.5 bg-[#475569] text-white rounded-lg font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:bg-[#1E293B] hover:shadow-md"
                           >
                             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                               <path d="M8 5v14l11-7z" />
@@ -908,13 +923,13 @@ export default function MyCoursesPage() {
                             href={resource.resource_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-2 p-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors group"
+                            className="flex items-center gap-2 p-3 bg-[#475569]/10 hover:bg-[#475569]/20 rounded-lg transition-colors group"
                           >
-                            <svg className="w-4 h-4 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-4 h-4 text-[#475569] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                             </svg>
-                            <span className="text-sm text-blue-700 font-medium flex-1 truncate">{resource.title}</span>
-                            <svg className="w-3.5 h-3.5 text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <span className="text-sm text-[#1E293B] font-medium flex-1 truncate">{resource.title}</span>
+                            <svg className="w-3.5 h-3.5 text-[#475569] opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                             </svg>
                           </a>

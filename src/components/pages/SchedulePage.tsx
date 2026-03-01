@@ -657,7 +657,7 @@ export default function SchedulePage() {
                               
                               <button
                                 onClick={() => handleEditSchedule(schedule)}
-                                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
+                                className="p-2 text-gray-400 hover:text-[#588157] hover:bg-[#588157]/10 rounded-lg transition-all duration-200"
                                 title="Edit schedule"
                               >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1020,7 +1020,7 @@ export default function SchedulePage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center space-x-2"
+                  className="px-6 py-2 bg-[#588157] text-white rounded-lg hover:bg-[#3a5a40] transition-colors disabled:opacity-50 flex items-center space-x-2"
                 >
                   {submitting && <ButtonLoading />}
                   <span>{submitting ? 'Creating...' : 'Create Schedule'}</span>
@@ -1291,7 +1291,7 @@ export default function SchedulePage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center space-x-2"
+                  className="px-6 py-2 bg-[#588157] text-white rounded-lg hover:bg-[#3a5a40] transition-colors disabled:opacity-50 flex items-center space-x-2"
                 >
                   {submitting && <ButtonLoading />}
                   <span>{submitting ? 'Updating...' : 'Update Schedule'}</span>

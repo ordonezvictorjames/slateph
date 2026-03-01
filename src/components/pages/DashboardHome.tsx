@@ -415,7 +415,7 @@ function RecentActivityList() {
   }
 
   return (
-    <div className="space-y-3 overflow-y-auto" style={{ maxHeight: '433px' }}>
+    <div className="space-y-3">
       {activities.map((activity) => (
         <div
           key={activity.id}
@@ -468,7 +468,6 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
   const [loading, setLoading] = useState(true)
   const [currentDate, setCurrentDate] = useState(new Date())
   const [currentTime, setCurrentTime] = useState(new Date())
-  const [isCalendarExpanded, setIsCalendarExpanded] = useState(false)
   const [showProfileDropdown, setShowProfileDropdown] = useState(false)
   const [showChangelogModal, setShowChangelogModal] = useState(false)
   const [userStats, setUserStats] = useState<UserStats>({
@@ -497,10 +496,10 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   // Helper function to get button background color
-  const getButtonBg = () => '#588157' // 30% - Primary color (green)
+  const getButtonBg = () => '#588157' // Primary color (green)
   
   // Helper function to get button hover color (slightly darker)
-  const getButtonHoverBg = () => '#3a5a40' // 10% - Accent color (dark green)
+  const getButtonHoverBg = () => '#3A5A40' // Accent color (dark green)
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -577,15 +576,13 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
     
     // First day of the month and how many days in the month
     const firstDay = new Date(year, month, 1)
-    const lastDay = new Date(year, month + 1, 0)
-    const daysInMonth = lastDay.getDate()
     const startingDayOfWeek = firstDay.getDay()
     
-    // Calculate days to show (including previous/next month days)
-    const totalCells = 42 // 6 rows × 7 days
+    // Calculate days to show (only 2 weeks = 14 days)
+    const totalCells = 14 // 2 rows × 7 days
     const days = []
     
-    // Previous month days
+    // Previous month days (to fill the first week)
     const prevMonth = new Date(year, month - 1, 0)
     const prevMonthDays = prevMonth.getDate()
     for (let i = startingDayOfWeek - 1; i >= 0; i--) {
@@ -599,8 +596,9 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
       })
     }
     
-    // Current month days
-    for (let day = 1; day <= daysInMonth; day++) {
+    // Current month days (only up to what fits in 2 weeks)
+    const daysToShow = totalCells - days.length
+    for (let day = 1; day <= daysToShow; day++) {
       const date = new Date(year, month, day)
       const isToday = today.getFullYear() === year && 
                      today.getMonth() === month && 
@@ -611,19 +609,6 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
         day,
         isCurrentMonth: true,
         isToday,
-        hasEvent
-      })
-    }
-    
-    // Next month days
-    const remainingCells = totalCells - days.length
-    for (let day = 1; day <= remainingCells; day++) {
-      const date = new Date(year, month + 1, day)
-      const hasEvent = hasScheduleOnDate(date)
-      days.push({
-        day,
-        isCurrentMonth: false,
-        isToday: false,
         hasEvent
       })
     }
@@ -1604,85 +1589,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 <h2 className="text-lg md:text-xl font-bold text-black">System Overview</h2>
               </div>
               
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-                {/* Users Card */}
-                <div className="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-gray-100 flex flex-col h-full">
-                  <div className="flex items-center justify-between mb-4 md:mb-6">
-                    <h3 className="font-bold text-gray-800">Users</h3>
-                    <button 
-                      onClick={() => onNavigate('user-management')}
-                      className="text-gray-400 hover:text-gray-600"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {/* Trainees Card */}
-                    <div className="bg-white rounded-xl p-4 border border-gray-200">
-                      <div className="flex items-center space-x-3 mb-3">
-                        <div className="p-2 bg-blue-500 rounded-lg">
-                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                          </svg>
-                        </div>
-                        <div className="text-2xl font-bold text-black">{userStats.totaltrainees}</div>
-                      </div>
-                      <div className="text-sm text-gray-600 font-medium">Trainees</div>
-                    </div>
-
-                    {/* TESDA Scholars Card */}
-                    <div className="bg-white rounded-xl p-4 border border-gray-200">
-                      <div className="flex items-center space-x-3 mb-3">
-                        <div className="p-2 bg-yellow-500 rounded-lg">
-                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                          </svg>
-                        </div>
-                        <div className="text-2xl font-bold text-black">{userStats.totalScholars}</div>
-                      </div>
-                      <div className="text-sm text-gray-600 font-medium">TESDA Scholars</div>
-                    </div>
-
-                    {/* Instructors Card */}
-                    <div className="bg-white rounded-xl p-4 border border-gray-200">
-                      <div className="flex items-center space-x-3 mb-3">
-                        <div className="p-2 bg-purple-500 rounded-lg">
-                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                          </svg>
-                        </div>
-                        <div className="text-2xl font-bold text-black">{userStats.totalInstructors}</div>
-                      </div>
-                      <div className="text-sm text-gray-600 font-medium">Instructors</div>
-                    </div>
-                  </div>
-
-                  {/* Admin and Developer count (smaller, below the main cards) */}
-                  <div className="mt-4 pt-4 border-t border-gray-100">
-                    <div className="grid grid-cols-2 gap-4">
-                      {userStats.totalAdmins > 0 && (
-                        <div className="flex items-center justify-center space-x-2 text-gray-600">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                          </svg>
-                          <span className="text-sm font-medium">{userStats.totalAdmins} Admin{userStats.totalAdmins !== 1 ? 's' : ''}</span>
-                        </div>
-                      )}
-                      {userStats.totalDevelopers > 0 && (
-                        <div className="flex items-center justify-center space-x-2 text-gray-600">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                          </svg>
-                          <span className="text-sm font-medium">{userStats.totalDevelopers} Developer{userStats.totalDevelopers !== 1 ? 's' : ''}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
                 {/* Courses Card */}
                 <div className="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-gray-100 flex flex-col h-full">
                   <div className="flex items-center justify-between mb-4 md:mb-6">
@@ -1697,44 +1604,126 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-3 gap-3">
                     {/* Total Courses Card */}
-                    <div className="bg-white rounded-xl p-4 border border-gray-200">
-                      <div className="flex items-center space-x-3 mb-3">
-                        <div className="p-2 bg-green-500 rounded-lg">
-                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="bg-white rounded-xl p-3 border border-gray-200">
+                      <div className="flex flex-col items-center text-center">
+                        <div className="p-2 bg-gray-200 rounded-lg mb-2">
+                          <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                           </svg>
                         </div>
-                        <div className="text-2xl font-bold text-black">{stats.totalCourses}</div>
+                        <div className="text-xl font-bold text-black mb-1">{stats.totalCourses}</div>
+                        <div className="text-xs text-gray-600 font-medium">Courses</div>
                       </div>
-                      <div className="text-sm text-gray-600 font-medium">Courses</div>
                     </div>
 
                     {/* Total Subjects Card */}
-                    <div className="bg-white rounded-xl p-4 border border-gray-200">
-                      <div className="flex items-center space-x-3 mb-3">
-                        <div className="p-2 bg-orange-500 rounded-lg">
-                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="bg-white rounded-xl p-3 border border-gray-200">
+                      <div className="flex flex-col items-center text-center">
+                        <div className="p-2 bg-gray-200 rounded-lg mb-2">
+                          <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                           </svg>
                         </div>
-                        <div className="text-2xl font-bold text-black">{stats.totalSubjects}</div>
+                        <div className="text-xl font-bold text-black mb-1">{stats.totalSubjects}</div>
+                        <div className="text-xs text-gray-600 font-medium">Subjects</div>
                       </div>
-                      <div className="text-sm text-gray-600 font-medium">Subjects</div>
                     </div>
 
                     {/* Total Modules Card */}
-                    <div className="bg-white rounded-xl p-4 border border-gray-200">
-                      <div className="flex items-center space-x-3 mb-3">
-                        <div className="p-2 bg-red-500 rounded-lg">
-                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="bg-white rounded-xl p-3 border border-gray-200">
+                      <div className="flex flex-col items-center text-center">
+                        <div className="p-2 bg-gray-200 rounded-lg mb-2">
+                          <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                           </svg>
                         </div>
-                        <div className="text-2xl font-bold text-black">{stats.totalModules}</div>
+                        <div className="text-xl font-bold text-black mb-1">{stats.totalModules}</div>
+                        <div className="text-xs text-gray-600 font-medium">Modules</div>
                       </div>
-                      <div className="text-sm text-gray-600 font-medium">Modules</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Users Card */}
+                <div className="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-gray-100 flex flex-col h-full md:col-span-2">
+                  <div className="flex items-center justify-between mb-4 md:mb-6">
+                    <h3 className="font-bold text-gray-800">Users</h3>
+                    <button 
+                      onClick={() => onNavigate('user-management')}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+                    {/* Trainees Card */}
+                    <div className="bg-white rounded-xl p-4 border border-gray-200">
+                      <div className="flex items-center space-x-3 mb-3">
+                        <div className="p-2 bg-gray-200 rounded-lg">
+                          <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                          </svg>
+                        </div>
+                        <div className="text-xl font-bold text-black">{userStats.totaltrainees}</div>
+                      </div>
+                      <div className="text-sm text-gray-600 font-medium">Trainees</div>
+                    </div>
+
+                    {/* TESDA Scholars Card */}
+                    <div className="bg-white rounded-xl p-4 border border-gray-200">
+                      <div className="flex items-center space-x-3 mb-3">
+                        <div className="p-2 bg-gray-200 rounded-lg">
+                          <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                          </svg>
+                        </div>
+                        <div className="text-xl font-bold text-black">{userStats.totalScholars}</div>
+                      </div>
+                      <div className="text-sm text-gray-600 font-medium">Scholars</div>
+                    </div>
+
+                    {/* Instructors Card */}
+                    <div className="bg-white rounded-xl p-4 border border-gray-200">
+                      <div className="flex items-center space-x-3 mb-3">
+                        <div className="p-2 bg-gray-200 rounded-lg">
+                          <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                        </div>
+                        <div className="text-xl font-bold text-black">{userStats.totalInstructors}</div>
+                      </div>
+                      <div className="text-sm text-gray-600 font-medium">Instructors</div>
+                    </div>
+
+                    {/* Admin Card */}
+                    <div className="bg-white rounded-xl p-4 border border-gray-200">
+                      <div className="flex items-center space-x-3 mb-3">
+                        <div className="p-2 bg-gray-200 rounded-lg">
+                          <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                          </svg>
+                        </div>
+                        <div className="text-xl font-bold text-black">{userStats.totalAdmins}</div>
+                      </div>
+                      <div className="text-sm text-gray-600 font-medium">Admin</div>
+                    </div>
+
+                    {/* Developer Card */}
+                    <div className="bg-white rounded-xl p-4 border border-gray-200">
+                      <div className="flex items-center space-x-3 mb-3">
+                        <div className="p-2 bg-gray-200 rounded-lg">
+                          <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                          </svg>
+                        </div>
+                        <div className="text-xl font-bold text-black">{userStats.totalDevelopers}</div>
+                      </div>
+                      <div className="text-sm text-gray-600 font-medium">Developer</div>
                     </div>
                   </div>
                 </div>
@@ -1846,11 +1835,11 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
           {/* Right Sidebar */}
           <div className="xl:col-span-2 space-y-4 md:space-y-6">
-            {/* Top row: Notification and Avatar Cards */}
-            <div className="grid grid-cols-2 gap-4">
-              {/* Notification Card */}
-              <div className="rounded-2xl p-2 h-[55px]">
-                <div className="flex items-center justify-start space-x-2 h-full pl-2">
+            {/* Combined Notification and Avatar Card */}
+            <div className="rounded-2xl p-2 h-[55px]">
+              <div className="flex items-center justify-between h-full px-2">
+                {/* Left side: Notifications */}
+                <div className="flex items-center space-x-2">
                   {/* Notification Bell */}
                   <NotificationBell />
                   
@@ -1867,13 +1856,9 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                     <span className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                   </button>
                 </div>
-              </div>
 
-              {/* Avatar Card */}
-              <div className="rounded-2xl p-2 h-[55px]">
-                <div className="flex items-center justify-end h-full">
-                  {/* User Profile */}
-                  <div className="relative" ref={dropdownRef}>
+                {/* Right side: User Profile */}
+                <div className="relative" ref={dropdownRef}>
                   <button 
                     onClick={() => setShowProfileDropdown(!showProfileDropdown)}
                     className="flex items-center space-x-2 hover:bg-gray-50 rounded-lg p-2 transition-colors"
@@ -1975,143 +1960,63 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 </div>
               </div>
             </div>
-            </div>
 
             {/* Calendar */}
             <div className="rounded-2xl p-4 shadow-sm border-2 border-gray-200" style={{ backgroundColor: '#FFFFFF' }}>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-gray-800">Calendar</h3>
+              </div>
+
+              {/* Full Calendar View */}
+              {/* Month Navigation */}
+              <div className="flex items-center justify-between mb-4">
                 <button 
-                  onClick={() => setIsCalendarExpanded(!isCalendarExpanded)}
-                  className="flex items-center space-x-2 text-gray-400 hover:text-gray-600 transition-colors"
+                  onClick={() => navigateMonth('prev')}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  {isCalendarExpanded ? (
-                    <>
-                      <span className="text-sm hidden sm:inline">Collapse</span>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                      </svg>
-                    </>
-                  ) : (
-                    <>
-                      <span className="text-sm hidden sm:inline">Expand</span>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </>
-                  )}
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <h4 className="font-semibold text-gray-800">{getMonthYear()}</h4>
+                <button 
+                  onClick={() => navigateMonth('next')}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
                 </button>
               </div>
 
-              {isCalendarExpanded ? (
-                <>
-                  {/* Full Calendar View */}
-                  {/* Month Navigation */}
-                  <div className="flex items-center justify-between mb-4">
-                    <button 
-                      onClick={() => navigateMonth('prev')}
-                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                      </svg>
-                    </button>
-                    <h4 className="font-semibold text-gray-800">{getMonthYear()}</h4>
-                    <button 
-                      onClick={() => navigateMonth('next')}
-                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
+              {/* Full Calendar Grid */}
+              <div className="grid grid-cols-7 gap-1 mb-4">
+                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
+                  <div key={`day-${index}`} className="text-center text-xs font-medium text-gray-500 py-2">
+                    {day}
                   </div>
-
-                  {/* Full Calendar Grid */}
-                  <div className="grid grid-cols-7 gap-1 mb-4">
-                    {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
-                      <div key={`day-${index}`} className="text-center text-xs font-medium text-gray-500 py-2">
-                        {day}
+                ))}
+                {getCalendarData().map((dayData, index) => (
+                  <div
+                    key={index}
+                    className={`text-center text-sm py-2 relative cursor-pointer transition-colors ${
+                      dayData.isToday
+                        ? 'text-white rounded-lg font-bold'
+                        : dayData.isCurrentMonth
+                        ? 'text-gray-700 hover:bg-gray-100 rounded-lg'
+                        : 'text-gray-300'
+                    }`}
+                    style={dayData.isToday ? { backgroundColor: '#3A5A40' } : {}}
+                  >
+                    {dayData.day}
+                    {dayData.hasEvent && (
+                      <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2">
+                        <div className={`w-1 h-1 rounded-full ${dayData.isToday ? 'bg-white' : 'bg-green-500'}`}></div>
                       </div>
-                    ))}
-                    {getCalendarData().map((dayData, index) => (
-                      <div
-                        key={index}
-                        className={`text-center text-sm py-2 relative cursor-pointer transition-colors ${
-                          dayData.isToday
-                            ? 'bg-black text-white rounded-lg font-bold'
-                            : dayData.isCurrentMonth
-                            ? 'text-gray-700 hover:bg-gray-100 rounded-lg'
-                            : 'text-gray-300'
-                        }`}
-                      >
-                        {dayData.day}
-                        {dayData.hasEvent && (
-                          <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2">
-                            <div className={`w-1 h-1 rounded-full ${dayData.isToday ? 'bg-white' : 'bg-green-500'}`}></div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                    )}
                   </div>
-                </>
-              ) : (
-                <>
-                  {/* Week View */}
-                  <div className="mb-4">
-                    {/* Week Navigation */}
-                    <div className="flex items-center justify-between mb-4">
-                      <button 
-                        onClick={() => navigateWeek('prev')}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                        </svg>
-                      </button>
-                      <h4 className="font-semibold text-gray-800 text-center">
-                        {getWeekRange()}
-                      </h4>
-                      <button 
-                        onClick={() => navigateWeek('next')}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </button>
-                    </div>
-                    
-                    {/* Week Grid */}
-                    <div className="grid grid-cols-7 gap-1">
-                      {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
-                        <div key={`day-${index}`} className="text-center text-xs font-medium text-gray-500 py-2">
-                          {day}
-                        </div>
-                      ))}
-                      {getCurrentWeekData().map((dayData, index) => (
-                        <div
-                          key={index}
-                          className={`text-center text-sm py-3 relative cursor-pointer transition-colors ${
-                            dayData.isToday
-                              ? 'bg-black text-white rounded-lg font-bold'
-                              : dayData.isCurrentMonth
-                              ? 'text-gray-700 hover:bg-gray-100 rounded-lg'
-                              : 'text-gray-400'
-                          }`}
-                        >
-                          {dayData.day}
-                          {dayData.hasEvent && (
-                            <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2">
-                              <div className={`w-1 h-1 rounded-full ${dayData.isToday ? 'bg-white' : 'bg-green-500'}`}></div>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
+                ))}
+              </div>
             </div>
 
             {/* Upcoming Schedule */}
@@ -2142,7 +2047,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             </div>
 
             {/* Recent Activity */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col" style={{ height: '400px' }}>
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col" style={{ height: '450px' }}>
 
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-bold text-gray-800">Recent Activity</h3>
