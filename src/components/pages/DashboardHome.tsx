@@ -2142,7 +2142,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             </div>
 
             {/* Recent Activity */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col" style={{ height: '545px' }}>
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col" style={{ height: '400px' }}>
 
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-bold text-gray-800">Recent Activity</h3>
