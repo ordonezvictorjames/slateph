@@ -358,10 +358,10 @@ export default function CourseManagementPage() {
   }
 
   // Helper function to get button background color
-  const getButtonBg = () => '#3b82f6'
+  const getButtonBg = () => '#588157' // 30% - Primary color (green)
   
   // Helper function to get button hover color (slightly darker)
-  const getButtonHoverBg = () => '#2563eb'
+  const getButtonHoverBg = () => '#3a5a40' // 10% - Accent color (dark green)
 
   // Fetch data functions
   const fetchCourses = async () => {

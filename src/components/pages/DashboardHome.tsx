@@ -497,10 +497,10 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   // Helper function to get button background color
-  const getButtonBg = () => '#3b82f6'
+  const getButtonBg = () => '#588157' // 30% - Primary color (green)
   
   // Helper function to get button hover color (slightly darker)
-  const getButtonHoverBg = () => '#2563eb'
+  const getButtonHoverBg = () => '#3a5a40' // 10% - Accent color (dark green)
 
   // Close dropdown when clicking outside
   useEffect(() => {
