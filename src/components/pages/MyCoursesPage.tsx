@@ -666,7 +666,6 @@ export default function MyCoursesPage() {
                       </span>
                     </div>
                   </div>
-                  )}
                 </div>
               </div>
             </div>
