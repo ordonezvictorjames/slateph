@@ -107,6 +107,12 @@ export default function CourseManagementPage() {
   const [courses, setCourses] = useState<Course[]>([])
   const [subjects, setSubjects] = useState<Subject[]>([])
   const [modules, setModules] = useState<CourseModule[]>([])
+  const [resources, setResources] = useState<any[]>([])
+  const [newResourceTitle, setNewResourceTitle] = useState('')
+  const [newResourceUrl, setNewResourceUrl] = useState('')
+  const [newResourceDescription, setNewResourceDescription] = useState('')
+  const [uploadingResource, setUploadingResource] = useState(false)
+  const [editingResourceId, setEditingResourceId] = useState<string | null>(null)
   
   // Early return if user doesn't have permission
   if (!hasPermission) {
@@ -445,6 +451,149 @@ export default function CourseManagementPage() {
     }
   }
 
+  const fetchResources = async (subjectId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('subject_resources')
+        .select('*')
+        .eq('subject_id', subjectId)
+        .order('order_index', { ascending: true })
+
+      if (error) {
+        console.error('Error fetching resources:', error)
+        return
+      }
+
+      setResources(data || [])
+    } catch (error) {
+      console.error('Error fetching resources:', error)
+    }
+  }
+
+  const handleAddResource = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedSubject || !newResourceTitle.trim() || !newResourceUrl.trim()) return
+
+    try {
+      setUploadingResource(true)
+      
+      console.log('Attempting to insert resource:', {
+        subject_id: selectedSubject.id,
+        title: newResourceTitle.trim(),
+        resource_url: newResourceUrl.trim(),
+        user_id: user?.id
+      })
+      
+      const { data, error } = await supabase
+        .from('subject_resources')
+        .insert({
+          subject_id: selectedSubject.id,
+          title: newResourceTitle.trim(),
+          resource_url: newResourceUrl.trim(),
+          description: newResourceDescription.trim() || null,
+          resource_type: 'link',
+          order_index: resources.length + 1,
+          status: 'active',
+          created_by: user?.id
+        })
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Supabase error:', error)
+        console.error('Error message:', error.message)
+        console.error('Error code:', error.code)
+        console.error('Error details:', error.details)
+        console.error('Error hint:', error.hint)
+        throw new Error(error.message || 'Failed to insert resource')
+      }
+
+      console.log('Resource added successfully:', data)
+      setResources([...resources, data])
+      setNewResourceTitle('')
+      setNewResourceUrl('')
+      setNewResourceDescription('')
+      alert('Resource added successfully!')
+      
+    } catch (error: any) {
+      console.error('Caught error:', error)
+      console.error('Error type:', typeof error)
+      console.error('Error keys:', Object.keys(error))
+      const errorMessage = error?.message || 'Unknown error - check console for details'
+      alert('Failed to add resource: ' + errorMessage + '\n\nCheck browser console (F12) for more details')
+    } finally {
+      setUploadingResource(false)
+    }
+  }
+
+  const handleDeleteResource = async (resourceId: string) => {
+    if (!confirm('Are you sure you want to delete this resource?')) return
+
+    try {
+      const { error } = await supabase
+        .from('subject_resources')
+        .delete()
+        .eq('id', resourceId)
+
+      if (error) throw error
+
+      setResources(resources.filter(r => r.id !== resourceId))
+    } catch (error: any) {
+      console.error('Error deleting resource:', error)
+      alert('Failed to delete resource: ' + error.message)
+    }
+  }
+
+  const handleEditResource = (resource: any) => {
+    setEditingResourceId(resource.id)
+    setNewResourceTitle(resource.title)
+    setNewResourceUrl(resource.resource_url)
+    setNewResourceDescription(resource.description || '')
+  }
+
+  const handleUpdateResource = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingResourceId || !newResourceTitle.trim() || !newResourceUrl.trim()) return
+
+    try {
+      setUploadingResource(true)
+      
+      const { data, error } = await supabase
+        .from('subject_resources')
+        .update({
+          title: newResourceTitle.trim(),
+          resource_url: newResourceUrl.trim(),
+          description: newResourceDescription.trim() || null,
+          updated_by: user?.id
+        })
+        .eq('id', editingResourceId)
+        .select()
+        .single()
+
+      if (error) throw new Error(error.message || 'Failed to update resource')
+
+      setResources(resources.map(r => r.id === editingResourceId ? data : r))
+      setNewResourceTitle('')
+      setNewResourceUrl('')
+      setNewResourceDescription('')
+      setEditingResourceId(null)
+      alert('Resource updated successfully!')
+      
+    } catch (error: any) {
+      console.error('Error updating resource:', error)
+      alert('Failed to update resource: ' + error.message)
+    } finally {
+      setUploadingResource(false)
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setEditingResourceId(null)
+    setNewResourceTitle('')
+    setNewResourceUrl('')
+    setNewResourceDescription('')
+  }
+
   const fetchtrainees = async () => {
     try {
       const { data, error } = await supabase
@@ -643,6 +792,7 @@ export default function CourseManagementPage() {
     setSelectedSubject(subject)
     setCurrentView('modules')
     fetchModules(subject.id)
+    fetchResources(subject.id)
   }
 
   const handleBackToCourses = () => {
@@ -2287,28 +2437,79 @@ export default function CourseManagementPage() {
                   className="w-full h-full object-contain opacity-90"
                 />
               </div>
-
-              {/* Add Subject Button */}
-              <button 
-                onClick={() => setShowAddSubjectModal(true)}
-                className="z-10 px-6 py-3 text-white rounded-lg transition-colors flex items-center space-x-2"
-                style={{ backgroundColor: getButtonBg() }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                <span>Add Subject</span>
-              </button>
             </div>
           </div>
 
-          {/* Grid Layout: Subject Cards + New Container */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Subject Cards Container */}
-            <div className="lg:col-span-2">
-              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+          {/* Subject Cards Container - Full Width */}
+          <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+                {/* Statistics and Add Button - At the top */}
+                <div className="p-6 border-b border-gray-200 bg-gray-50">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Course Statistics</h3>
+                    <button
+                      onClick={() => setShowAddSubjectModal(true)}
+                      className="px-4 py-2 text-white rounded-lg transition-colors flex items-center gap-2"
+                      style={{ backgroundColor: getButtonBg() }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                      <span>Add Subject</span>
+                    </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                        <span className="text-xs text-gray-600">Total</span>
+                      </div>
+                      <span className="text-xl font-bold text-gray-900">{subjects.length}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-green-200">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-xs text-gray-600">Active</span>
+                      </div>
+                      <span className="text-xl font-bold text-green-700">
+                        {subjects.filter(s => s.status === 'active').length}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-yellow-200">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-xs text-gray-600">Draft</span>
+                      </div>
+                      <span className="text-xl font-bold text-yellow-700">
+                        {subjects.filter(s => s.status === 'draft').length}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-red-200">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-xs text-gray-600">Inactive</span>
+                      </div>
+                      <span className="text-xl font-bold text-red-700">
+                        {subjects.filter(s => s.status === 'inactive').length}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Subject Cards */}
                 <div className="p-6">
                   {subjects.length === 0 ? (
                     <div className="text-center py-12">
@@ -2421,105 +2622,6 @@ export default function CourseManagementPage() {
                   )}
                 </div>
               </div>
-            </div>
-
-            {/* New Container Beside Subject Cards */}
-            <div className="lg:col-span-1">
-              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden h-full">
-                <div className="p-6">
-                  {/* Quick Actions */}
-                  <div className="mb-6">
-                    <div className="space-y-2">
-                      <button
-                        onClick={() => setShowAddSubjectModal(true)}
-                        className="w-full px-4 py-2 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
-                        style={{ backgroundColor: getButtonBg() }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                        <span>Add Subject</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Stats */}
-                  <div className="space-y-4 pt-6 border-t border-gray-200">
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                        </svg>
-                        <span className="text-sm text-gray-600">Total Subjects</span>
-                      </div>
-                      <span className="text-xl font-bold text-gray-900">{subjects.length}</span>
-                    </div>
-
-                    <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span className="text-sm text-gray-600">Active</span>
-                      </div>
-                      <span className="text-xl font-bold text-green-700">
-                        {subjects.filter(s => s.status === 'active').length}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span className="text-sm text-gray-600">Draft</span>
-                      </div>
-                      <span className="text-xl font-bold text-yellow-700">
-                        {subjects.filter(s => s.status === 'draft').length}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span className="text-sm text-gray-600">Inactive</span>
-                      </div>
-                      <span className="text-xl font-bold text-red-700">
-                        {subjects.filter(s => s.status === 'inactive').length}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Resources Title */}
-                  <div className="mt-6 pt-6 border-t border-gray-200">
-                    <h4 className="text-sm font-semibold text-gray-900 mb-3">Resources</h4>
-                    <div className="space-y-2">
-                      <input
-                        type="url"
-                        placeholder="Enter resource link..."
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
-                      />
-                      <button
-                        className="w-full px-4 py-2 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
-                        style={{ backgroundColor: getButtonBg() }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                        </svg>
-                        <span>Upload Resource</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       )}
 
@@ -2549,30 +2651,79 @@ export default function CourseManagementPage() {
             </div>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <h2 className="text-lg font-semibold text-black">Modules in {selectedSubject.title}</h2>
-                <span className="px-2 py-1 bg-gray-200 text-gray-800 text-xs font-medium rounded-full">
-                  {modules.length} module{modules.length !== 1 ? 's' : ''}
-                </span>
-              </div>
-              <button 
-                onClick={() => setShowAddModuleModal(true)}
-                className="px-4 py-2 text-white rounded-lg transition-colors flex items-center space-x-2"
-                style={{ backgroundColor: getButtonBg() }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                <span>Add Module</span>
-              </button>
-            </div>
-          </div>
+          {/* Grid Layout: Module Cards + Sidebar */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Module Cards Container */}
+            <div className="lg:col-span-2">
+              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+                {/* Statistics and Add Button - At the top */}
+                <div className="p-6 border-b border-gray-200 bg-gray-50">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Module Statistics</h3>
+                    <button
+                      onClick={() => setShowAddModuleModal(true)}
+                      className="px-4 py-2 text-white rounded-lg transition-colors flex items-center gap-2"
+                      style={{ backgroundColor: getButtonBg() }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                      <span>Add Module</span>
+                    </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span className="text-xs text-gray-600">Total</span>
+                      </div>
+                      <span className="text-xl font-bold text-gray-900">{modules.length}</span>
+                    </div>
 
+                    <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-green-200">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-xs text-gray-600">Active</span>
+                      </div>
+                      <span className="text-xl font-bold text-green-700">
+                        {modules.filter(m => 'status' in m && m.status === 'active').length}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-yellow-200">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-xs text-gray-600">Draft</span>
+                      </div>
+                      <span className="text-xl font-bold text-yellow-700">
+                        {modules.filter(m => 'status' in m && m.status === 'draft').length}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-red-200">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-xs text-gray-600">Inactive</span>
+                      </div>
+                      <span className="text-xl font-bold text-red-700">
+                        {modules.filter(m => 'status' in m && m.status === 'inactive').length}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Module Cards */}
           <div className="p-4 sm:p-6">
             {modules.length === 0 ? (
               <div className="text-center py-12">
@@ -2594,7 +2745,7 @@ export default function CourseManagementPage() {
                 </button>
               </div>
             ) : (
-              <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 gap-6">
                 {modules.map((module, index) => (
                   <div
                     key={module.id}
@@ -2727,6 +2878,143 @@ export default function CourseManagementPage() {
               </div>
             )}
           </div>
+          </div>
+            </div>
+
+            {/* Sidebar Container */}
+            <div className="lg:col-span-1">
+              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden h-full">
+                <div className="p-6">
+                  {/* Resources Section */}
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-900 mb-3">Resources</h4>
+                    
+                    {/* Resources List - Show first */}
+                    <div className="space-y-2 mb-4">
+                      {resources.length === 0 ? (
+                        <p className="text-xs text-gray-500 italic">No resources added yet</p>
+                      ) : (
+                        resources.map((resource) => (
+                          <div
+                            key={resource.id}
+                            className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg group"
+                          >
+                            <a
+                              href={resource.resource_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 flex-1 min-w-0"
+                            >
+                              <svg className="w-4 h-4 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                              </svg>
+                              <div className="flex-1 min-w-0">
+                                <span className="text-sm text-blue-700 font-medium block truncate">{resource.title}</span>
+                                {resource.description && (
+                                  <span className="text-xs text-blue-600 block truncate">{resource.description}</span>
+                                )}
+                              </div>
+                              <svg className="w-3.5 h-3.5 text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              </svg>
+                            </a>
+                            <button
+                              onClick={() => handleEditResource(resource)}
+                              className="p-1.5 text-gray-600 hover:bg-gray-100 rounded transition-colors flex-shrink-0"
+                              title="Edit resource"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => handleDeleteResource(resource.id)}
+                              className="p-1.5 text-red-600 hover:bg-red-100 rounded transition-colors flex-shrink-0"
+                              title="Delete resource"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    {/* Add/Edit Resource Form - Show below resources */}
+                    <form onSubmit={editingResourceId ? handleUpdateResource : handleAddResource} className="space-y-3">
+                      <div className="text-xs font-semibold text-gray-700 mb-2">
+                        {editingResourceId ? 'Edit Resource' : 'Add New Resource'}
+                      </div>
+                      <div>
+                        <input
+                          type="text"
+                          placeholder="Resource title"
+                          value={newResourceTitle}
+                          onChange={(e) => setNewResourceTitle(e.target.value)}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <input
+                          type="url"
+                          placeholder="Resource URL"
+                          value={newResourceUrl}
+                          onChange={(e) => setNewResourceUrl(e.target.value)}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <input
+                          type="text"
+                          placeholder="Description (optional)"
+                          value={newResourceDescription}
+                          onChange={(e) => setNewResourceDescription(e.target.value)}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        {editingResourceId && (
+                          <button
+                            type="button"
+                            onClick={handleCancelEdit}
+                            className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg transition-colors hover:bg-gray-300"
+                          >
+                            Cancel
+                          </button>
+                        )}
+                        <button
+                          type="submit"
+                          disabled={uploadingResource}
+                          className="flex-1 px-4 py-2 text-white rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                          style={{ backgroundColor: getButtonBg() }}
+                          onMouseEnter={(e) => !uploadingResource && (e.currentTarget.style.backgroundColor = getButtonHoverBg())}
+                          onMouseLeave={(e) => !uploadingResource && (e.currentTarget.style.backgroundColor = getButtonBg())}
+                        >
+                          {editingResourceId ? (
+                            <>
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                              <span>{uploadingResource ? 'Updating...' : 'Update Resource'}</span>
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                              </svg>
+                              <span>{uploadingResource ? 'Adding...' : 'Add Resource'}</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

@@ -171,28 +171,6 @@ export default function MyCoursesPage() {
     }
   }
 
-  const fetchResources = async (courseId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('subject_resources')
-        .select(`
-          *,
-          subject:subjects!inner(course_id)
-        `)
-        .eq('subject.course_id', courseId)
-        .eq('status', 'active')
-        .order('order_index', { ascending: true })
-
-      if (error) {
-        console.error('Error fetching resources:', error)
-        return
-      }
-
-      setResources(data || [])
-    } catch (error) {
-      console.error('Error fetching resources:', error)
-    }
-  }
 
   const fetchModules = async (subjectId: string) => {
     try {
@@ -222,13 +200,33 @@ export default function MyCoursesPage() {
     setSelectedCourse(course)
     setCurrentView('subjects')
     await fetchSubjects(course.id)
-    await fetchResources(course.id)
   }
 
   const handleSubjectSelect = async (subject: Subject) => {
     setSelectedSubject(subject)
     setCurrentView('modules')
     await fetchModules(subject.id)
+    await fetchResourcesBySubject(subject.id)
+  }
+
+  const fetchResourcesBySubject = async (subjectId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('subject_resources')
+        .select('*')
+        .eq('subject_id', subjectId)
+        .eq('status', 'active')
+        .order('order_index', { ascending: true })
+
+      if (error) {
+        console.error('Error fetching resources:', error)
+        return
+      }
+
+      setResources(data || [])
+    } catch (error) {
+      console.error('Error fetching resources:', error)
+    }
   }
 
   const handleBackToCourses = () => {
@@ -513,10 +511,10 @@ export default function MyCoursesPage() {
       {/* Subjects View */}
       {currentView === 'subjects' && selectedCourse && (
         <div className="space-y-6">
-          {/* Grid Layout: Subject Cards + Sidebar */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Grid Layout: Subject Cards + Sidebar (only show sidebar for admin/developer/instructor) */}
+          <div className={`grid grid-cols-1 ${user?.profile?.role !== 'trainee' && user?.profile?.role !== 'tesda_scholar' ? 'lg:grid-cols-3' : ''} gap-6`}>
             {/* Subject Cards Container */}
-            <div className="lg:col-span-2">
+            <div className={user?.profile?.role !== 'trainee' && user?.profile?.role !== 'tesda_scholar' ? 'lg:col-span-2' : ''}>
               <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
                 <div className="px-6 py-4 border-b border-gray-100">
                   <div className="flex items-center justify-between">
@@ -615,11 +613,13 @@ export default function MyCoursesPage() {
               </div>
             </div>
 
-            {/* Sidebar Container */}
+            {/* Sidebar Container - Only show for admin/developer/instructor */}
+            {user?.profile?.role !== 'trainee' && user?.profile?.role !== 'tesda_scholar' && (
             <div className="lg:col-span-1">
               <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden h-full">
                 <div className="p-6">
-                  {/* Stats */}
+                  {/* Stats - Only show for admin, developer, instructor */}
+                  {user?.profile?.role !== 'trainee' && user?.profile?.role !== 'tesda_scholar' && (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center gap-2">
@@ -667,77 +667,56 @@ export default function MyCoursesPage() {
                       </span>
                     </div>
                   </div>
-
-                  {/* Resources Section */}
-                  <div className="mt-6 pt-6 border-t border-gray-200">
-                    <h4 className="text-sm font-semibold text-gray-900 mb-3">Resources</h4>
-                    <div className="space-y-2">
-                      {resources.length === 0 ? (
-                        <p className="text-xs text-gray-500 italic">No resources available for this course</p>
-                      ) : (
-                        resources.map((resource) => (
-                          <a
-                            key={resource.id}
-                            href={resource.resource_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-2 p-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors group"
-                          >
-                            <svg className="w-4 h-4 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                            </svg>
-                            <span className="text-sm text-blue-700 font-medium flex-1 truncate">{resource.title}</span>
-                            <svg className="w-3.5 h-3.5 text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                            </svg>
-                          </a>
-                        ))
-                      )}
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
+            )}
           </div>
         </div>
       )}
 
       {/* Modules View */}
       {currentView === 'modules' && selectedSubject && (
-        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={handleBackToSubjects}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  title="Back to subjects"
-                >
-                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-                <h2 className="text-lg font-semibold text-black">Modules in {selectedSubject.title}</h2>
-                <span className="px-2 py-1 bg-blue-100 text-blue-600 text-xs font-medium rounded-full">
-                  {modules.length} module{modules.length !== 1 ? 's' : ''}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="p-6">
-            {modules.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                  <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
+        <div className="space-y-6">
+          {/* Grid Layout: Module Cards + Sidebar */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Module Cards Container */}
+            <div className="lg:col-span-2">
+              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={handleBackToSubjects}
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        title="Back to subjects"
+                      >
+                        <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                      </button>
+                      <h2 className="text-lg font-semibold text-black">Modules in {selectedSubject.title}</h2>
+                      <span className="px-2 py-1 bg-blue-100 text-blue-600 text-xs font-medium rounded-full">
+                        {modules.length} module{modules.length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <h3 className="text-lg font-medium text-black mb-2">No modules yet</h3>
-                <p className="text-gray-500">This subject doesn't have any modules yet</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+                <div className="p-6">
+                  {modules.length === 0 ? (
+                    <div className="text-center py-12">
+                      <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                        <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <h3 className="text-lg font-medium text-black mb-2">No modules yet</h3>
+                      <p className="text-gray-500">This subject doesn't have any modules yet</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {modules.map((module, index) => (
                   <div
                     key={module.id}
@@ -848,6 +827,95 @@ export default function MyCoursesPage() {
                 ))}
               </div>
             )}
+                </div>
+              </div>
+            </div>
+
+            {/* Sidebar Container */}
+            <div className="lg:col-span-1">
+              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden h-full">
+                <div className="p-6">
+                  {/* Stats - Only show for admin, developer, instructor */}
+                  {user?.profile?.role !== 'trainee' && user?.profile?.role !== 'tesda_scholar' && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span className="text-sm text-gray-600">Total Modules</span>
+                      </div>
+                      <span className="text-xl font-bold text-gray-900">{modules.length}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-sm text-gray-600">Active</span>
+                      </div>
+                      <span className="text-xl font-bold text-green-700">
+                        {modules.filter(m => m.status === 'active').length}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-sm text-gray-600">Draft</span>
+                      </div>
+                      <span className="text-xl font-bold text-yellow-700">
+                        {modules.filter(m => m.status === 'draft').length}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-sm text-gray-600">Inactive</span>
+                      </div>
+                      <span className="text-xl font-bold text-red-700">
+                        {modules.filter(m => m.status === 'inactive').length}
+                      </span>
+                    </div>
+                  </div>
+                  )}
+
+                  {/* Resources Section */}
+                  <div className={user?.profile?.role !== 'trainee' && user?.profile?.role !== 'tesda_scholar' ? "mt-6 pt-6 border-t border-gray-200" : ""}>
+                    <h4 className="text-sm font-semibold text-gray-900 mb-3">Resources</h4>
+                    <div className="space-y-2">
+                      {resources.length === 0 ? (
+                        <p className="text-xs text-gray-500 italic">No resources available for this subject</p>
+                      ) : (
+                        resources.map((resource) => (
+                          <a
+                            key={resource.id}
+                            href={resource.resource_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 p-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors group"
+                          >
+                            <svg className="w-4 h-4 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                            </svg>
+                            <span className="text-sm text-blue-700 font-medium flex-1 truncate">{resource.title}</span>
+                            <svg className="w-3.5 h-3.5 text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                          </a>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
