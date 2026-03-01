@@ -144,14 +144,25 @@ export default function MyCoursesPage() {
 
   const fetchSubjects = async (courseId: string) => {
     try {
-      const { data, error } = await supabase
+      const userRole = user?.profile?.role || 'trainee'
+      
+      // Build query
+      let query = supabase
         .from('subjects')
         .select(`
           *,
           trainee:profiles(first_name, last_name)
         `)
         .eq('course_id', courseId)
-        .order('order_index', { ascending: true })
+      
+      // Filter by status based on user role
+      // Trainee and scholar can only see active subjects
+      if (userRole === 'trainee' || userRole === 'tesda_scholar') {
+        query = query.eq('status', 'active')
+      }
+      // Admin, developer, and instructor can see all subjects
+      
+      const { data, error } = await query.order('order_index', { ascending: true })
 
       if (error) {
         console.error('Error fetching subjects:', error)
