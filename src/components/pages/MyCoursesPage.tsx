@@ -512,9 +512,9 @@ export default function MyCoursesPage() {
       {currentView === 'subjects' && selectedCourse && (
         <div className="space-y-6">
           {/* Grid Layout: Subject Cards + Sidebar (only show sidebar for admin/developer/instructor) */}
-          <div className={`grid grid-cols-1 ${user?.profile?.role !== 'trainee' && user?.profile?.role !== 'tesda_scholar' ? 'lg:grid-cols-3' : ''} gap-6`}>
+          <div className={`grid grid-cols-1 ${user?.profile?.role && !['trainee', 'tesda_scholar'].includes(user.profile.role) ? 'lg:grid-cols-3' : ''} gap-6`}>
             {/* Subject Cards Container */}
-            <div className={user?.profile?.role !== 'trainee' && user?.profile?.role !== 'tesda_scholar' ? 'lg:col-span-2' : ''}>
+            <div className={user?.profile?.role && !['trainee', 'tesda_scholar'].includes(user.profile.role) ? 'lg:col-span-2' : ''}>
               <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
                 <div className="px-6 py-4 border-b border-gray-100">
                   <div className="flex items-center justify-between">
@@ -614,12 +614,11 @@ export default function MyCoursesPage() {
             </div>
 
             {/* Sidebar Container - Only show for admin/developer/instructor */}
-            {user?.profile?.role !== 'trainee' && user?.profile?.role !== 'tesda_scholar' && (
+            {user?.profile?.role && !['trainee', 'tesda_scholar'].includes(user.profile.role) && (
             <div className="lg:col-span-1">
               <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden h-full">
                 <div className="p-6">
                   {/* Stats - Only show for admin, developer, instructor */}
-                  {user?.profile?.role !== 'trainee' && user?.profile?.role !== 'tesda_scholar' && (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center gap-2">
@@ -836,7 +835,7 @@ export default function MyCoursesPage() {
               <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden h-full">
                 <div className="p-6">
                   {/* Stats - Only show for admin, developer, instructor */}
-                  {user?.profile?.role !== 'trainee' && user?.profile?.role !== 'tesda_scholar' && (
+                  {user?.profile?.role && !['trainee', 'tesda_scholar'].includes(user.profile.role) && (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center gap-2">
@@ -887,7 +886,7 @@ export default function MyCoursesPage() {
                   )}
 
                   {/* Resources Section */}
-                  <div className={user?.profile?.role !== 'trainee' && user?.profile?.role !== 'tesda_scholar' ? "mt-6 pt-6 border-t border-gray-200" : ""}>
+                  <div className={user?.profile?.role && !['trainee', 'tesda_scholar'].includes(user.profile.role) ? "mt-6 pt-6 border-t border-gray-200" : ""}>
                     <h4 className="text-sm font-semibold text-gray-900 mb-3">Resources</h4>
                     <div className="space-y-2">
                       {resources.length === 0 ? (
