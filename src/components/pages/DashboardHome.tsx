@@ -466,6 +466,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
     totalTests: 0
   })
   const [loading, setLoading] = useState(true)
+  const hasFetchedRef = useRef(false)
   const [currentDate, setCurrentDate] = useState(new Date())
   const [currentTime, setCurrentTime] = useState(new Date())
   const [showProfileDropdown, setShowProfileDropdown] = useState(false)
@@ -680,6 +681,9 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
   }
 
   useEffect(() => {
+    if (hasFetchedRef.current) return
+    hasFetchedRef.current = true
+    
     fetchDashboardData()
 
     // Set up real-time subscriptions for courses
@@ -1070,16 +1074,6 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
       badges.push({ text: 'TESDA Scholars', color: 'bg-purple-100 text-purple-800' })
     }
     return badges
-  }
-
-  if (loading) {
-    return (
-      <div className="p-8">
-        <div className="flex items-center justify-center h-64">
-          <Loading size="lg" />
-        </div>
-      </div>
-    )
   }
 
   const userRole = user?.profile?.role || 'trainee'

@@ -19,12 +19,14 @@ interface UsedCode {
 }
 
 export default function CodeGeneratorPage() {
-  const [generatedCodes, setGeneratedCodes] = useState<string[]>([])
+  const [generatedCode, setGeneratedCode] = useState<string>('')
+  const [showModal, setShowModal] = useState(false)
   const [generating, setGenerating] = useState(false)
-  const [quantity, setQuantity] = useState(1)
   const [usedCodes, setUsedCodes] = useState<UsedCode[]>([])
+  const [filteredCodes, setFilteredCodes] = useState<UsedCode[]>([])
   const [loadingUsedCodes, setLoadingUsedCodes] = useState(true)
-  const [showUsedCodes, setShowUsedCodes] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filterRole, setFilterRole] = useState<string>('all')
   const { user } = useAuth()
   const { showSuccess, showError } = useToast()
   const supabase = createClient()
@@ -32,6 +34,10 @@ export default function CodeGeneratorPage() {
   useEffect(() => {
     fetchUsedCodes()
   }, [])
+
+  useEffect(() => {
+    filterCodes()
+  }, [searchQuery, filterRole, usedCodes])
 
   const fetchUsedCodes = async () => {
     try {
@@ -78,382 +84,254 @@ export default function CodeGeneratorPage() {
     }
   }
 
-  const generateCodes = async () => {
+  const filterCodes = () => {
+    let filtered = [...usedCodes]
+
+    // Filter by search query
+    if (searchQuery) {
+      filtered = filtered.filter(code => 
+        code.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        code.user_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        code.user_email.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    }
+
+    // Filter by role
+    if (filterRole !== 'all') {
+      filtered = filtered.filter(code => code.user_role === filterRole)
+    }
+
+    setFilteredCodes(filtered)
+  }
+
+  const generateCode = async () => {
     if (!user?.id) {
       showError('Error', 'You must be logged in to generate codes')
       return
     }
 
     setGenerating(true)
-    const newCodes: string[] = []
     
     try {
-      // Generate multiple codes
-      for (let i = 0; i < quantity; i++) {
-        const { data, error } = await supabase.rpc('generate_registration_code', {
-          p_created_by: user.id
-        }) as { data: any, error: any }
+      const { data, error } = await supabase.rpc('generate_registration_code', {
+        p_created_by: user.id
+      }) as { data: any, error: any }
 
-        if (error) {
-          console.error('Error generating code:', error)
-          showError('Error', `Failed to generate code ${i + 1}`)
-          continue
-        }
-
-        if (data && data.success) {
-          newCodes.push(data.code)
-        }
+      if (error) {
+        console.error('Error generating code:', error)
+        showError('Error', 'Failed to generate code')
+        setGenerating(false)
+        return
       }
 
-      if (newCodes.length > 0) {
-        setGeneratedCodes(newCodes)
-        showSuccess('Codes Generated!', `Successfully generated ${newCodes.length} registration code(s)`)
-        // Refresh used codes list in case any were just used
+      if (data && data.success) {
+        setGeneratedCode(data.code)
+        setShowModal(true)
+        showSuccess('Code Generated!', 'Registration code created successfully')
         fetchUsedCodes()
       } else {
-        showError('Error', 'Failed to generate any codes')
+        showError('Error', 'Failed to generate code')
       }
       
       setGenerating(false)
     } catch (err) {
-      console.error('Error generating codes:', err)
-      showError('Error', 'Failed to generate codes')
+      console.error('Error generating code:', err)
+      showError('Error', 'Failed to generate code')
       setGenerating(false)
     }
   }
 
-  const copyToClipboard = () => {
-    if (generatedCodes.length > 0) {
-      const codesText = generatedCodes.join('\n')
-      navigator.clipboard.writeText(codesText)
-      showSuccess('Copied!', `${generatedCodes.length} code(s) copied to clipboard`)
-    }
-  }
-
-  const copyAllFormatted = () => {
-    if (generatedCodes.length > 0) {
-      const formatted = generatedCodes.map((code, i) => `${i + 1}. ${code}`).join('\n')
-      navigator.clipboard.writeText(formatted)
-      showSuccess('Copied!', 'Formatted codes copied to clipboard')
-    }
+  const copyToClipboard = (code: string) => {
+    navigator.clipboard.writeText(code)
+    showSuccess('Copied!', 'Code copied to clipboard')
   }
 
   return (
     <div className="space-y-6">
+      {/* Modal for Generated Code */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+                <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Code Generated Successfully!</h3>
+              <p className="text-sm text-gray-600 mb-6">Share this code with the new user for registration</p>
+              
+              <div className="bg-gray-50 border-2 border-gray-300 rounded-lg p-6 mb-6">
+                <p className="text-4xl font-bold font-mono text-gray-900 tracking-wider">{generatedCode}</p>
+              </div>
+
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => copyToClipboard(generatedCode)}
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  Copy Code
+                </Button>
+                <Button
+                  onClick={() => setShowModal(false)}
+                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-white rounded-lg shadow-sm p-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Registration Code Generator</h2>
         <p className="text-gray-600">
-          Generate unique 6-character codes for new user registrations. These codes are required during the sign-up process.
+          Generate unique 6-character codes for new user registrations.
         </p>
       </div>
 
-      {/* Code Generator Card */}
-      <div className="bg-white rounded-lg shadow-sm p-8">
-        <div className="max-w-3xl mx-auto space-y-6">
-          
-          {/* Quantity Selector */}
-          <div className="flex items-center justify-center gap-4 mb-6">
-            <label className="text-sm font-semibold text-gray-700">Number of codes:</label>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                className="w-10 h-10 flex items-center justify-center border-2 border-black rounded-lg hover:bg-gray-100 transition-colors"
-                disabled={generating}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+      {/* Used Codes Table */}
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+        {/* Filter Bar and Generate Button */}
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex flex-col sm:flex-row gap-3 flex-1">
+              {/* Search Input */}
+              <div className="relative flex-1">
+                <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
-              </button>
-              <input
-                type="number"
-                min="1"
-                max="50"
-                value={quantity}
-                onChange={(e) => setQuantity(Math.min(50, Math.max(1, parseInt(e.target.value) || 1)))}
-                className="w-20 h-10 text-center border-2 border-black rounded-lg font-semibold text-lg focus:outline-none focus:ring-2 focus:ring-black"
-                disabled={generating}
-              />
-              <button
-                onClick={() => setQuantity(Math.min(50, quantity + 1))}
-                className="w-10 h-10 flex items-center justify-center border-2 border-black rounded-lg hover:bg-gray-100 transition-colors"
-                disabled={generating}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-              </button>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setQuantity(10)}
-                className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-100 transition-colors"
-                disabled={generating}
-              >
-                10
-              </button>
-              <button
-                onClick={() => setQuantity(25)}
-                className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-100 transition-colors"
-                disabled={generating}
-              >
-                25
-              </button>
-            </div>
-          </div>
-
-          {/* Generated Codes Display */}
-          {generatedCodes.length > 0 && (
-            <div className="bg-gray-50 border-2 border-black rounded-xl p-6 mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <p className="text-sm text-gray-600 uppercase tracking-wide font-semibold">
-                  Generated Codes ({generatedCodes.length})
-                </p>
-                <div className="flex gap-2">
-                  <Button
-                    onClick={copyToClipboard}
-                    className="bg-gray-800 hover:bg-gray-900 text-white text-xs px-3 py-1 h-auto"
-                  >
-                    <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
-                    Copy All
-                  </Button>
-                  <Button
-                    onClick={copyAllFormatted}
-                    className="bg-black hover:bg-gray-800 text-white text-xs px-3 py-1 h-auto"
-                  >
-                    <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Copy Formatted
-                  </Button>
-                </div>
+                <input
+                  type="text"
+                  placeholder="Search by code, name, or email..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 max-h-96 overflow-y-auto">
-                {generatedCodes.map((code, index) => (
-                  <div
-                    key={index}
-                    className="bg-white border-2 border-black rounded-lg p-3 text-center"
-                  >
-                    <div className="text-xs text-gray-500 mb-1">#{index + 1}</div>
-                    <div className="text-lg font-bold font-mono">{code}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
-          {/* Generate Button */}
-          <div className="text-center">
+              {/* Role Filter */}
+              <select
+                value={filterRole}
+                onChange={(e) => setFilterRole(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">All Roles</option>
+                <option value="trainee">Trainee</option>
+                <option value="instructor">Instructor</option>
+                <option value="admin">Admin</option>
+                <option value="developer">Developer</option>
+              </select>
+            </div>
+
+            {/* Generate Button */}
             <Button
-              onClick={generateCodes}
+              onClick={generateCode}
               disabled={generating}
-              className="bg-black hover:bg-gray-800 text-white px-12 py-6 text-lg rounded-full"
+              className="bg-black hover:bg-gray-800 text-white px-6 py-2"
             >
               {generating ? (
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <ButtonLoading />
-                  <span>Generating {quantity} code(s)...</span>
+                  <span>Generating...</span>
                 </div>
               ) : (
-                <div className="flex items-center gap-3">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex items-center gap-2">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
-                  <span>Generate {quantity} Code{quantity > 1 ? 's' : ''}</span>
+                  <span>Generate Code</span>
                 </div>
               )}
             </Button>
           </div>
-
-          {/* Instructions */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-left">
-            <h3 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              How to use registration codes
-            </h3>
-            <ul className="space-y-2 text-sm text-blue-800">
-              <li className="flex items-start gap-2">
-                <span className="text-blue-600 mt-0.5">1.</span>
-                <span>Click "Generate New Code" to create a unique 6-character registration code</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-blue-600 mt-0.5">2.</span>
-                <span>Share the code with the new user who wants to register</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-blue-600 mt-0.5">3.</span>
-                <span>The user will enter this code during the sign-up process</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-blue-600 mt-0.5">4.</span>
-                <span>Each code can be used once to create a new account</span>
-              </li>
-            </ul>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-4 pt-6">
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-2xl font-bold text-gray-900">6</p>
-              <p className="text-xs text-gray-600 uppercase tracking-wide">Characters</p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-2xl font-bold text-gray-900">A-Z, 0-9</p>
-              <p className="text-xs text-gray-600 uppercase tracking-wide">Format</p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-2xl font-bold text-gray-900">Unique</p>
-              <p className="text-xs text-gray-600 uppercase tracking-wide">Each Code</p>
-            </div>
-          </div>
         </div>
-      </div>
 
-      {/* Used Codes Section */}
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-        <button
-          onClick={() => setShowUsedCodes(!showUsedCodes)}
-          className="w-full p-6 flex items-center justify-between hover:bg-gray-50 transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <div className="text-left">
-              <h3 className="text-lg font-bold text-gray-900">Used Registration Codes</h3>
-              <p className="text-sm text-gray-600">View codes that have been used for registration</p>
+        {/* Table Content */}
+        <div className="overflow-x-auto">
+          {loadingUsedCodes ? (
+            <div className="p-12 text-center">
+              <Loading size="lg" />
+              <p className="mt-4 text-gray-600">Loading used codes...</p>
             </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-semibold">
-              {usedCodes.length} used
-            </span>
-            <svg 
-              className={`w-5 h-5 text-gray-400 transition-transform ${showUsedCodes ? 'rotate-180' : ''}`} 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </div>
-        </button>
-
-        {showUsedCodes && (
-          <div className="border-t border-gray-200">
-            {loadingUsedCodes ? (
-              <div className="p-8 text-center">
-                <Loading size="md" />
-                <p className="mt-4 text-gray-600">Loading used codes...</p>
-              </div>
-            ) : usedCodes.length === 0 ? (
-              <div className="p-8 text-center">
-                <svg className="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                </svg>
-                <p className="text-gray-600 font-medium">No codes have been used yet</p>
-                <p className="text-sm text-gray-500 mt-1">Used codes will appear here once users register</p>
-              </div>
-            ) : (
-              <>
-                {/* Desktop Table View */}
-                <div className="hidden lg:block overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-200">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Code</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">User Name</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Email</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Role</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Used At</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {usedCodes.map((codeData) => (
-                        <tr key={codeData.id} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="font-mono font-bold text-lg">{codeData.code}</span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
-                                {codeData.user_name.charAt(0).toUpperCase()}
-                              </div>
-                              <span className="font-medium text-gray-900">{codeData.user_name}</span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            {codeData.user_email}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                              codeData.user_role === 'admin' ? 'bg-red-100 text-red-800' :
-                              codeData.user_role === 'trainee' ? 'bg-blue-100 text-blue-800' :
-                              codeData.user_role === 'trainee' ? 'bg-green-100 text-green-800' :
-                              codeData.user_role === 'developer' ? 'bg-purple-100 text-purple-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {codeData.user_role.charAt(0).toUpperCase() + codeData.user_role.slice(1)}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            {new Date(codeData.used_at).toLocaleString('en-US', {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Mobile Card View */}
-                <div className="lg:hidden p-4 space-y-4">
-                  {usedCodes.map((codeData) => (
-                    <div key={codeData.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="font-mono font-bold text-xl">{codeData.code}</span>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                          codeData.user_role === 'admin' ? 'bg-red-100 text-red-800' :
-                          codeData.user_role === 'trainee' ? 'bg-blue-100 text-blue-800' :
-                          codeData.user_role === 'trainee' ? 'bg-green-100 text-green-800' :
-                          codeData.user_role === 'developer' ? 'bg-purple-100 text-purple-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {codeData.user_role.charAt(0).toUpperCase() + codeData.user_role.slice(1)}
-                        </span>
-                      </div>
-                      <div className="flex items-center mb-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
+          ) : filteredCodes.length === 0 ? (
+            <div className="p-12 text-center">
+              <svg className="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+              </svg>
+              <p className="text-gray-600 font-medium">
+                {searchQuery || filterRole !== 'all' ? 'No codes match your filters' : 'No codes have been used yet'}
+              </p>
+              <p className="text-sm text-gray-500 mt-1">
+                {searchQuery || filterRole !== 'all' ? 'Try adjusting your search or filter' : 'Used codes will appear here once users register'}
+              </p>
+            </div>
+          ) : (
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Code</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">User Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Email</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Role</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Used At</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredCodes.map((codeData) => (
+                  <tr key={codeData.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="font-mono font-bold text-lg">{codeData.code}</span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
                           {codeData.user_name.charAt(0).toUpperCase()}
                         </div>
-                        <div>
-                          <div className="font-medium text-gray-900">{codeData.user_name}</div>
-                          <div className="text-sm text-gray-600">{codeData.user_email}</div>
-                        </div>
+                        <span className="font-medium text-gray-900">{codeData.user_name}</span>
                       </div>
-                      <div className="text-xs text-gray-500 pt-3 border-t border-gray-100">
-                        Used: {new Date(codeData.used_at).toLocaleString('en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      {codeData.user_email}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                        codeData.user_role === 'admin' ? 'bg-red-100 text-red-800' :
+                        codeData.user_role === 'trainee' ? 'bg-blue-100 text-blue-800' :
+                        codeData.user_role === 'instructor' ? 'bg-green-100 text-green-800' :
+                        codeData.user_role === 'developer' ? 'bg-purple-100 text-purple-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {codeData.user_role.charAt(0).toUpperCase() + codeData.user_role.slice(1)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      {new Date(codeData.used_at).toLocaleString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {/* Results Count */}
+        {!loadingUsedCodes && filteredCodes.length > 0 && (
+          <div className="px-6 py-3 bg-gray-50 border-t border-gray-200">
+            <p className="text-sm text-gray-600">
+              Showing {filteredCodes.length} of {usedCodes.length} used codes
+            </p>
           </div>
         )}
       </div>

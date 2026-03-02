@@ -42,15 +42,13 @@ export default function SchedulePage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [selectedDate, setSelectedDate] = useState(new Date())
-  const [viewMode, setViewMode] = useState<'week' | 'month'>('month')
   const [scheduleToDelete, setScheduleToDelete] = useState<CourseSchedule | null>(null)
   const [scheduleToEdit, setScheduleToEdit] = useState<CourseSchedule | null>(null)
   const [expandedScheduleId, setExpandedScheduleId] = useState<string | null>(null)
+  const [selectedDateSchedules, setSelectedDateSchedules] = useState<CourseSchedule[]>([])
+  const [showDateModal, setShowDateModal] = useState(false)
+  const [selectedDateString, setSelectedDateString] = useState('')
   
-  // Available options
-  const [availableSections, setAvailableSections] = useState<string[]>([])
-  const [availableStrands, setAvailableStrands] = useState<string[]>([])
-
   const [newSchedule, setNewSchedule] = useState({
     course_id: '',
     title: '',
@@ -61,15 +59,6 @@ export default function SchedulePage() {
     start_time: '',
     end_time: '',
     enrollment_type: 'trainee' as 'trainee' | 'tesda_scholar' | 'both',
-    sections: [] as string[],
-    grade_levels: [] as number[],
-    strands: [] as string[],
-    batch_numbers: [] as number[],
-    // Single selections for dropdowns
-    selected_section: '',
-    selected_grade: '',
-    selected_strand: '',
-    selected_batch: ''
   })
 
   useEffect(() => {
@@ -81,9 +70,7 @@ export default function SchedulePage() {
       setLoading(true)
       await Promise.all([
         fetchSchedules(),
-        fetchCourses(),
-        fetchAvailableSections(),
-        fetchAvailableStrands()
+        fetchCourses()
       ])
     } finally {
       setLoading(false)
@@ -117,38 +104,6 @@ export default function SchedulePage() {
     }
 
     setCourses(data || [])
-  }
-
-  const fetchAvailableSections = async () => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('section')
-      .not('section', 'is', null)
-      .eq('role', 'trainee')
-
-    if (error) {
-      console.error('Error fetching sections:', error)
-      return
-    }
-
-    const uniqueSections = Array.from(new Set(data.map((p: { section: string }) => p.section).filter(Boolean))) as string[]
-    setAvailableSections(uniqueSections.sort())
-  }
-
-  const fetchAvailableStrands = async () => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('strand')
-      .not('strand', 'is', null)
-      .eq('role', 'trainee')
-
-    if (error) {
-      console.error('Error fetching strands:', error)
-      return
-    }
-
-    const uniqueStrands = Array.from(new Set(data.map((p: { strand: string }) => p.strand).filter(Boolean))) as string[]
-    setAvailableStrands(uniqueStrands.sort())
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -198,10 +153,6 @@ export default function SchedulePage() {
         start_date: startDateTime,
         end_date: endDateTime,
         enrollment_type: newSchedule.enrollment_type,
-        sections: newSchedule.sections.length > 0 ? newSchedule.sections : null,
-        grade_levels: newSchedule.grade_levels.length > 0 ? newSchedule.grade_levels : null,
-        strands: newSchedule.strands.length > 0 ? newSchedule.strands : null,
-        batch_numbers: newSchedule.batch_numbers.length > 0 ? newSchedule.batch_numbers : null,
         status: 'scheduled',
         created_by: user?.id
       }
@@ -226,14 +177,6 @@ export default function SchedulePage() {
         start_time: '',
         end_time: '',
         enrollment_type: 'trainee',
-        sections: [],
-        grade_levels: [],
-        strands: [],
-        batch_numbers: [],
-        selected_section: '',
-        selected_grade: '',
-        selected_strand: '',
-        selected_batch: ''
       })
       setShowAddModal(false)
       await fetchData()
@@ -247,14 +190,23 @@ export default function SchedulePage() {
   }
 
   const handleEditSchedule = (schedule: CourseSchedule) => {
-    // Extract date and time from timestamps
+    // Extract date and time from timestamps using local timezone
     const startDate = new Date(schedule.start_date)
     const endDate = new Date(schedule.end_date)
     
-    const startDateStr = startDate.toISOString().split('T')[0]
-    const endDateStr = endDate.toISOString().split('T')[0]
-    const startTimeStr = startDate.toTimeString().slice(0, 5) // HH:MM format
-    const endTimeStr = endDate.toTimeString().slice(0, 5)
+    // Format dates in local timezone (YYYY-MM-DD)
+    const startDateStr = startDate.getFullYear() + '-' + 
+      String(startDate.getMonth() + 1).padStart(2, '0') + '-' + 
+      String(startDate.getDate()).padStart(2, '0')
+    const endDateStr = endDate.getFullYear() + '-' + 
+      String(endDate.getMonth() + 1).padStart(2, '0') + '-' + 
+      String(endDate.getDate()).padStart(2, '0')
+    
+    // Format times in local timezone (HH:MM)
+    const startTimeStr = String(startDate.getHours()).padStart(2, '0') + ':' + 
+      String(startDate.getMinutes()).padStart(2, '0')
+    const endTimeStr = String(endDate.getHours()).padStart(2, '0') + ':' + 
+      String(endDate.getMinutes()).padStart(2, '0')
     
     // Pre-populate the form with schedule data
     setNewSchedule({
@@ -267,14 +219,6 @@ export default function SchedulePage() {
       start_time: startTimeStr,
       end_time: endTimeStr,
       enrollment_type: schedule.enrollment_type,
-      sections: schedule.sections || [],
-      grade_levels: schedule.grade_levels || [],
-      strands: schedule.strands || [],
-      batch_numbers: schedule.batch_numbers || [],
-      selected_section: schedule.sections?.[0] || '',
-      selected_grade: schedule.grade_levels?.[0]?.toString() || '',
-      selected_strand: schedule.strands?.[0] || '',
-      selected_batch: schedule.batch_numbers?.[0]?.toString() || ''
     })
     setScheduleToEdit(schedule)
     setShowEditModal(true)
@@ -312,10 +256,6 @@ export default function SchedulePage() {
         start_date: startDateTime,
         end_date: endDateTime,
         enrollment_type: newSchedule.enrollment_type,
-        sections: newSchedule.sections.length > 0 ? newSchedule.sections : null,
-        grade_levels: newSchedule.grade_levels.length > 0 ? newSchedule.grade_levels : null,
-        strands: newSchedule.strands.length > 0 ? newSchedule.strands : null,
-        batch_numbers: newSchedule.batch_numbers.length > 0 ? newSchedule.batch_numbers : null,
       }
 
       const { error } = await supabase
@@ -395,12 +335,25 @@ export default function SchedulePage() {
   }
 
   const getSchedulesForDate = (date: Date) => {
-    const dateString = date.toISOString().split('T')[0]
+    // Create date strings in local timezone for comparison
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    const dateString = `${year}-${month}-${day}`
+    
     return schedules.filter(schedule => {
       const startDate = new Date(schedule.start_date)
       const endDate = new Date(schedule.end_date)
-      const currentDate = new Date(dateString)
-      return currentDate >= startDate && currentDate <= endDate
+      
+      // Format schedule dates in local timezone
+      const startDateString = startDate.getFullYear() + '-' + 
+        String(startDate.getMonth() + 1).padStart(2, '0') + '-' + 
+        String(startDate.getDate()).padStart(2, '0')
+      const endDateString = endDate.getFullYear() + '-' + 
+        String(endDate.getMonth() + 1).padStart(2, '0') + '-' + 
+        String(endDate.getDate()).padStart(2, '0')
+      
+      return dateString >= startDateString && dateString <= endDateString
     })
   }
 
@@ -417,8 +370,14 @@ export default function SchedulePage() {
   }
 
   const formatTime = (dateString: string) => {
+    // Parse the datetime string and ensure it's treated as local time
     const date = new Date(dateString)
-    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+    const hours = date.getHours()
+    const minutes = date.getMinutes()
+    const ampm = hours >= 12 ? 'PM' : 'AM'
+    const displayHours = hours % 12 || 12
+    const displayMinutes = String(minutes).padStart(2, '0')
+    return `${displayHours}:${displayMinutes} ${ampm}`
   }
 
   const formatTimeRange = (startDate: string, endDate: string) => {
@@ -463,26 +422,12 @@ export default function SchedulePage() {
             </div>
             
             <div className="flex items-center gap-3">
-              {/* View Mode Toggle */}
-              <div className="inline-flex bg-white rounded-xl shadow-sm border border-gray-200 p-1">
-                {(['week', 'month'] as const).map((mode) => (
-                  <button
-                    key={mode}
-                    onClick={() => setViewMode(mode)}
-                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
-                      viewMode === mode
-                        ? 'bg-gradient-to-r from-gray-900 to-gray-700 text-white shadow-md'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    }`}
-                  >
-                    {mode.charAt(0).toUpperCase() + mode.slice(1)}
-                  </button>
-                ))}
-              </div>
-              
               <button
                 onClick={() => setShowAddModal(true)}
-                className="px-5 py-2.5 bg-gradient-to-r from-gray-900 to-gray-700 text-white rounded-xl hover:from-gray-800 hover:to-gray-600 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2 font-medium"
+                className="px-5 py-2.5 text-white rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2 font-medium"
+                style={{ backgroundColor: '#588157' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#3A5A40'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#588157'}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -541,9 +486,19 @@ export default function SchedulePage() {
                   const isToday = date.toDateString() === new Date().toDateString()
                   
                   return (
-                    <div key={index} className={`bg-gray-50 rounded-xl min-h-[110px] p-3 transition-all duration-200 hover:shadow-md ${
-                      !isCurrentMonth ? 'opacity-40' : 'hover:bg-white'
-                    }`}>
+                    <div 
+                      key={index} 
+                      className={`bg-gray-50 rounded-xl min-h-[110px] p-3 transition-all duration-200 hover:shadow-md cursor-pointer ${
+                        !isCurrentMonth ? 'opacity-40' : 'hover:bg-white'
+                      }`}
+                      onClick={() => {
+                        if (daySchedules.length > 0) {
+                          setSelectedDateSchedules(daySchedules)
+                          setSelectedDateString(date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }))
+                          setShowDateModal(true)
+                        }
+                      }}
+                    >
                       {/* Date */}
                       <div className={`text-sm font-bold mb-2 ${
                         isToday 
@@ -553,30 +508,21 @@ export default function SchedulePage() {
                         {date.getDate()}
                       </div>
 
-                      {/* Schedules */}
-                      <div className="space-y-1.5">
-                        {daySchedules.slice(0, 2).map((schedule) => {
+                      {/* Schedules as Circles */}
+                      <div className="flex flex-wrap gap-1.5">
+                        {daySchedules.map((schedule) => {
                           const color = getCourseColor(schedule.course_id)
                           return (
                             <div
                               key={schedule.id}
-                              className="px-2 py-1 rounded-lg text-xs font-semibold cursor-pointer hover:scale-105 transition-transform duration-200 shadow-sm"
-                              style={{ 
-                                backgroundColor: `${color}15`,
-                                color: color,
-                                borderLeft: `3px solid ${color}`
-                              }}
+                              className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm hover:scale-110 transition-transform duration-200"
+                              style={{ backgroundColor: color }}
                               title={`${schedule.title} - ${schedule.course_title}`}
                             >
-                              <div className="truncate">{schedule.course_title}</div>
+                              {schedule.batch_number}
                             </div>
                           )
                         })}
-                        {daySchedules.length > 2 && (
-                          <div className="text-xs text-gray-500 text-center font-medium">
-                            +{daySchedules.length - 2} more
-                          </div>
-                        )}
                       </div>
                     </div>
                   )
@@ -607,7 +553,10 @@ export default function SchedulePage() {
                     <p className="text-gray-500 mb-6 text-sm">Create your first course schedule to get started</p>
                     <button 
                       onClick={() => setShowAddModal(true)}
-                      className="px-5 py-2.5 bg-gradient-to-r from-gray-900 to-gray-700 text-white rounded-xl hover:from-gray-800 hover:to-gray-600 transition-all duration-200 shadow-lg hover:shadow-xl font-medium"
+                      className="px-5 py-2.5 text-white rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl font-medium"
+                      style={{ backgroundColor: '#588157' }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#3A5A40'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#588157'}
                     >
                       Create Schedule
                     </button>
@@ -889,124 +838,9 @@ export default function SchedulePage() {
                   </select>
                 </div>
 
-                {newSchedule.enrollment_type === 'trainee' && (
-                  <>
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Section
-                      </label>
-                      <select
-                        required
-                        value={newSchedule.selected_section}
-                        onChange={(e) => {
-                          const section = e.target.value
-                          setNewSchedule(prev => ({
-                            ...prev,
-                            selected_section: section,
-                            sections: section ? [section] : []
-                          }))
-                        }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                      >
-                        <option value="">Select Section</option>
-                        <option value="Einstein">Einstein</option>
-                        <option value="Newton">Newton</option>
-                        <option value="Curie">Curie</option>
-                        <option value="Darwin">Darwin</option>
-                        <option value="Tesla">Tesla</option>
-                        <option value="Galileo">Galileo</option>
-                        <option value="Hawking">Hawking</option>
-                        <option value="Pasteur">Pasteur</option>
-                        <option value="Edison">Edison</option>
-                        <option value="Franklin">Franklin</option>
-                      </select>
-                    </div>
+                {newSchedule.enrollment_type === 'trainee' && (<></>)}
 
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Grade Level
-                      </label>
-                      <select
-                        value={newSchedule.selected_grade}
-                        onChange={(e) => {
-                          const grade = e.target.value
-                          setNewSchedule(prev => ({
-                            ...prev,
-                            selected_grade: grade,
-                            grade_levels: grade ? [parseInt(grade)] : []
-                          }))
-                        }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                      >
-                        <option value="">All Grades</option>
-                        {[11, 12].map(grade => (
-                          <option key={grade} value={grade}>
-                            Grade {grade}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Strand
-                      </label>
-                      <select
-                        required
-                        value={newSchedule.selected_strand}
-                        onChange={(e) => {
-                          const strand = e.target.value
-                          setNewSchedule(prev => ({
-                            ...prev,
-                            selected_strand: strand,
-                            strands: strand ? [strand] : []
-                          }))
-                        }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                      >
-                        <option value="">Select Strand</option>
-                        <option value="STEM">STEM</option>
-                        <option value="ABM">ABM</option>
-                        <option value="HUMSS">HUMSS</option>
-                        <option value="GAS">GAS</option>
-                        <option value="TVL-ICT">TVL-ICT</option>
-                        <option value="TVL-HE">TVL-HE</option>
-                        <option value="TVL-IA">TVL-IA</option>
-                        <option value="TVL-Agri">TVL-Agri</option>
-                        <option value="Arts and Design">Arts & Design</option>
-                        <option value="Sports">Sports</option>
-                      </select>
-                    </div>
-                  </>
-                )}
-
-                {newSchedule.enrollment_type === 'tesda_scholar' && (
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      TESDA Batch Number
-                    </label>
-                    <select
-                      required
-                      value={newSchedule.selected_batch}
-                      onChange={(e) => {
-                        const batch = e.target.value
-                        setNewSchedule(prev => ({
-                          ...prev,
-                          selected_batch: batch,
-                          batch_numbers: batch ? [parseInt(batch)] : []
-                        }))
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                    >
-                      <option value="">Select Batch Number</option>
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(batch => (
-                        <option key={batch} value={batch}>
-                          Batch {batch}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
+                {newSchedule.enrollment_type === 'tesda_scholar' && (<></>)}
               </div>
 
               <div className="flex justify-end space-x-4 mt-8">
@@ -1157,124 +991,9 @@ export default function SchedulePage() {
                   </select>
                 </div>
 
-                {newSchedule.enrollment_type === 'trainee' && (
-                  <>
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Section
-                      </label>
-                      <select
-                        required
-                        value={newSchedule.selected_section}
-                        onChange={(e) => {
-                          const section = e.target.value
-                          setNewSchedule(prev => ({
-                            ...prev,
-                            selected_section: section,
-                            sections: section ? [section] : []
-                          }))
-                        }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                      >
-                        <option value="">Select Section</option>
-                        <option value="Einstein">Einstein</option>
-                        <option value="Newton">Newton</option>
-                        <option value="Curie">Curie</option>
-                        <option value="Darwin">Darwin</option>
-                        <option value="Tesla">Tesla</option>
-                        <option value="Galileo">Galileo</option>
-                        <option value="Hawking">Hawking</option>
-                        <option value="Pasteur">Pasteur</option>
-                        <option value="Edison">Edison</option>
-                        <option value="Franklin">Franklin</option>
-                      </select>
-                    </div>
+                {newSchedule.enrollment_type === 'trainee' && (<></>)}
 
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Grade Level
-                      </label>
-                      <select
-                        value={newSchedule.selected_grade}
-                        onChange={(e) => {
-                          const grade = e.target.value
-                          setNewSchedule(prev => ({
-                            ...prev,
-                            selected_grade: grade,
-                            grade_levels: grade ? [parseInt(grade)] : []
-                          }))
-                        }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                      >
-                        <option value="">All Grades</option>
-                        {[11, 12].map(grade => (
-                          <option key={grade} value={grade}>
-                            Grade {grade}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Strand
-                      </label>
-                      <select
-                        required
-                        value={newSchedule.selected_strand}
-                        onChange={(e) => {
-                          const strand = e.target.value
-                          setNewSchedule(prev => ({
-                            ...prev,
-                            selected_strand: strand,
-                            strands: strand ? [strand] : []
-                          }))
-                        }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                      >
-                        <option value="">Select Strand</option>
-                        <option value="STEM">STEM</option>
-                        <option value="ABM">ABM</option>
-                        <option value="HUMSS">HUMSS</option>
-                        <option value="GAS">GAS</option>
-                        <option value="TVL-ICT">TVL-ICT</option>
-                        <option value="TVL-HE">TVL-HE</option>
-                        <option value="TVL-IA">TVL-IA</option>
-                        <option value="TVL-Agri">TVL-Agri</option>
-                        <option value="Arts and Design">Arts & Design</option>
-                        <option value="Sports">Sports</option>
-                      </select>
-                    </div>
-                  </>
-                )}
-
-                {newSchedule.enrollment_type === 'tesda_scholar' && (
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      TESDA Batch Number
-                    </label>
-                    <select
-                      required
-                      value={newSchedule.selected_batch}
-                      onChange={(e) => {
-                        const batch = e.target.value
-                        setNewSchedule(prev => ({
-                          ...prev,
-                          selected_batch: batch,
-                          batch_numbers: batch ? [parseInt(batch)] : []
-                        }))
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                    >
-                      <option value="">Select Batch Number</option>
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(batch => (
-                        <option key={batch} value={batch}>
-                          Batch {batch}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
+                {newSchedule.enrollment_type === 'tesda_scholar' && (<></>)}
               </div>
 
               <div className="flex justify-end space-x-4 mt-8">
@@ -1354,6 +1073,111 @@ export default function SchedulePage() {
                   {submitting && <ButtonLoading />}
                   <span>{submitting ? 'Deleting...' : 'Delete Schedule'}</span>
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Date Details Modal */}
+      {showDateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">{selectedDateString}</h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {selectedDateSchedules.length} schedule{selectedDateSchedules.length !== 1 ? 's' : ''} on this day
+                  </p>
+                </div>
+                <button 
+                  onClick={() => setShowDateModal(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-full"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 overflow-y-auto max-h-[calc(80vh-140px)]">
+              <div className="space-y-4">
+                {selectedDateSchedules.map((schedule) => {
+                  const color = getCourseColor(schedule.course_id)
+                  return (
+                    <div
+                      key={schedule.id}
+                      className="border-2 rounded-xl p-4 hover:shadow-lg transition-all duration-200"
+                      style={{ borderColor: color }}
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold text-white shadow-md"
+                            style={{ backgroundColor: color }}
+                          >
+                            {schedule.batch_number}
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-gray-900 text-lg">{schedule.title}</h3>
+                            <p className="text-sm text-gray-600">{schedule.course_title}</p>
+                          </div>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                          schedule.status === 'scheduled' ? 'bg-blue-100 text-blue-800' :
+                          schedule.status === 'active' ? 'bg-green-100 text-green-800' :
+                          schedule.status === 'completed' ? 'bg-gray-100 text-gray-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {schedule.status.charAt(0).toUpperCase() + schedule.status.slice(1)}
+                        </span>
+                      </div>
+
+                      {schedule.description && (
+                        <p className="text-sm text-gray-600 mb-3">{schedule.description}</p>
+                      )}
+
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <span>{new Date(schedule.start_date).toLocaleDateString()}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                          </svg>
+                          <span className="capitalize">{schedule.enrollment_type.replace('_', ' ')}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2 mt-4">
+                        <button
+                          onClick={() => {
+                            setShowDateModal(false)
+                            handleEditSchedule(schedule)
+                          }}
+                          className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm font-medium"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowDateModal(false)
+                            handleDeleteSchedule(schedule)
+                          }}
+                          className="flex-1 px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors text-sm font-medium"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           </div>
