@@ -123,23 +123,8 @@ export default function SchedulePage() {
         ? existingSchedules[0].batch_number + 1 
         : 1
 
-      // Generate title based on enrollment type
-      let generatedTitle = ''
-      if (newSchedule.enrollment_type === 'trainee') {
-        // For trainees, use grade level as title
-        if (newSchedule.selected_grade) {
-          generatedTitle = `Grade ${newSchedule.selected_grade}`
-        } else {
-          generatedTitle = 'All Grades'
-        }
-      } else if (newSchedule.enrollment_type === 'tesda_scholar') {
-        // For TESDA scholars, use batch number as title
-        if (newSchedule.selected_batch) {
-          generatedTitle = `Batch ${newSchedule.selected_batch}`
-        } else {
-          generatedTitle = `Batch ${nextBatchNumber}`
-        }
-      }
+      // Generate title based on enrollment type and batch number
+      const generatedTitle = `Batch ${nextBatchNumber}`
 
       // Combine date and time into ISO timestamp
       const startDateTime = `${newSchedule.start_date}T${newSchedule.start_time}:00`
@@ -232,18 +217,8 @@ export default function SchedulePage() {
 
     try {
       // Generate title based on enrollment type
-      let generatedTitle = ''
-      if (newSchedule.enrollment_type === 'trainee') {
-        if (newSchedule.selected_grade) {
-          generatedTitle = `Grade ${newSchedule.selected_grade}`
-        } else {
-          generatedTitle = 'All Grades'
-        }
-      } else if (newSchedule.enrollment_type === 'tesda_scholar') {
-        if (newSchedule.selected_batch) {
-          generatedTitle = `Batch ${newSchedule.selected_batch}`
-        }
-      }
+      // Use the existing title from the form
+      const generatedTitle = newSchedule.title
 
       // Combine date and time into ISO timestamp
       const startDateTime = `${newSchedule.start_date}T${newSchedule.start_time}:00`
