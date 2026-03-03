@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { ToastProvider } from '@/contexts/ToastContext'
-import { InitialPageLoader } from '@/components/InitialPageLoader'
+import { ClientInitialLoader } from '@/components/ClientInitialLoader'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -80,7 +80,7 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="//fonts.gstatic.com" />
       </head>
       <body className="antialiased">
-        <InitialPageLoader />
+        <ClientInitialLoader />
         <AuthProvider>
           <ToastProvider>
             {children}

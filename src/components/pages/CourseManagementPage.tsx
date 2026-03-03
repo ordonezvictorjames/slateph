@@ -358,10 +358,10 @@ export default function CourseManagementPage() {
   }
 
   // Helper function to get button background color
-  const getButtonBg = () => '#475569' // 30% - Primary color (green)
+  const getButtonBg = () => '#588157' // Primary color (green)
   
   // Helper function to get button hover color (slightly darker)
-  const getButtonHoverBg = () => '#1E293B' // 10% - Accent color (dark green)
+  const getButtonHoverBg = () => '#3A5A40' // Accent color (dark green)
 
   // Fetch data functions
   const fetchCourses = async () => {
@@ -2237,15 +2237,6 @@ export default function CourseManagementPage() {
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div className="flex items-center justify-end gap-2">
                             <button
-                              onClick={() => handleEnrolltrainees(course)}
-                              className="px-3 py-1.5 text-white rounded-lg text-xs transition-colors"
-                              style={{ backgroundColor: getButtonBg() }}
-                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
-                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
-                            >
-                              Enroll
-                            </button>
-                            <button
                               onClick={() => handleCourseSelect(course)}
                               className="px-3 py-1.5 text-white rounded-lg text-xs transition-colors"
                               style={{ backgroundColor: getButtonBg() }}
@@ -2255,8 +2246,18 @@ export default function CourseManagementPage() {
                               Subjects
                             </button>
                             <button
+                              onClick={() => handleEnrolltrainees(course)}
+                              className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="Enroll students"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                              </svg>
+                            </button>
+                            <button
                               onClick={() => handleEditCourse(course)}
-                              className="p-1.5 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                              className="p-1.5 text-green-500 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors"
+                              title="Edit course"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -2264,7 +2265,8 @@ export default function CourseManagementPage() {
                             </button>
                             <button
                               onClick={() => handleDeleteCourse(course)}
-                              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Delete course"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -2282,53 +2284,44 @@ export default function CourseManagementPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {courses.map((course) => {
                   const courseColor = getCourseColor(course.id)
+                  
                   return (
                     <div 
                       key={course.id} 
                       className="group relative bg-white rounded-2xl border border-gray-200 hover:border-gray-300 hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col h-full"
                     >
-                      {/* Color Header Bar */}
-                      <div className="h-2 w-full bg-white flex-shrink-0" />
-                      
                       <div className="p-6 flex flex-col flex-1">
-                        {/* Header with Color Indicator */}
+                        {/* Header */}
                         <div className="flex items-start justify-between mb-4">
-                          <div className="flex items-start space-x-3 flex-1">
-                            {/* Color Circle */}
-                            <div className="flex-shrink-0 mt-1">
-                              <div className="w-4 h-4 rounded-full bg-gray-400 border-2 border-white shadow-sm" />
-                            </div>
-                            
+                          <div className="flex-1 min-w-0">
                             {/* Course Info */}
-                            <div className="flex-1 min-w-0">
-                              <h3 className="font-bold text-lg text-gray-900 mb-2 line-clamp-2 group-hover:text-black transition-colors">
-                                {course.title}
-                              </h3>
-                              <p className="text-sm text-gray-600 mb-2 line-clamp-3 leading-relaxed">
-                                {course.description}
-                              </p>
-                              {/* All Badges in One Row */}
-                              <div className="flex items-center flex-wrap gap-2 mb-2">
-                                <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${getStatusColor(course.status)}`}>
-                                  <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
-                                    course.status === 'active' ? 'bg-green-600' :
-                                    course.status === 'inactive' ? 'bg-red-600' :
-                                    'bg-yellow-600'
-                                  }`} />
-                                  {course.status.charAt(0).toUpperCase() + course.status.slice(1)}
+                            <h3 className="font-bold text-lg text-gray-900 mb-2 line-clamp-2 group-hover:text-black transition-colors">
+                              {course.title}
+                            </h3>
+                            <p className="text-sm text-gray-600 mb-2 line-clamp-3 leading-relaxed">
+                              {course.description}
+                            </p>
+                            {/* All Badges in One Row */}
+                            <div className="flex items-center flex-wrap gap-2 mb-2">
+                              <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${getStatusColor(course.status)}`}>
+                                <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+                                  course.status === 'active' ? 'bg-green-600' :
+                                  course.status === 'inactive' ? 'bg-red-600' :
+                                  'bg-yellow-600'
+                                }`} />
+                                {course.status.charAt(0).toUpperCase() + course.status.slice(1)}
+                              </span>
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                {course.course_type === 'academic' ? 'Academic' : course.course_type === 'tesda' ? 'TESDA' : 'UpSkill'}
+                              </span>
+                              <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${getEnrollmentTypeDisplay(course.enrollment_type)[0].color}`}>
+                                {getEnrollmentTypeDisplay(course.enrollment_type)[0].text}
+                              </span>
+                              {getEnrollmentTypeDisplay(course.enrollment_type).length > 1 && (
+                                <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${getEnrollmentTypeDisplay(course.enrollment_type)[1].color}`}>
+                                  {getEnrollmentTypeDisplay(course.enrollment_type)[1].text}
                                 </span>
-                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                  {course.course_type === 'academic' ? 'Academic' : course.course_type === 'tesda' ? 'TESDA' : 'UpSkill'}
-                                </span>
-                                <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${getEnrollmentTypeDisplay(course.enrollment_type)[0].color}`}>
-                                  {getEnrollmentTypeDisplay(course.enrollment_type)[0].text}
-                                </span>
-                                {getEnrollmentTypeDisplay(course.enrollment_type).length > 1 && (
-                                  <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${getEnrollmentTypeDisplay(course.enrollment_type)[1].color}`}>
-                                    {getEnrollmentTypeDisplay(course.enrollment_type)[1].text}
-                                  </span>
-                                )}
-                              </div>
+                              )}
                             </div>
                           </div>
                           
@@ -2336,7 +2329,7 @@ export default function CourseManagementPage() {
                           <div className="flex items-center space-x-1 ml-2 flex-shrink-0">
                             <button
                               onClick={() => handleEnrolltrainees(course)}
-                              className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                              className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
                               title="Enroll students"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2345,7 +2338,7 @@ export default function CourseManagementPage() {
                             </button>
                             <button
                               onClick={() => handleEditCourse(course)}
-                              className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                              className="p-2 text-green-500 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors"
                               title="Edit course"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2354,7 +2347,7 @@ export default function CourseManagementPage() {
                             </button>
                             <button
                               onClick={() => handleDeleteCourse(course)}
-                              className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-200 rounded-lg transition-colors"
+                              className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
                               title="Delete course"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
