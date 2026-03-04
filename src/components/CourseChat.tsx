@@ -167,8 +167,8 @@ export default function CourseChat({ isOpen, onClose }: CourseChatProps) {
         if (!error && data) {
           coursesData = data
         }
-      } else if (userRole === 'instructor') {
-        // Instructors can access courses they teach
+      } else if (userRole === 'instructor' || userRole === 'developer') {
+        // Instructors and developers can access courses they teach
         const { data, error } = await supabase
           .from('subjects')
           .select(`

@@ -86,8 +86,8 @@ export default function MyCoursesPage() {
 
       let courseIds: string[] = []
 
-      if (userRole === 'instructor') {
-        // Instructors see courses where they are assigned to at least one subject
+      if (userRole === 'instructor' || userRole === 'developer') {
+        // Instructors and developers see courses where they are assigned to at least one subject
         const { data: instructorSubjects, error: subjectsError } = await supabase
           .from('subjects')
           .select('course_id')
@@ -369,7 +369,7 @@ export default function MyCoursesPage() {
                   My Courses
                 </h2>
                 <p className="text-gray-600">
-                  {user?.profile?.role === 'instructor' 
+                  {user?.profile?.role === 'instructor' || user?.profile?.role === 'developer'
                     ? 'View courses where you are assigned as an instructor' 
                     : 'View your enrolled courses, subjects, and modules'}
                 </p>

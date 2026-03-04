@@ -621,8 +621,8 @@ export default function CourseManagementPage() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, email')
-        .eq('role', 'instructor')
+        .select('id, first_name, last_name, email, role')
+        .in('role', ['instructor', 'developer'])
         .order('first_name', { ascending: true })
 
       if (error) {
