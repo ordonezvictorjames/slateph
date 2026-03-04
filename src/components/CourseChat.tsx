@@ -167,8 +167,8 @@ export default function CourseChat({ isOpen, onClose }: CourseChatProps) {
         if (!error && data) {
           coursesData = data
         }
-      } else if (userRole === 'trainee') {
-        // trainee can access courses they teach
+      } else if (userRole === 'instructor') {
+        // Instructors can access courses they teach
         const { data, error } = await supabase
           .from('subjects')
           .select(`
@@ -179,11 +179,11 @@ export default function CourseChat({ isOpen, onClose }: CourseChatProps) {
               description
             )
           `)
-          .eq('trainee_id', user.id)
+          .eq('instructor_id', user.id)
           .eq('courses.status', 'active')
 
         if (error) {
-          console.error('Error loading courses for trainee:', error)
+          console.error('Error loading courses for instructor:', error)
         }
         if (!error && data) {
           // Extract unique courses
