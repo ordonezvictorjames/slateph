@@ -620,15 +620,19 @@ export default function MyCoursesPage() {
                       
                       {/* Action Button */}
                       <div className="flex-shrink-0">
-                        <button 
+                        <NatureButton 
+                          size="sm" 
+                          variant="leaf"
                           onClick={() => handleSubjectSelect(subject)}
-                          className="px-4 py-2 bg-gradient-leaf text-white rounded-lg font-medium text-sm hover:shadow-lg transition-all duration-200 hover:scale-105 flex items-center gap-2"
+                          icon={
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          }
+                          iconPosition="right"
                         >
-                          <span>View Modules</span>
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </button>
+                          View Modules
+                        </NatureButton>
                       </div>
                     </div>
                   </div>
@@ -835,15 +839,20 @@ export default function MyCoursesPage() {
 
                         {/* Action Button */}
                         <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
-                          <button
+                          <NatureButton
+                            size="sm"
+                            variant="leaf"
                             onClick={() => handleStartLesson(module)}
-                            className="flex-1 px-4 py-2.5 bg-[#475569] text-white rounded-lg font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:bg-[#1E293B] hover:shadow-md"
+                            className="flex-1"
+                            icon={
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M8 5v14l11-7z" />
+                              </svg>
+                            }
+                            iconPosition="left"
                           >
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M8 5v14l11-7z" />
-                            </svg>
-                            <span>Start</span>
-                          </button>
+                            Start
+                          </NatureButton>
                         </div>
                       </div>
                     </div>

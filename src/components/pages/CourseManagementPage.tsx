@@ -34,6 +34,7 @@ interface Subject {
   order_index: number
   status: 'active' | 'inactive' | 'draft'
   enrollment_type: 'trainee' | 'tesda_scholar' | 'both'
+  online_class_link?: string
   created_at: string
   modules?: CourseModule[]
   enrollment_count?: number
@@ -77,6 +78,7 @@ interface NewSubject {
   order_index: number
   status: 'active' | 'inactive' | 'draft'
   enrollment_type: 'trainee' | 'tesda_scholar' | 'both'
+  online_class_link?: string
 }
 
 interface NewCourseModule {
@@ -941,6 +943,7 @@ export default function CourseManagementPage() {
           instructor_id: newSubject.instructor_id || null,
           status: newSubject.status,
           enrollment_type: newSubject.enrollment_type,
+          online_class_link: newSubject.online_class_link || null,
           order_index: targetOrderIndex
         }])
 
@@ -1351,7 +1354,8 @@ export default function CourseManagementPage() {
       instructor_id: subject.instructor_id || '',
       order_index: subject.order_index,
       status: subject.status,
-      enrollment_type: subject.enrollment_type
+      enrollment_type: subject.enrollment_type,
+      online_class_link: subject.online_class_link || ''
     })
     setShowEditSubjectModal(true)
   }
@@ -1410,6 +1414,7 @@ export default function CourseManagementPage() {
           instructor_id: newSubject.instructor_id || null,
           status: newSubject.status,
           enrollment_type: newSubject.enrollment_type,
+          online_class_link: newSubject.online_class_link || null,
           order_index: newSubject.order_index
         })
         .eq('id', editingSubject.id)
@@ -2533,9 +2538,9 @@ export default function CourseManagementPage() {
                                   </span>
                                 </div>
                                 
-                                {subject.description && (
+                                {selectedCourse && (
                                   <p className="text-sm text-gray-600 mb-3 line-clamp-1">
-                                    {subject.description}
+                                    {selectedCourse.title}
                                   </p>
                                 )}
                                 
@@ -2552,6 +2557,24 @@ export default function CourseManagementPage() {
                                       {subject.trainee_name}
                                     </span>
                                   </div>
+                                  
+                                  {/* Online Class Link */}
+                                  {subject.online_class_link && (
+                                    <div className="flex items-center gap-2">
+                                      <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                      </svg>
+                                      <a 
+                                        href={subject.online_class_link}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-blue-600 hover:text-blue-700 font-medium hover:underline"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        Join Online Class
+                                      </a>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                               
@@ -3147,6 +3170,18 @@ export default function CourseManagementPage() {
                 />
               </div>
 
+              <div>
+                <label className="block text-xs font-medium text-black mb-1">Online Class Link</label>
+                <input
+                  type="url"
+                  value={newSubject.online_class_link || ''}
+                  onChange={(e) => setNewSubject(prev => ({ ...prev, online_class_link: e.target.value }))}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569]"
+                  placeholder="https://meet.google.com/... or https://zoom.us/..."
+                />
+                <p className="mt-1 text-xs text-gray-500">Add Google Meet, Zoom, or other online class link</p>
+              </div>
+
               <div className="grid grid-cols-4 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-black mb-1">Order *</label>
@@ -3246,6 +3281,18 @@ export default function CourseManagementPage() {
                   className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569]"
                   placeholder="Enter subject title"
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-black mb-1">Online Class Link</label>
+                <input
+                  type="url"
+                  value={newSubject.online_class_link || ''}
+                  onChange={(e) => setNewSubject(prev => ({ ...prev, online_class_link: e.target.value }))}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569]"
+                  placeholder="https://meet.google.com/... or https://zoom.us/..."
+                />
+                <p className="mt-1 text-xs text-gray-500">Add Google Meet, Zoom, or other online class link</p>
               </div>
 
               <div className="grid grid-cols-4 gap-4">
