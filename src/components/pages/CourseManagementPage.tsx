@@ -663,7 +663,6 @@ export default function CourseManagementPage() {
             id,
             enrolled_at,
             status,
-            progress,
             trainee_id,
             trainee:profiles!course_enrollments_trainee_id_fkey(id, first_name, last_name, email, role)
           `)
@@ -680,7 +679,6 @@ export default function CourseManagementPage() {
           id: string
           enrolled_at: string
           status: string
-          progress: number
           trainee: {
             id: string
             first_name: string
@@ -697,15 +695,13 @@ export default function CourseManagementPage() {
           enrollment_id: string
           enrolled_at: string
           status: string
-          progress: number
         }
 
         const enrolled: Enrolledtrainee[] = (data || []).map((enrollment: EnrollmentData) => ({
           ...enrollment.trainee,
           enrollment_id: enrollment.id,
           enrolled_at: enrollment.enrolled_at,
-          status: enrollment.status,
-          progress: enrollment.progress
+          status: enrollment.status
         }))
 
         setEnrolledtrainees(enrolled)
