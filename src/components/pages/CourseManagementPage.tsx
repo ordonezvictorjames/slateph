@@ -2396,10 +2396,10 @@ export default function CourseManagementPage() {
             <div className="flex items-center justify-between">
               <div className="z-10 pr-4">
                 <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
-                  Subject Management
+                  {selectedCourse.title}
                 </h2>
                 <p className="text-gray-600">
-                  Organize subjects and assign trainees for <span className="font-semibold text-gray-900">{selectedCourse.title}</span>
+                  Manage subjects and assign trainees
                 </p>
               </div>
               
@@ -2607,10 +2607,10 @@ export default function CourseManagementPage() {
             <div className="flex items-center justify-between">
               <div className="z-10 pr-4">
                 <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
-                  Module Management
+                  {selectedSubject.title}
                 </h2>
                 <p className="text-gray-600">
-                  Create and organize learning modules for <span className="font-semibold text-gray-900">{selectedSubject.title}</span>
+                  Create and organize learning modules
                 </p>
               </div>
               
