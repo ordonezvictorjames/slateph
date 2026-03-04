@@ -153,8 +153,8 @@ export default function CourseChat({ isOpen, onClose }: CourseChatProps) {
 
       let coursesData: Course[] = []
 
-      if (userRole === 'admin' || userRole === 'developer') {
-        // Admin and Developer can access all courses
+      if (userRole === 'admin') {
+        // Admin can access all courses
         const { data, error } = await supabase
           .from('courses')
           .select('id, title, description')
@@ -162,7 +162,7 @@ export default function CourseChat({ isOpen, onClose }: CourseChatProps) {
           .order('title')
 
         if (error) {
-          console.error('Error loading courses for admin/developer:', error)
+          console.error('Error loading courses for admin:', error)
         }
         if (!error && data) {
           coursesData = data
@@ -183,7 +183,7 @@ export default function CourseChat({ isOpen, onClose }: CourseChatProps) {
           .eq('courses.status', 'active')
 
         if (error) {
-          console.error('Error loading courses for instructor:', error)
+          console.error('Error loading courses for instructor/developer:', error)
         }
         if (!error && data) {
           // Extract unique courses
