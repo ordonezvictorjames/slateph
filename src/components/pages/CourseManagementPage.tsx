@@ -135,7 +135,7 @@ export default function CourseManagementPage() {
   }
   const [trainees, settrainees] = useState<Array<{id: string, first_name: string, last_name: string, email: string, role: string}>>([])
   const [instructors, setInstructors] = useState<Array<{id: string, first_name: string, last_name: string, email: string}>>([])
-  const [enrolledtrainees, setEnrolledtrainees] = useState<Array<{id: string, first_name: string, last_name: string, email: string, enrollment_id: string, enrolled_at: string, status: string, progress: number}>>([])
+  const [enrolledtrainees, setEnrolledtrainees] = useState<Array<{id: string, first_name: string, last_name: string, email: string, enrollment_id: string, enrolled_at: string, status: string}>>([])
   const [availabletrainees, setAvailabletrainees] = useState<Array<{id: string, first_name: string, last_name: string, email: string, role: string}>>([])
   const [selectedtrainees, setSelectedtrainees] = useState<string[]>([])
   const [selectedCourseForEnrollment, setSelectedCourseForEnrollment] = useState<Course | null>(null)
