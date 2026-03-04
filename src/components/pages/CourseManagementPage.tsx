@@ -660,14 +660,19 @@ export default function CourseManagementPage() {
         const { data, error } = await supabase
           .from('course_enrollments')
           .select(`
-            *,
-            trainee:profiles(id, first_name, last_name, email)
+            id,
+            enrolled_at,
+            status,
+            progress,
+            trainee_id,
+            trainee:profiles!course_enrollments_trainee_id_fkey(id, first_name, last_name, email, role)
           `)
           .eq('course_id', courseId)
           .order('enrolled_at', { ascending: false })
 
         if (error) {
           console.error('Error fetching enrollments:', error)
+          console.error('Error details:', error.message, error.details)
           return
         }
 
