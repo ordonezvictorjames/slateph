@@ -395,36 +395,36 @@ export default function CourseChat({ isOpen, onClose }: CourseChatProps) {
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-6xl h-[600px] flex flex-col shadow-2xl">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 md:p-4">
+      <div className="bg-white rounded-2xl w-full max-w-6xl h-[calc(100vh-1rem)] md:h-[600px] flex flex-col shadow-2xl">
         {/* Header */}
-        <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="p-3 md:p-4 border-b border-gray-200 flex items-center justify-between">
+          <div className="flex items-center space-x-2 md:space-x-3">
+            <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+              <svg className="w-5 h-5 md:w-6 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-black">
+              <h2 className="text-base md:text-lg font-semibold text-black">
                 {selectedCourse ? selectedCourse.title : 'Course Chat'}
               </h2>
-              <p className="text-xs text-gray-500">Real-time messaging</p>
+              <p className="text-[10px] md:text-xs text-gray-500">Real-time messaging</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-1.5 md:p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 md:w-5 md:h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
         <div className="flex flex-1 overflow-hidden">
-          {/* Course List Sidebar */}
-          <div className="w-64 border-r border-gray-200 flex flex-col">
+          {/* Course List Sidebar - Hidden on mobile, show as dropdown or separate view */}
+          <div className="hidden md:flex w-64 border-r border-gray-200 flex-col">
             <div className="p-3 border-b border-gray-200">
               <h3 className="text-sm font-semibold text-gray-700">Chats</h3>
             </div>
@@ -478,13 +478,13 @@ export default function CourseChat({ isOpen, onClose }: CourseChatProps) {
             {selectedCourse ? (
               <>
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 md:space-y-4">
                   {messages.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                      <svg className="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex flex-col items-center justify-center h-full text-gray-400 px-4">
+                      <svg className="w-12 h-12 md:w-16 md:h-16 mb-3 md:mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                       </svg>
-                      <p className="text-lg">No messages yet. Start the conversation!</p>
+                      <p className="text-sm md:text-lg">No messages yet. Start the conversation!</p>
                     </div>
                   ) : (
                     messages.map((msg) => {
@@ -542,7 +542,7 @@ export default function CourseChat({ isOpen, onClose }: CourseChatProps) {
                 </div>
 
                 {/* Message Input */}
-                <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-200">
+                <form onSubmit={handleSendMessage} className="p-3 md:p-4 border-t border-gray-200">
                   <div className="flex items-end space-x-2">
                     <div className="flex-1">
                       <textarea
@@ -555,19 +555,19 @@ export default function CourseChat({ isOpen, onClose }: CourseChatProps) {
                           }
                         }}
                         placeholder="Type a message..."
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                        className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm md:text-base"
                         rows={2}
                         maxLength={2000}
                         disabled={sending}
                       />
-                      <div className="text-xs text-gray-400 mt-1">
+                      <div className="text-[10px] md:text-xs text-gray-400 mt-1">
                         {newMessage.length}/2000 characters
                       </div>
                     </div>
                     <button
                       type="submit"
                       disabled={!newMessage.trim() || sending}
-                      className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed h-[42px]"
+                      className="px-4 md:px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed h-[42px] text-sm md:text-base"
                     >
                       {sending ? (
                         <ButtonLoading />
@@ -590,8 +590,8 @@ export default function CourseChat({ isOpen, onClose }: CourseChatProps) {
             )}
           </div>
 
-          {/* Online Users Sidebar */}
-          <div className="w-64 border-l border-gray-200 flex flex-col">
+          {/* Online Users Sidebar - Hidden on mobile */}
+          <div className="hidden lg:flex w-64 border-l border-gray-200 flex-col">
             <OnlineUsers />
           </div>
         </div>
