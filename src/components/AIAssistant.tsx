@@ -32,15 +32,21 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [apiKey, setApiKey] = useState('')
   const [showApiKeyInput, setShowApiKeyInput] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
+  const [selectedModel, setSelectedModel] = useState<'gemini-2.5-flash' | 'gemini-2.5-flash-lite' | 'gemini-2.5-pro'>('gemini-2.5-flash')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
     const savedKey = localStorage.getItem('gemini_api_key')
+    const savedModel = localStorage.getItem('gemini_model') as 'gemini-2.5-flash' | 'gemini-2.5-flash-lite' | 'gemini-2.5-pro'
     if (savedKey) {
       setApiKey(savedKey)
     } else {
       setShowApiKeyInput(true)
+    }
+    if (savedModel) {
+      setSelectedModel(savedModel)
     }
   }, [])
 
@@ -58,6 +64,26 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
     if (apiKey.trim()) {
       localStorage.setItem('gemini_api_key', apiKey.trim())
       setShowApiKeyInput(false)
+    }
+  }
+
+  const saveSettings = () => {
+    if (apiKey.trim()) {
+      localStorage.setItem('gemini_api_key', apiKey.trim())
+      localStorage.setItem('gemini_model', selectedModel)
+      setShowSettings(false)
+      setShowApiKeyInput(false)
+    }
+  }
+
+  const getModelDisplayName = () => {
+    switch (selectedModel) {
+      case 'gemini-2.5-flash-lite':
+        return 'Gemini 2.5 Flash-Lite'
+      case 'gemini-2.5-pro':
+        return 'Gemini 2.5 Pro'
+      default:
+        return 'Gemini 2.5 Flash'
     }
   }
 
@@ -86,7 +112,7 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
       ).join('\n')
 
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1/models/${selectedModel}:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: {
@@ -146,6 +172,127 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      {/* Settings Modal */}
+      {showSettings && (
+        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60 p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">AI Settings</h3>
+            
+            {/* API Key */}
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Google Gemini API Key
+              </label>
+              <p className="text-xs text-gray-600 mb-2">
+                Get your FREE API key from{' '}
+                <a 
+                  href="https://aistudio.google.com/app/apikey" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="text-blue-600 hover:underline"
+                >
+                  Google AI Studio
+                </a>
+              </p>
+              <input
+                type="password"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="AIza..."
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Model Selection */}
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                AI Model
+              </label>
+              <div className="space-y-2">
+                <button
+                  onClick={() => setSelectedModel('gemini-2.5-flash-lite')}
+                  className={`w-full p-3 rounded-lg border-2 transition-all text-left ${
+                    selectedModel === 'gemini-2.5-flash-lite'
+                      ? 'border-green-500 bg-green-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-semibold text-gray-900">Gemini 2.5 Flash-Lite</span>
+                    {selectedModel === 'gemini-2.5-flash-lite' && (
+                      <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </div>
+                  <div className="text-xs text-gray-600">
+                    ⚡ Fastest • 1,000 requests/day • Best for quick questions
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setSelectedModel('gemini-2.5-flash')}
+                  className={`w-full p-3 rounded-lg border-2 transition-all text-left ${
+                    selectedModel === 'gemini-2.5-flash'
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-semibold text-gray-900">Gemini 2.5 Flash</span>
+                    {selectedModel === 'gemini-2.5-flash' && (
+                      <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </div>
+                  <div className="text-xs text-gray-600">
+                    ⚖️ Balanced • 250 requests/day • Recommended for most users
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setSelectedModel('gemini-2.5-pro')}
+                  className={`w-full p-3 rounded-lg border-2 transition-all text-left ${
+                    selectedModel === 'gemini-2.5-pro'
+                      ? 'border-purple-500 bg-purple-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-semibold text-gray-900">Gemini 2.5 Pro</span>
+                    {selectedModel === 'gemini-2.5-pro' && (
+                      <svg className="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </div>
+                  <div className="text-xs text-gray-600">
+                    🎯 Best Quality • 100 requests/day • For complex problems
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={saveSettings}
+                disabled={!apiKey.trim()}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Save Settings
+              </button>
+              <button
+                onClick={() => setShowSettings(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* API Key Modal */}
       {showApiKeyInput && (
         <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60 p-4">
@@ -200,7 +347,7 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
             </div>
             <div>
               <h2 className="text-lg font-semibold text-white">AI Coding Assistant</h2>
-              <p className="text-xs text-blue-100">Powered by Gemini 2.5 Flash</p>
+              <p className="text-xs text-blue-100">Powered by {getModelDisplayName()}</p>
             </div>
           </div>
           <div className="flex gap-2">
