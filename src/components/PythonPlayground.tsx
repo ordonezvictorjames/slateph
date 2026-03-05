@@ -3,6 +3,13 @@
 import { useState, useEffect, useRef } from 'react'
 import { ButtonLoading } from '@/components/ui/loading'
 
+// Declare Skulpt global
+declare global {
+  interface Window {
+    Sk: any
+  }
+}
+
 interface PythonPlaygroundProps {
   isOpen: boolean
   onClose: () => void
@@ -13,7 +20,7 @@ export default function PythonPlayground({ isOpen, onClose }: PythonPlaygroundPr
 # Write your Python code here and click Run
 
 def greet(name):
-    return f"Hello, {name}!"
+    return "Hello, " + name + "!"
 
 print(greet("World"))
 
@@ -24,27 +31,36 @@ def fibonacci(n):
         return n
     return fibonacci(n-1) + fibonacci(n-2)
 
-print(f"Fibonacci(10) = {fibonacci(10)}")
+print("Fibonacci(10) =", fibonacci(10))
 `)
   const [output, setOutput] = useState('')
   const [isRunning, setIsRunning] = useState(false)
-  const [pyodideReady, setPyodideReady] = useState(false)
-  const [loadingPyodide, setLoadingPyodide] = useState(false)
-  const pyodideRef = useRef<any>(null)
+  const [skulptReady, setSkulptReady] = useState(false)
+  const [loadingSkulpt, setLoadingSkulpt] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const highlightRef = useRef<HTMLPreElement>(null)
 
   // Syntax highlighting function
   const highlightCode = (code: string) => {
+    // Escape HTML entities
+    const escapeHtml = (text: string) => {
+      return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;')
+    }
+
     return code
       .split('\n')
       .map(line => {
         // Check if line is a comment
         const trimmed = line.trim()
         if (trimmed.startsWith('#')) {
-          return `<span style="color: #4ade80;">${line}</span>` // green for comments
+          return `<span style="color: #4ade80;">${escapeHtml(line)}</span>` // green for comments
         }
-        return `<span style="color: white;">${line}</span>` // white for code
+        return `<span style="color: white;">${escapeHtml(line)}</span>` // white for code
       })
       .join('\n')
   }
@@ -56,90 +72,104 @@ print(f"Fibonacci(10) = {fibonacci(10)}")
     }
   }, [code])
 
-  // Load Pyodide when component mounts
+  // Force initial highlight render when modal opens
   useEffect(() => {
-    if (isOpen && !pyodideReady && !loadingPyodide) {
-      loadPyodide()
+    if (isOpen && highlightRef.current) {
+      // Small delay to ensure DOM is ready
+      setTimeout(() => {
+        if (highlightRef.current) {
+          highlightRef.current.innerHTML = highlightCode(code)
+        }
+      }, 50)
     }
   }, [isOpen])
 
-  const loadPyodide = async () => {
-    setLoadingPyodide(true)
+  // Load Skulpt when component mounts
+  useEffect(() => {
+    if (isOpen && !skulptReady && !loadingSkulpt) {
+      loadSkulpt()
+    }
+  }, [isOpen])
+
+  const loadSkulpt = async () => {
+    setLoadingSkulpt(true)
     setOutput('Loading Python environment...\n')
     
     try {
-      // Load Pyodide from CDN
-      const script = document.createElement('script')
-      script.src = 'https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js'
-      script.async = true
+      // Load Skulpt from CDN
+      const script1 = document.createElement('script')
+      script1.src = 'https://cdn.jsdelivr.net/npm/skulpt@1.2.0/dist/skulpt.min.js'
+      script1.async = false
       
-      script.onload = async () => {
-        try {
-          // @ts-ignore
-          const pyodide = await loadPyodide({
-            indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.24.1/full/'
-          })
-          
-          pyodideRef.current = pyodide
-          setPyodideReady(true)
+      const script2 = document.createElement('script')
+      script2.src = 'https://cdn.jsdelivr.net/npm/skulpt@1.2.0/dist/skulpt-stdlib.js'
+      script2.async = false
+      
+      script1.onload = () => {
+        script2.onload = () => {
+          setSkulptReady(true)
           setOutput('✓ Python environment ready! You can now run your code.\n')
-        } catch (error: any) {
-          setOutput(`Error loading Python: ${error.message}\n`)
+          setLoadingSkulpt(false)
         }
+        
+        script2.onerror = () => {
+          setOutput('Failed to load Python environment. Please check your internet connection.\n')
+          setLoadingSkulpt(false)
+        }
+        
+        document.body.appendChild(script2)
       }
       
-      script.onerror = () => {
+      script1.onerror = () => {
         setOutput('Failed to load Python environment. Please check your internet connection.\n')
+        setLoadingSkulpt(false)
       }
       
-      document.body.appendChild(script)
+      document.body.appendChild(script1)
     } catch (error: any) {
       setOutput(`Error: ${error.message}\n`)
-    } finally {
-      setLoadingPyodide(false)
+      setLoadingSkulpt(false)
     }
   }
 
   const runCode = async () => {
-    if (!pyodideReady || !pyodideRef.current) {
+    if (!skulptReady || !window.Sk) {
       setOutput('Python environment not ready. Please wait...\n')
       return
     }
 
     setIsRunning(true)
-    setOutput('Running...\n')
+    setOutput('')
 
     try {
-      const pyodide = pyodideRef.current
+      let outputText = ''
       
-      // Simple approach: wrap code in a function that captures print output
-      const wrappedCode = `
-import sys
-from io import StringIO
+      // Configure Skulpt
+      window.Sk.configure({
+        output: (text: string) => {
+          outputText += text
+        },
+        read: (filename: string) => {
+          if (window.Sk.builtinFiles === undefined || window.Sk.builtinFiles.files[filename] === undefined) {
+            throw new Error(`File not found: '${filename}'`)
+          }
+          return window.Sk.builtinFiles.files[filename]
+        }
+      })
 
-# Capture stdout
-_stdout = StringIO()
-_old_stdout = sys.stdout
-sys.stdout = _stdout
+      // Run the code
+      await window.Sk.misceval.asyncToPromise(() => {
+        return window.Sk.importMainWithBody('<stdin>', false, code, true)
+      })
 
-try:
-${code.split('\n').map(line => '    ' + line).join('\n')}
-except Exception as e:
-    print(f"Error: {e}")
-    import traceback
-    traceback.print_exc()
-finally:
-    sys.stdout = _old_stdout
-
-_stdout.getvalue()
-`
-      
-      // Run and get output
-      const result = await pyodide.runPythonAsync(wrappedCode)
-      
-      setOutput(result || 'Code executed successfully (no output)\n')
+      // Display output
+      if (outputText.trim()) {
+        setOutput(outputText)
+      } else {
+        setOutput('✓ Code executed successfully (no output)')
+      }
     } catch (error: any) {
-      setOutput(`Error:\n${error.message}\n`)
+      setOutput(`Error: ${error.toString()}`)
     } finally {
       setIsRunning(false)
     }
@@ -187,7 +217,7 @@ def fibonacci(n):
     return fibonacci(n-1) + fibonacci(n-2)
 
 for i in range(10):
-    print(f"Fibonacci({i}) = {fibonacci(i)}")`,
+    print("Fibonacci(" + str(i) + ") =", fibonacci(i))`,
       
       sorting: `# Bubble Sort Algorithm
 def bubble_sort(arr):
@@ -206,13 +236,13 @@ print("Sorted:", bubble_sort(numbers.copy()))`,
 # For loop
 print("For loop:")
 for i in range(1, 6):
-    print(f"  {i} squared = {i**2}")
+    print("  " + str(i) + " squared =", i**2)
 
 # While loop
 print("\\nWhile loop:")
 count = 1
 while count <= 5:
-    print(f"  Count: {count}")
+    print("  Count:", count)
     count += 1
 
 # If-elif-else
@@ -252,35 +282,35 @@ print("Even squares:", even_squares)`
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 md:p-4">
-      <div className="bg-white rounded-2xl w-full max-w-7xl h-[calc(100vh-1rem)] md:h-[90vh] flex flex-col shadow-2xl">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-0 sm:p-2 md:p-4">
+      <div className="bg-white rounded-none sm:rounded-2xl w-full h-full sm:h-[95vh] sm:max-w-7xl md:h-[90vh] flex flex-col shadow-2xl">
         {/* Header */}
-        <div className="p-3 md:p-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-green-500 to-blue-600">
-          <div className="flex items-center gap-2 md:gap-3">
-            <div className="w-8 h-8 md:w-10 md:h-10 bg-white rounded-xl flex items-center justify-center">
-              <svg className="w-5 h-5 md:w-6 md:h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="p-2 sm:p-3 md:p-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-green-500 to-blue-600">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 bg-white rounded-lg sm:rounded-xl flex items-center justify-center">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
               </svg>
             </div>
             <div>
-              <h2 className="text-base md:text-lg font-semibold text-white">Slate Python IDE</h2>
-              <p className="text-[10px] md:text-xs text-green-100">
-                {pyodideReady ? 'Ready to code!' : 'Loading...'}
+              <h2 className="text-sm sm:text-base md:text-lg font-semibold text-white">Slate Python IDE</h2>
+              <p className="text-[9px] sm:text-[10px] md:text-xs text-green-100">
+                {skulptReady ? 'Ready to code!' : 'Loading...'}
               </p>
             </div>
           </div>
-          <div className="flex gap-1 md:gap-2">
+          <div className="flex gap-1 sm:gap-2">
             <button
               onClick={clearOutput}
-              className="px-3 md:px-4 py-1.5 md:py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors text-xs md:text-sm"
+              className="px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 md:py-2 bg-white/20 text-white rounded-md sm:rounded-lg hover:bg-white/30 transition-colors text-[10px] sm:text-xs md:text-sm"
             >
               Clear
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 md:p-2 hover:bg-white/20 rounded-lg transition-colors text-white"
+              className="p-1 sm:p-1.5 md:p-2 hover:bg-white/20 rounded-md sm:rounded-lg transition-colors text-white"
             >
-              <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 sm:w-4 sm:h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -288,14 +318,14 @@ print("Even squares:", even_squares)`
         </div>
 
         {/* Examples Bar */}
-        <div className="p-2 md:p-3 border-b border-gray-200 bg-gray-50">
-          <div className="flex items-center gap-2 overflow-x-auto">
-            <span className="text-xs text-gray-600 whitespace-nowrap">Examples:</span>
+        <div className="p-1.5 sm:p-2 md:p-3 border-b border-gray-200 bg-gray-50">
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1">
+            <span className="text-[10px] sm:text-xs text-gray-600 whitespace-nowrap">Examples:</span>
             {['hello', 'fibonacci', 'sorting', 'loops', 'lists'].map((example) => (
               <button
                 key={example}
                 onClick={() => loadExample(example)}
-                className="px-2 md:px-3 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-100 transition-colors whitespace-nowrap"
+                className="px-2 sm:px-2 md:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs bg-white border border-gray-300 rounded hover:bg-gray-100 transition-colors whitespace-nowrap flex-shrink-0"
               >
                 {example.charAt(0).toUpperCase() + example.slice(1)}
               </button>
@@ -306,13 +336,13 @@ print("Even squares:", even_squares)`
         {/* Editor and Output */}
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
           {/* Code Editor */}
-          <div className="flex-1 flex flex-col border-b md:border-b-0 md:border-r border-gray-200">
-            <div className="p-2 md:p-3 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
-              <h3 className="text-xs md:text-sm font-semibold text-gray-700">Code Editor</h3>
+          <div className="h-1/2 md:h-auto md:flex-1 flex flex-col border-b md:border-b-0 md:border-r border-gray-200">
+            <div className="p-1.5 sm:p-2 md:p-3 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+              <h3 className="text-[10px] sm:text-xs md:text-sm font-semibold text-gray-700">Code Editor</h3>
               <button
                 onClick={runCode}
-                disabled={isRunning || !pyodideReady}
-                className="px-3 md:px-4 py-1.5 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-xs md:text-sm"
+                disabled={isRunning || !skulptReady}
+                className="px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 md:py-2 bg-green-600 text-white rounded-md sm:rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 sm:gap-2 text-[10px] sm:text-xs md:text-sm"
               >
                 {isRunning ? (
                   <>
@@ -321,7 +351,7 @@ print("Even squares:", even_squares)`
                   </>
                 ) : (
                   <>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
@@ -334,7 +364,7 @@ print("Even squares:", even_squares)`
               {/* Syntax highlighted background */}
               <pre
                 ref={highlightRef}
-                className="absolute inset-0 p-3 md:p-4 font-mono text-xs md:text-sm overflow-auto pointer-events-none bg-gray-900"
+                className="absolute inset-0 p-2 sm:p-3 md:p-4 font-mono text-[10px] sm:text-xs md:text-sm overflow-auto pointer-events-none bg-gray-900 z-0"
                 style={{
                   lineHeight: '1.5',
                   whiteSpace: 'pre-wrap',
@@ -355,7 +385,7 @@ print("Even squares:", even_squares)`
                     highlightRef.current.scrollLeft = e.currentTarget.scrollLeft
                   }
                 }}
-                className="absolute inset-0 p-3 md:p-4 font-mono text-xs md:text-sm resize-none focus:outline-none bg-transparent text-transparent caret-white"
+                className="absolute inset-0 p-2 sm:p-3 md:p-4 font-mono text-[10px] sm:text-xs md:text-sm resize-none focus:outline-none bg-transparent caret-white z-10 selection:bg-blue-500/30"
                 style={{
                   caretColor: 'white',
                   lineHeight: '1.5',
@@ -366,18 +396,19 @@ print("Even squares:", even_squares)`
                 placeholder="Write your Python code here..."
               />
             </div>
-            <div className="p-2 border-t border-gray-700 bg-gray-800 text-[10px] md:text-xs text-gray-400">
-              Press Ctrl+Enter to run • Tab for indentation
+            <div className="p-1.5 sm:p-2 border-t border-gray-700 bg-gray-800 text-[9px] sm:text-[10px] md:text-xs text-gray-400">
+              <span className="hidden md:inline">Press Ctrl+Enter to run • Tab for indentation</span>
+              <span className="md:hidden">Tap Run button above</span>
             </div>
           </div>
 
           {/* Output */}
-          <div className="flex-1 flex flex-col bg-gray-900">
-            <div className="p-2 md:p-3 border-b border-gray-700 bg-gray-800">
-              <h3 className="text-xs md:text-sm font-semibold text-gray-300">Output</h3>
+          <div className="h-1/2 md:h-auto md:flex-1 flex flex-col bg-gray-900">
+            <div className="p-1.5 sm:p-2 md:p-3 border-b border-gray-700 bg-gray-800">
+              <h3 className="text-[10px] sm:text-xs md:text-sm font-semibold text-gray-300">Output</h3>
             </div>
-            <div className="flex-1 overflow-y-auto p-3 md:p-4">
-              <pre className="font-mono text-xs md:text-sm text-gray-300 whitespace-pre-wrap">
+            <div className="flex-1 overflow-y-auto p-2 sm:p-3 md:p-4">
+              <pre className="font-mono text-[10px] sm:text-xs md:text-sm text-gray-300 whitespace-pre-wrap break-words">
                 {output || 'Output will appear here...'}
               </pre>
             </div>
