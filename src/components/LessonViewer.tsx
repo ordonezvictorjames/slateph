@@ -205,16 +205,68 @@ export default function LessonViewer({ module, isOpen, onClose }: LessonViewerPr
         }
 
         const isSupabaseStorage = module.document_url.includes('supabase.co/storage')
+        const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
         
-        // Choose viewer based on content type
+        // On mobile, provide download/open option instead of iframe
+        if (isMobileDevice) {
+          const getDocumentIcon = () => {
+            if (module.content_type === 'slide_presentation') {
+              return (
+                <svg className="w-20 h-20 mx-auto mb-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                </svg>
+              )
+            }
+            return (
+              <svg className="w-20 h-20 mx-auto mb-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            )
+          }
+
+          const getDocumentType = () => {
+            if (module.content_type === 'slide_presentation') return 'Presentation'
+            if (module.content_type === 'pdf_document') return 'PDF Document'
+            return 'Document'
+          }
+
+          return (
+            <div className="flex items-center justify-center h-full bg-gradient-to-br from-blue-50 to-indigo-50 p-6">
+              <div className="text-center max-w-md">
+                {getDocumentIcon()}
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">{getDocumentType()}</h3>
+                <p className="text-gray-600 mb-6">
+                  Documents work best when opened in your device's native viewer or browser.
+                </p>
+                <a
+                  href={module.document_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl"
+                >
+                  <span>Open Document</span>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+              </div>
+            </div>
+          )
+        }
+        
+        // Desktop: Choose viewer based on content type
         let docEmbedUrl = module.document_url
         
         if (isSupabaseStorage) {
           if (module.content_type === 'slide_presentation') {
             // Use Microsoft Office Online Viewer for PowerPoint files (better slide navigation)
             docEmbedUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(module.document_url)}`
+          } else if (module.content_type === 'pdf_document') {
+            // For PDFs, use the direct URL to leverage browser's native PDF viewer
+            // This shows all pages and has better navigation
+            docEmbedUrl = module.document_url
           } else {
-            // Use Google Docs Viewer for PDFs and other documents
+            // Use Google Docs Viewer for other documents
             docEmbedUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(module.document_url)}&embedded=true`
           }
         } else {
