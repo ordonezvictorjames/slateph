@@ -580,7 +580,7 @@ export default function MyCoursesPage() {
                     key={subject.id}
                     className="bg-white rounded-xl border-2 border-leaf-100 hover:border-leaf-300 hover:shadow-soft transition-all duration-200 overflow-hidden"
                   >
-                    <div className="p-4 flex items-center gap-4">
+                    <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4">
                       {/* Subject Number */}
                       <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 bg-leaf-100 rounded-lg border-2 border-leaf-200">
                         <span className="text-xl font-bold text-leaf-700">{subject.order_index}</span>
@@ -588,13 +588,13 @@ export default function MyCoursesPage() {
                       
                       {/* Subject Info */}
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-semibold text-earth-900 mb-1 truncate">
+                        <h3 className="text-base sm:text-lg font-semibold text-earth-900 mb-1 truncate">
                           {subject.title}
                         </h3>
                         <p className="text-sm text-earth-600 line-clamp-2 mb-2">
                           {subject.description}
                         </p>
-                        <div className="flex items-center gap-3 flex-wrap">
+                        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                           <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${
                             subject.status === 'active' ? 'bg-green-100 text-green-700' :
                             subject.status === 'inactive' ? 'bg-red-100 text-red-700' :
@@ -607,7 +607,7 @@ export default function MyCoursesPage() {
                               {badge.text}
                             </span>
                           ))}
-                          <div className="flex items-center gap-1.5 text-sm text-gray-500">
+                          <div className="hidden sm:flex items-center gap-1.5 text-sm text-gray-500">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                             </svg>
@@ -619,11 +619,12 @@ export default function MyCoursesPage() {
                       </div>
                       
                       {/* Action Button */}
-                      <div className="flex-shrink-0">
+                      <div className="w-full sm:w-auto sm:flex-shrink-0">
                         <NatureButton 
                           size="sm" 
                           variant="leaf"
                           onClick={() => handleSubjectSelect(subject)}
+                          className="w-full sm:w-auto"
                           icon={
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
