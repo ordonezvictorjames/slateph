@@ -9,7 +9,7 @@ interface PythonPlaygroundProps {
 }
 
 export default function PythonPlayground({ isOpen, onClose }: PythonPlaygroundProps) {
-  const [code, setCode] = useState(`# Welcome to Python Playground!
+  const [code, setCode] = useState(`# Welcome to Slate Python IDE!
 # Write your Python code here and click Run
 
 def greet(name):
@@ -32,6 +32,29 @@ print(f"Fibonacci(10) = {fibonacci(10)}")
   const [loadingPyodide, setLoadingPyodide] = useState(false)
   const pyodideRef = useRef<any>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const highlightRef = useRef<HTMLPreElement>(null)
+
+  // Syntax highlighting function
+  const highlightCode = (code: string) => {
+    return code
+      .split('\n')
+      .map(line => {
+        // Check if line is a comment
+        const trimmed = line.trim()
+        if (trimmed.startsWith('#')) {
+          return `<span style="color: #4ade80;">${line}</span>` // green for comments
+        }
+        return `<span style="color: white;">${line}</span>` // white for code
+      })
+      .join('\n')
+  }
+
+  // Update highlight when code changes
+  useEffect(() => {
+    if (highlightRef.current) {
+      highlightRef.current.innerHTML = highlightCode(code)
+    }
+  }, [code])
 
   // Load Pyodide when component mounts
   useEffect(() => {
@@ -89,18 +112,32 @@ print(f"Fibonacci(10) = {fibonacci(10)}")
     try {
       const pyodide = pyodideRef.current
       
-      // Capture stdout
-      let outputText = ''
-      pyodide.setStdout({
-        batched: (text: string) => {
-          outputText += text + '\n'
-        }
-      })
+      // Simple approach: wrap code in a function that captures print output
+      const wrappedCode = `
+import sys
+from io import StringIO
 
-      // Run the code
-      await pyodide.runPythonAsync(code)
+# Capture stdout
+_stdout = StringIO()
+_old_stdout = sys.stdout
+sys.stdout = _stdout
+
+try:
+${code.split('\n').map(line => '    ' + line).join('\n')}
+except Exception as e:
+    print(f"Error: {e}")
+    import traceback
+    traceback.print_exc()
+finally:
+    sys.stdout = _old_stdout
+
+_stdout.getvalue()
+`
       
-      setOutput(outputText || 'Code executed successfully (no output)\n')
+      // Run and get output
+      const result = await pyodide.runPythonAsync(wrappedCode)
+      
+      setOutput(result || 'Code executed successfully (no output)\n')
     } catch (error: any) {
       setOutput(`Error:\n${error.message}\n`)
     } finally {
@@ -226,7 +263,7 @@ print("Even squares:", even_squares)`
               </svg>
             </div>
             <div>
-              <h2 className="text-base md:text-lg font-semibold text-white">Python Playground</h2>
+              <h2 className="text-base md:text-lg font-semibold text-white">Slate Python IDE</h2>
               <p className="text-[10px] md:text-xs text-green-100">
                 {pyodideReady ? 'Ready to code!' : 'Loading...'}
               </p>
@@ -293,15 +330,42 @@ print("Even squares:", even_squares)`
                 )}
               </button>
             </div>
-            <textarea
-              ref={textareaRef}
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="flex-1 p-3 md:p-4 font-mono text-xs md:text-sm resize-none focus:outline-none bg-gray-900 text-green-400"
-              spellCheck={false}
-              placeholder="Write your Python code here..."
-            />
+            <div className="flex-1 relative overflow-hidden">
+              {/* Syntax highlighted background */}
+              <pre
+                ref={highlightRef}
+                className="absolute inset-0 p-3 md:p-4 font-mono text-xs md:text-sm overflow-auto pointer-events-none bg-gray-900"
+                style={{
+                  lineHeight: '1.5',
+                  whiteSpace: 'pre-wrap',
+                  wordWrap: 'break-word'
+                }}
+                aria-hidden="true"
+              />
+              {/* Transparent textarea overlay */}
+              <textarea
+                ref={textareaRef}
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onScroll={(e) => {
+                  // Sync scroll between textarea and highlight
+                  if (highlightRef.current) {
+                    highlightRef.current.scrollTop = e.currentTarget.scrollTop
+                    highlightRef.current.scrollLeft = e.currentTarget.scrollLeft
+                  }
+                }}
+                className="absolute inset-0 p-3 md:p-4 font-mono text-xs md:text-sm resize-none focus:outline-none bg-transparent text-transparent caret-white"
+                style={{
+                  caretColor: 'white',
+                  lineHeight: '1.5',
+                  color: 'transparent',
+                  WebkitTextFillColor: 'transparent'
+                }}
+                spellCheck={false}
+                placeholder="Write your Python code here..."
+              />
+            </div>
             <div className="p-2 border-t border-gray-700 bg-gray-800 text-[10px] md:text-xs text-gray-400">
               Press Ctrl+Enter to run • Tab for indentation
             </div>
