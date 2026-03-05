@@ -620,13 +620,13 @@ export default function MyCoursesPage() {
                         </div>
                       </div>
                       
-                      {/* Action Button - Separate row on mobile */}
-                      <div className="w-full">
+                      {/* Action Button - Full width on mobile, auto width on desktop */}
+                      <div className="w-full sm:w-auto sm:ml-auto">
                         <NatureButton 
                           size="sm" 
                           variant="leaf"
                           onClick={() => handleSubjectSelect(subject)}
-                          className="w-full"
+                          className="w-full sm:w-auto"
                           icon={
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
