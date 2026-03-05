@@ -6,6 +6,7 @@ import { useIdleTimeout } from '@/hooks/useIdleTimeout'
 import Sidebar from '@/components/Sidebar'
 import CourseChat from '@/components/CourseChat'
 import AIAssistant from '@/components/AIAssistant'
+import PythonPlayground from '@/components/PythonPlayground'
 import { PageLoading } from '@/components/ui/page-loading'
 import DashboardHome from '@/components/pages/DashboardHome'
 import UserManagementPage from '@/components/pages/UserManagementPage'
@@ -30,6 +31,7 @@ export default function Dashboard() {
   const [isPageTransitioning, setIsPageTransitioning] = useState(false)
   const [showChat, setShowChat] = useState(false)
   const [showAI, setShowAI] = useState(false)
+  const [showPython, setShowPython] = useState(false)
 
   // Page transition loading effect
   useEffect(() => {
@@ -78,6 +80,17 @@ export default function Dashboard() {
         <div className="flex-1 flex flex-col ml-0 lg:ml-16">
           <main className="flex-1">{renderCurrentPage()}</main>
         </div>
+        {/* Python Playground Button */}
+        <button 
+          onClick={() => setShowPython(true)} 
+          className="fixed bottom-36 right-4 sm:bottom-40 sm:right-6 w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-green-500 to-blue-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center group z-40 hover:scale-110" 
+          title="Python Playground"
+        >
+          <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+          </svg>
+        </button>
+
         {/* AI Assistant Button */}
         <button 
           onClick={() => setShowAI(true)} 
@@ -100,6 +113,7 @@ export default function Dashboard() {
           </svg>
         </button>
         
+        <PythonPlayground isOpen={showPython} onClose={() => setShowPython(false)} />
         <AIAssistant isOpen={showAI} onClose={() => setShowAI(false)} />
         <CourseChat isOpen={showChat} onClose={() => setShowChat(false)} />
       </div>
