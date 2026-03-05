@@ -262,9 +262,11 @@ export default function LessonViewer({ module, isOpen, onClose }: LessonViewerPr
             // Use Microsoft Office Online Viewer for PowerPoint files (better slide navigation)
             docEmbedUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(module.document_url)}`
           } else if (module.content_type === 'pdf_document') {
-            // For PDFs, use the direct URL to leverage browser's native PDF viewer
-            // This shows all pages and has better navigation
-            docEmbedUrl = module.document_url
+            // For PDFs, modify URL to force inline display instead of download
+            // Add download parameter to control behavior
+            const url = new URL(module.document_url)
+            url.searchParams.set('download', '') // Empty value forces inline display
+            docEmbedUrl = url.toString()
           } else {
             // Use Google Docs Viewer for other documents
             docEmbedUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(module.document_url)}&embedded=true`
