@@ -145,6 +145,37 @@ export default function LessonViewer({ module, isOpen, onClose }: LessonViewerPr
           )
         }
 
+        // On mobile, show a button to open in new tab instead of iframe
+        // Canva blocks iframe embedding on mobile browsers
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+        
+        if (isMobile) {
+          return (
+            <div className="flex items-center justify-center h-full bg-gradient-to-br from-purple-50 to-blue-50 p-6">
+              <div className="text-center max-w-md">
+                <svg className="w-20 h-20 mx-auto mb-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                </svg>
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">Canva Presentation</h3>
+                <p className="text-gray-600 mb-6">
+                  Canva presentations work best when opened in a new tab on mobile devices.
+                </p>
+                <a
+                  href={module.canva_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors shadow-lg hover:shadow-xl"
+                >
+                  <span>Open Presentation</span>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+              </div>
+            </div>
+          )
+        }
+
         return (
           <div className="w-full h-full">
             <iframe
