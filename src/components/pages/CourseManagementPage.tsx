@@ -2518,7 +2518,7 @@ export default function CourseManagementPage() {
                           className="bg-white border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-md transition-all duration-200"
                         >
                           <div className="p-4">
-                            <div className="flex items-center gap-4">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                               {/* Order Number */}
                               <div className="flex-shrink-0 w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
                                 <span className="text-xl font-bold text-gray-700">{subject.order_index}</span>
@@ -2527,7 +2527,7 @@ export default function CourseManagementPage() {
                               {/* Subject Info */}
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-start justify-between gap-3 mb-2">
-                                  <h3 className="text-lg font-bold text-gray-900 truncate">
+                                  <h3 className="text-base sm:text-lg font-bold text-gray-900 truncate">
                                     {subject.title}
                                   </h3>
                                   <span className={`flex-shrink-0 inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${
@@ -2545,7 +2545,7 @@ export default function CourseManagementPage() {
                                   </p>
                                 )}
                                 
-                                <div className="flex flex-wrap items-center gap-4 text-sm">
+                                <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-2 sm:gap-4 text-sm">
                                   {/* Instructor */}
                                   <div className="flex items-center gap-2">
                                     <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2580,10 +2580,10 @@ export default function CourseManagementPage() {
                               </div>
                               
                               {/* Action Buttons */}
-                              <div className="flex-shrink-0 flex items-center gap-2">
+                              <div className="w-full sm:w-auto sm:flex-shrink-0 flex items-center gap-2">
                                 <button 
                                   onClick={() => handleSubjectSelect(subject)}
-                                  className="px-4 py-2 text-white rounded-lg font-medium text-sm transition-colors flex items-center gap-2"
+                                  className="flex-1 sm:flex-none px-4 py-2 text-white rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2"
                                   style={{ backgroundColor: getButtonBg() }}
                                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
                                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
