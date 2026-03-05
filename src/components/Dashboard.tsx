@@ -76,7 +76,11 @@ export default function Dashboard() {
     <>
       {isPageTransitioning && <PageLoading />}
       <div className="min-h-screen flex" style={{ backgroundColor: '#f3f4f6' }}>
-        <Sidebar currentPage={currentPage} onPageChange={setCurrentPage} />
+        <Sidebar 
+          currentPage={currentPage} 
+          onPageChange={setCurrentPage}
+          hideHamburger={showChat || showAI || showPython}
+        />
         <div className="flex-1 flex flex-col ml-0 lg:ml-16">
           <main className="flex-1">{renderCurrentPage()}</main>
         </div>
