@@ -26,8 +26,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Check for active session from server
     const checkSession = async () => {
       try {
+        // Add timeout to prevent infinite loading
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 8000) // 8 second timeout
+        
         // Fetch current session from API
-        const response = await fetch('/api/auth/session')
+        const response = await fetch('/api/auth/session', {
+          signal: controller.signal,
+          cache: 'no-store'
+        })
+        
+        clearTimeout(timeoutId)
+        
         if (response.ok) {
           const data = await response.json()
           if (data.session?.id && mounted) {
@@ -38,7 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               .eq('id', data.session.id)
               .single()
 
-            if (!error && profile) {
+            if (!error && profile && mounted) {
               const userData: AuthUser = {
                 id: profile.id,
                 email: profile.email,
@@ -61,7 +71,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
       } catch (error) {
-        console.log('No active session found')
+        if (error instanceof Error && error.name === 'AbortError') {
+          console.log('Session check timed out - continuing without session')
+        } else {
+          console.log('No active session found')
+        }
       } finally {
         if (mounted) {
           setLoading(false)
