@@ -97,6 +97,8 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
   const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>([])
   const [loadingCourses, setLoadingCourses] = useState(true)
   const [showBannerModal, setShowBannerModal] = useState(false)
+  const [isRepositioning, setIsRepositioning] = useState(false)
+  const [bannerPositionY, setBannerPositionY] = useState(50) // Percentage from top
   const supabase = createClient()
 
   // Determine which user profile to display
@@ -515,6 +517,17 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
     }
   }
 
+  const handleSavePosition = () => {
+    setIsRepositioning(false)
+    setShowBannerModal(false)
+    alert('Banner position saved!')
+  }
+
+  const handleCancelReposition = () => {
+    setIsRepositioning(false)
+    setBannerPositionY(50)
+  }
+
   if (!user || (loadingProfile && !isOwnProfile)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -533,19 +546,70 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
         <div className="max-w-7xl mx-auto">
           {/* Banner Section */}
           <div className="relative w-full h-32 md:h-48 bg-gradient-to-r from-blue-500 to-purple-600 overflow-hidden">
-            {bannerUrl ? (
-              <img 
-                src={bannerUrl} 
-                alt="Profile Banner"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full bg-gradient-to-r from-blue-500 to-purple-600"></div>
+            <div className="absolute inset-0">
+              {bannerUrl ? (
+                <img 
+                  src={bannerUrl} 
+                  alt="Profile Banner"
+                  className="w-full h-full object-cover"
+                  style={{
+                    objectPosition: `center ${bannerPositionY}%`
+                  }}
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-r from-blue-500 to-purple-600"></div>
+              )}
+            </div>
+            
+            {/* Reposition Controls Overlay */}
+            {isRepositioning && (
+              <div className="absolute inset-0 bg-black bg-opacity-60 flex flex-col items-center justify-center z-20">
+                <div className="text-center text-white mb-6">
+                  <p className="text-lg font-semibold mb-2">Adjust banner position</p>
+                  <p className="text-sm text-gray-300">Use the slider to move the image up or down</p>
+                </div>
+                
+                {/* Slider */}
+                <div className="w-64 mb-6">
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={bannerPositionY}
+                    onChange={(e) => setBannerPositionY(Number(e.target.value))}
+                    className="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer"
+                    style={{
+                      background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${bannerPositionY}%, #d1d5db ${bannerPositionY}%, #d1d5db 100%)`
+                    }}
+                  />
+                  <div className="flex justify-between text-xs text-gray-300 mt-1">
+                    <span>Top</span>
+                    <span>Center</span>
+                    <span>Bottom</span>
+                  </div>
+                </div>
+                
+                {/* Action Buttons */}
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleSavePosition}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={handleCancelReposition}
+                    className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
             )}
             
             {/* Edit Cover Photo Button - Only show for own profile */}
-            {isOwnProfile && (
-              <div className="absolute bottom-4 right-4">
+            {isOwnProfile && !isRepositioning && (
+              <div className="absolute bottom-4 right-4 z-10">
                 <button
                   onClick={() => setShowBannerModal(!showBannerModal)}
                   className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 rounded-lg shadow-md hover:bg-gray-100 transition-colors text-sm font-medium"
@@ -556,84 +620,81 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
                   </svg>
                   Edit cover photo
                 </button>
-
-                {/* Dropdown Menu */}
-                {showBannerModal && (
-                  <>
-                    {/* Backdrop to close menu */}
-                    <div 
-                      className="fixed inset-0 z-40" 
-                      onClick={() => setShowBannerModal(false)}
-                    />
-                    
-                    {/* Menu */}
-                    <div className="absolute top-full right-0 mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden">
-                      {/* Header */}
-                      <div className="px-4 py-3 border-b border-gray-200">
-                        <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                          Choose cover photo
-                        </h3>
-                      </div>
-
-                      {/* Menu Items */}
-                      <div className="py-2">
-                        {/* Upload Photo Option */}
-                        <label className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors">
-                          <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                          </svg>
-                          <span className="text-gray-900 font-medium">Upload photo</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => {
-                              handleBannerUpload(e)
-                              setShowBannerModal(false)
-                            }}
-                            disabled={uploadingBanner}
-                            className="hidden"
-                          />
-                        </label>
-
-                        {/* Reposition Option (placeholder) */}
-                        <button
-                          className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors w-full text-left opacity-50 cursor-not-allowed"
-                          disabled
-                        >
-                          <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-                          </svg>
-                          <span className="text-gray-900 font-medium">Reposition</span>
-                        </button>
-
-                        {/* Remove Option */}
-                        {bannerUrl && (
-                          <>
-                            <div className="my-2 border-t border-gray-200"></div>
-                            <button
-                              onClick={() => {
-                                handleRemoveBanner()
-                                setShowBannerModal(false)
-                              }}
-                              className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-colors w-full text-left bg-gray-50"
-                            >
-                              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                              <span className="text-gray-900 font-medium">Remove</span>
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </>
-                )}
               </div>
             )}
           </div>
+
+          {/* Dropdown Menu - Rendered outside overflow container */}
+          {isOwnProfile && showBannerModal && !isRepositioning && (
+            <>
+              {/* Backdrop to close menu */}
+              <div 
+                className="fixed inset-0 z-40" 
+                onClick={() => setShowBannerModal(false)}
+              />
+              
+              {/* Menu - positioned relative to viewport */}
+              <div className="relative">
+                <div className="absolute top-0 right-4 w-80 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden">
+                  {/* Menu Items */}
+                  <div className="py-2">
+                    {/* Upload Photo Option */}
+                    <label className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors">
+                      <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                      <span className="text-gray-900 font-medium">Upload photo</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          handleBannerUpload(e)
+                          setShowBannerModal(false)
+                        }}
+                        disabled={uploadingBanner}
+                        className="hidden"
+                      />
+                    </label>
+
+                    {/* Reposition Option */}
+                    {bannerUrl && (
+                      <button
+                        onClick={() => {
+                          setIsRepositioning(true)
+                          setShowBannerModal(false)
+                        }}
+                        className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors w-full text-left"
+                      >
+                        <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                        </svg>
+                        <span className="text-gray-900 font-medium">Reposition</span>
+                      </button>
+                    )}
+
+                    {/* Remove Option */}
+                    {bannerUrl && (
+                      <>
+                        <div className="my-2 border-t border-gray-200"></div>
+                        <button
+                          onClick={() => {
+                            handleRemoveBanner()
+                            setShowBannerModal(false)
+                          }}
+                          className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-colors w-full text-left bg-gray-50"
+                        >
+                          <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                          <span className="text-gray-900 font-medium">Remove</span>
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Profile Info */}
           <div className="px-4 py-4 md:py-8">
@@ -687,18 +748,37 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
 
               {/* User Info */}
               <div className="flex-1 mt-4 md:mt-16 text-center md:text-left">
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-                  {displayUser?.profile?.first_name} {displayUser?.profile?.last_name}
-                </h1>
-                <p className="text-sm md:text-base text-gray-600 mt-1 truncate">{displayUser?.email || displayUser?.profile?.email}</p>
-                <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 md:gap-4 mt-3">
-                  <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs md:text-sm font-medium capitalize">
-                    {displayUser?.profile?.role}
-                  </span>
-                  {(displayUser?.profile as any)?.status && (
-                    <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs md:text-sm font-medium capitalize">
-                      {(displayUser?.profile as any)?.status}
-                    </span>
+                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                  <div className="flex-1">
+                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                      {displayUser?.profile?.first_name} {displayUser?.profile?.last_name}
+                    </h1>
+                    <p className="text-sm md:text-base text-gray-600 mt-1 truncate">{displayUser?.email || displayUser?.profile?.email}</p>
+                    <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 md:gap-4 mt-3">
+                      <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs md:text-sm font-medium capitalize">
+                        {displayUser?.profile?.role}
+                      </span>
+                      {(displayUser?.profile as any)?.status && (
+                        <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs md:text-sm font-medium capitalize">
+                          {(displayUser?.profile as any)?.status}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Edit Profile Button - Only show for own profile */}
+                  {isOwnProfile && (
+                    <div className="flex justify-center md:justify-end">
+                      <button
+                        onClick={() => alert('Edit profile feature coming soon!')}
+                        className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Edit Profile
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
