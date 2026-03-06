@@ -34,9 +34,10 @@ interface LoungeChat {
 interface CourseChatProps {
   isOpen: boolean
   onClose: () => void
+  onNavigateToProfile?: (userId?: string) => void
 }
 
-export default function CourseChat({ isOpen, onClose }: CourseChatProps) {
+export default function CourseChat({ isOpen, onClose, onNavigateToProfile }: CourseChatProps) {
   const { user } = useAuth()
   const [courses, setCourses] = useState<Course[]>([])
   const [selectedCourse, setSelectedCourse] = useState<Course | LoungeChat | null>(null)
@@ -588,9 +589,17 @@ export default function CourseChat({ isOpen, onClose }: CourseChatProps) {
                             {/* Message Content */}
                             <div className="min-w-0">
                               <div className="flex items-center space-x-1 sm:space-x-2 mb-0.5 sm:mb-1 flex-wrap">
-                                <span className="text-[10px] sm:text-xs font-semibold text-gray-700 truncate">
+                                <button
+                                  onClick={() => {
+                                    if (onNavigateToProfile) {
+                                      onNavigateToProfile(msg.sender_id === user?.id ? undefined : msg.sender_id)
+                                      onClose() // Close chat when navigating to profile
+                                    }
+                                  }}
+                                  className="text-[10px] sm:text-xs font-semibold text-gray-700 truncate hover:underline"
+                                >
                                   {msg.user_first_name} {msg.user_last_name}
-                                </span>
+                                </button>
                                 {(msg.user_role === 'admin' || msg.user_role === 'trainee' || msg.user_role === 'developer') && (
                                   <span className={`text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 rounded ${getRoleBadgeColor(msg.user_role)}`}>
                                     {msg.user_role}

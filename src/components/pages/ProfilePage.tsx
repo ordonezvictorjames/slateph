@@ -71,8 +71,15 @@ interface EnrolledCourse {
   status: string
 }
 
-export default function ProfilePage() {
+interface ProfilePageProps {
+  userId?: string // Optional userId to view other profiles
+  onNavigateToProfile?: (userId?: string) => void // Callback to navigate to another profile
+}
+
+export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePageProps = {}) {
   const { user, refreshUser } = useAuth()
+  const [profileUser, setProfileUser] = useState<any>(null)
+  const [loadingProfile, setLoadingProfile] = useState(false)
   const [uploadingBanner, setUploadingBanner] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [posts, setPosts] = useState<Post[]>([])
@@ -91,9 +98,22 @@ export default function ProfilePage() {
   const [loadingCourses, setLoadingCourses] = useState(true)
   const supabase = createClient()
 
+  // Determine which user profile to display
+  const displayUserId = userId || user?.id
+  const isOwnProfile = !userId || userId === user?.id
+
+  // Fetch profile user data if viewing another user's profile
+  useEffect(() => {
+    if (displayUserId && !isOwnProfile) {
+      fetchProfileUser()
+    } else if (isOwnProfile) {
+      setProfileUser(user)
+    }
+  }, [displayUserId, isOwnProfile, user])
+
   // Fetch posts
   useEffect(() => {
-    if (user?.id) {
+    if (displayUserId) {
       setIsInitialLoad(true)
       fetchPosts()
       fetchEnrolledCourses()
@@ -125,7 +145,25 @@ export default function ProfilePage() {
         supabase.removeChannel(postsChannel)
       }
     }
-  }, [user?.id, activeTab])
+  }, [displayUserId, activeTab])
+
+  const fetchProfileUser = async () => {
+    try {
+      setLoadingProfile(true)
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', displayUserId)
+        .single()
+
+      if (error) throw error
+      setProfileUser({ id: displayUserId, profile: data, email: data.email })
+    } catch (error) {
+      console.error('Error fetching profile user:', error)
+    } finally {
+      setLoadingProfile(false)
+    }
+  }
 
   const fetchEnrolledCourses = async () => {
     try {
@@ -139,7 +177,7 @@ export default function ProfilePage() {
           status,
           course:course_id(id, title, description)
         `)
-        .eq('trainee_id', user?.id)
+        .eq('trainee_id', displayUserId)
         .eq('status', 'active')
         .order('created_at', { ascending: false })
 
@@ -175,7 +213,7 @@ export default function ProfilePage() {
       
       // Filter by user ID only on Home tab
       if (activeTab === 'home') {
-        query = query.eq('user_id', user?.id)
+        query = query.eq('user_id', displayUserId)
       }
       
       const { data: postsData, error: postsError } = await query.order('created_at', { ascending: false })
@@ -476,7 +514,7 @@ export default function ProfilePage() {
     }
   }
 
-  if (!user) {
+  if (!user || (loadingProfile && !isOwnProfile)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loading size="lg" />
@@ -484,7 +522,8 @@ export default function ProfilePage() {
     )
   }
 
-  const bannerUrl = user?.profile?.banner_url
+  const displayUser = profileUser || user
+  const bannerUrl = displayUser?.profile?.banner_url
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -503,90 +542,94 @@ export default function ProfilePage() {
               <div className="w-full h-full bg-gradient-to-r from-blue-500 to-purple-600"></div>
             )}
             
-            {/* Banner Upload Controls */}
-            <div className="absolute top-2 md:top-4 right-2 md:right-4 flex flex-col md:flex-row gap-2">
-              <label className="px-3 md:px-4 py-1.5 md:py-2 bg-white text-gray-700 rounded-lg shadow-md hover:bg-gray-100 cursor-pointer transition-colors text-xs md:text-sm font-medium whitespace-nowrap">
-                {uploadingBanner ? 'Uploading...' : bannerUrl ? 'Change Banner' : 'Upload Banner'}
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleBannerUpload}
-                  disabled={uploadingBanner}
-                  className="hidden"
-                />
-              </label>
-              {bannerUrl && (
-                <button
-                  onClick={handleRemoveBanner}
-                  className="px-3 md:px-4 py-1.5 md:py-2 bg-red-500 text-white rounded-lg shadow-md hover:bg-red-600 transition-colors text-xs md:text-sm font-medium whitespace-nowrap"
-                >
-                  Remove
-                </button>
-              )}
-            </div>
+            {/* Banner Upload Controls - Only show for own profile */}
+            {isOwnProfile && (
+              <div className="absolute top-2 md:top-4 right-2 md:right-4 flex flex-col md:flex-row gap-2">
+                <label className="px-3 md:px-4 py-1.5 md:py-2 bg-white text-gray-700 rounded-lg shadow-md hover:bg-gray-100 cursor-pointer transition-colors text-xs md:text-sm font-medium whitespace-nowrap">
+                  {uploadingBanner ? 'Uploading...' : bannerUrl ? 'Change Banner' : 'Upload Banner'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleBannerUpload}
+                    disabled={uploadingBanner}
+                    className="hidden"
+                  />
+                </label>
+                {bannerUrl && (
+                  <button
+                    onClick={handleRemoveBanner}
+                    className="px-3 md:px-4 py-1.5 md:py-2 bg-red-500 text-white rounded-lg shadow-md hover:bg-red-600 transition-colors text-xs md:text-sm font-medium whitespace-nowrap"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Profile Info */}
           <div className="px-4 py-4 md:py-8">
             <div className="flex flex-col md:flex-row items-center md:items-start md:space-x-6 -mt-16 md:-mt-20 relative">
-              {/* Avatar with Camera Icon Overlay */}
+              {/* Avatar with Camera Icon Overlay - Only show camera for own profile */}
               <div className="relative">
                 <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-white border-4 border-white shadow-lg overflow-hidden flex items-center justify-center flex-shrink-0 relative z-10">
-                  {(user?.profile as any)?.avatar_url ? (
-                    (user.profile as any).avatar_url.startsWith('data:') || (user.profile as any).avatar_url.length > 2 ? (
+                  {(displayUser?.profile as any)?.avatar_url ? (
+                    (displayUser.profile as any).avatar_url.startsWith('data:') || (displayUser.profile as any).avatar_url.length > 2 ? (
                       <img 
-                        src={(user.profile as any).avatar_url} 
+                        src={(displayUser.profile as any).avatar_url} 
                         alt="Profile"
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <span className="text-4xl md:text-5xl">{(user.profile as any).avatar_url}</span>
+                      <span className="text-4xl md:text-5xl">{(displayUser.profile as any).avatar_url}</span>
                     )
                   ) : (
                     <span className="text-3xl md:text-4xl font-bold text-gray-400">
-                      {user?.profile?.first_name?.charAt(0)}{user?.profile?.last_name?.charAt(0)}
+                      {displayUser?.profile?.first_name?.charAt(0)}{displayUser?.profile?.last_name?.charAt(0)}
                     </span>
                   )}
                 </div>
-                {/* Camera Icon Overlay */}
-                <label 
-                  className="absolute bottom-0 right-0 w-8 h-8 md:w-10 md:h-10 bg-blue-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-700 transition-colors shadow-lg z-20"
-                  title={uploadingAvatar ? 'Uploading...' : 'Change Avatar'}
-                >
-                  {uploadingAvatar ? (
-                    <svg className="w-4 h-4 md:w-5 md:h-5 text-white animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                  ) : (
-                    <svg className="w-4 h-4 md:w-5 md:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                  )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarUpload}
-                    disabled={uploadingAvatar}
-                    className="hidden"
-                  />
-                </label>
+                {/* Camera Icon Overlay - Only for own profile */}
+                {isOwnProfile && (
+                  <label 
+                    className="absolute bottom-0 right-0 w-8 h-8 md:w-10 md:h-10 bg-blue-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-700 transition-colors shadow-lg z-20"
+                    title={uploadingAvatar ? 'Uploading...' : 'Change Avatar'}
+                  >
+                    {uploadingAvatar ? (
+                      <svg className="w-4 h-4 md:w-5 md:h-5 text-white animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4 md:w-5 md:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarUpload}
+                      disabled={uploadingAvatar}
+                      className="hidden"
+                    />
+                  </label>
+                )}
               </div>
 
               {/* User Info */}
               <div className="flex-1 mt-4 md:mt-16 text-center md:text-left">
                 <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-                  {user?.profile?.first_name} {user?.profile?.last_name}
+                  {displayUser?.profile?.first_name} {displayUser?.profile?.last_name}
                 </h1>
-                <p className="text-sm md:text-base text-gray-600 mt-1 truncate">{user?.email}</p>
+                <p className="text-sm md:text-base text-gray-600 mt-1 truncate">{displayUser?.email || displayUser?.profile?.email}</p>
                 <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 md:gap-4 mt-3">
                   <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs md:text-sm font-medium capitalize">
-                    {user?.profile?.role}
+                    {displayUser?.profile?.role}
                   </span>
-                  {(user?.profile as any)?.status && (
+                  {(displayUser?.profile as any)?.status && (
                     <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs md:text-sm font-medium capitalize">
-                      {(user?.profile as any)?.status}
+                      {(displayUser?.profile as any)?.status}
                     </span>
                   )}
                 </div>
@@ -640,7 +683,7 @@ export default function ProfilePage() {
                     </svg>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-gray-500">Email</p>
-                      <p className="text-sm text-gray-900 truncate">{user?.email}</p>
+                      <p className="text-sm text-gray-900 truncate">{displayUser?.email || displayUser?.profile?.email}</p>
                     </div>
                   </div>
                   <div className="flex items-start space-x-3">
@@ -649,17 +692,17 @@ export default function ProfilePage() {
                     </svg>
                     <div className="flex-1">
                       <p className="text-xs text-gray-500">Role</p>
-                      <p className="text-sm text-gray-900 capitalize">{user?.profile?.role}</p>
+                      <p className="text-sm text-gray-900 capitalize">{displayUser?.profile?.role}</p>
                     </div>
                   </div>
-                  {(user?.profile as any)?.status && (
+                  {(displayUser?.profile as any)?.status && (
                     <div className="flex items-start space-x-3">
                       <svg className="w-5 h-5 text-gray-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       <div className="flex-1">
                         <p className="text-xs text-gray-500">Status</p>
-                        <p className="text-sm text-gray-900 capitalize">{(user?.profile as any)?.status}</p>
+                        <p className="text-sm text-gray-900 capitalize">{(displayUser?.profile as any)?.status}</p>
                       </div>
                     </div>
                   )}
@@ -670,7 +713,7 @@ export default function ProfilePage() {
                     <div className="flex-1">
                       <p className="text-xs text-gray-500">Joined</p>
                       <p className="text-sm text-gray-900">
-                        {new Date(user?.profile?.created_at || '').toLocaleDateString('en-US', { 
+                        {new Date(displayUser?.profile?.created_at || '').toLocaleDateString('en-US', { 
                           month: 'long', 
                           year: 'numeric' 
                         })}
@@ -760,8 +803,8 @@ export default function ProfilePage() {
 
           {/* Main Content Area */}
           <div className="flex-1 min-w-0">
-        {/* Create Post Card - Only show on Home tab */}
-        {activeTab === 'home' && (
+        {/* Create Post Card - Only show on Home tab and own profile */}
+        {activeTab === 'home' && isOwnProfile && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6 mb-4 md:mb-6">
           <div className="flex items-start space-x-3 md:space-x-4">
             {/* User Avatar */}
@@ -784,7 +827,7 @@ export default function ProfilePage() {
               <textarea
                 value={newPostContent}
                 onChange={(e) => setNewPostContent(e.target.value)}
-                placeholder={`What's on your mind, ${user?.profile?.first_name}?`}
+                placeholder={`What's on your mind, ${displayUser?.profile?.first_name}?`}
                 className="w-full px-3 md:px-4 py-2 md:py-3 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                 rows={3}
               />
@@ -907,7 +950,14 @@ export default function ProfilePage() {
                   <div className="flex items-start justify-between">
                     <div className="flex items-center space-x-2 md:space-x-3 min-w-0 flex-1">
                       {/* User Avatar */}
-                      <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                      <button
+                        onClick={() => {
+                          if (onNavigateToProfile) {
+                            onNavigateToProfile(post.user_id === user?.id ? undefined : post.user_id)
+                          }
+                        }}
+                        className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0 hover:opacity-80 transition-opacity"
+                      >
                         {post.user.avatar_url ? (
                           post.user.avatar_url.length <= 2 ? (
                             <span className="text-xl md:text-2xl">{post.user.avatar_url}</span>
@@ -919,14 +969,23 @@ export default function ProfilePage() {
                             {post.user.first_name.charAt(0)}{post.user.last_name.charAt(0)}
                           </span>
                         )}
-                      </div>
+                      </button>
 
                       {/* User Info */}
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-col md:flex-row md:items-center md:space-x-2">
-                          <h3 className="font-semibold text-sm md:text-base text-gray-900 truncate">
+                          <button
+                            onClick={() => {
+                              if (post.user_id !== user?.id && onNavigateToProfile) {
+                                onNavigateToProfile(post.user_id)
+                              } else if (post.user_id === user?.id && onNavigateToProfile) {
+                                onNavigateToProfile(undefined) // Navigate to own profile
+                              }
+                            }}
+                            className="font-semibold text-sm md:text-base text-gray-900 truncate hover:underline text-left"
+                          >
                             {post.user.first_name} {post.user.last_name}
-                          </h3>
+                          </button>
                           {post.emotion && (
                             <span className="text-gray-500 text-xs md:text-sm flex items-center space-x-1">
                               <span className="hidden md:inline">is feeling</span>

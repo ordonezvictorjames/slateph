@@ -29,10 +29,17 @@ export type PageType = 'dashboard' | 'user-management' | 'course-management' | '
 export default function Dashboard() {
   const { signOut } = useAuth()
   const [currentPage, setCurrentPage] = useState<PageType>('dashboard')
+  const [profileUserId, setProfileUserId] = useState<string | undefined>(undefined)
   const [isPageTransitioning, setIsPageTransitioning] = useState(false)
   const [showChat, setShowChat] = useState(false)
   const [showAI, setShowAI] = useState(false)
   const [showPython, setShowPython] = useState(false)
+
+  // Function to navigate to a user's profile
+  const navigateToProfile = (userId?: string) => {
+    setProfileUserId(userId)
+    setCurrentPage('profile')
+  }
 
   // Page transition loading effect
   useEffect(() => {
@@ -61,7 +68,7 @@ export default function Dashboard() {
       case 'my-courses': return <MyCoursesPage />
       case 'schedule': return <SchedulePage />
       case 'analytics': return <AnalyticsPage />
-      case 'profile': return <ProfilePage />
+      case 'profile': return <ProfilePage userId={profileUserId} onNavigateToProfile={navigateToProfile} />
       case 'settings': return <SettingsPage />
       case 'system-tracker': return <SystemTrackerPage />
       case 'code-generator': return <CodeGeneratorPage />
@@ -120,7 +127,7 @@ export default function Dashboard() {
         
         <PythonPlayground isOpen={showPython} onClose={() => setShowPython(false)} />
         <AIAssistant isOpen={showAI} onClose={() => setShowAI(false)} />
-        <CourseChat isOpen={showChat} onClose={() => setShowChat(false)} />
+        <CourseChat isOpen={showChat} onClose={() => setShowChat(false)} onNavigateToProfile={navigateToProfile} />
       </div>
     </>
   )
