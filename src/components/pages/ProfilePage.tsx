@@ -96,6 +96,7 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
   const [activeTab, setActiveTab] = useState<'home' | 'newsfeed'>('home')
   const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>([])
   const [loadingCourses, setLoadingCourses] = useState(true)
+  const [showBannerModal, setShowBannerModal] = useState(false)
   const supabase = createClient()
 
   // Determine which user profile to display
@@ -542,28 +543,18 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
               <div className="w-full h-full bg-gradient-to-r from-blue-500 to-purple-600"></div>
             )}
             
-            {/* Banner Upload Controls - Only show for own profile */}
+            {/* Edit Cover Photo Button - Only show for own profile */}
             {isOwnProfile && (
-              <div className="absolute top-2 md:top-4 right-2 md:right-4 flex flex-col md:flex-row gap-2">
-                <label className="px-3 md:px-4 py-1.5 md:py-2 bg-white text-gray-700 rounded-lg shadow-md hover:bg-gray-100 cursor-pointer transition-colors text-xs md:text-sm font-medium whitespace-nowrap">
-                  {uploadingBanner ? 'Uploading...' : bannerUrl ? 'Change Banner' : 'Upload Banner'}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleBannerUpload}
-                    disabled={uploadingBanner}
-                    className="hidden"
-                  />
-                </label>
-                {bannerUrl && (
-                  <button
-                    onClick={handleRemoveBanner}
-                    className="px-3 md:px-4 py-1.5 md:py-2 bg-red-500 text-white rounded-lg shadow-md hover:bg-red-600 transition-colors text-xs md:text-sm font-medium whitespace-nowrap"
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
+              <button
+                onClick={() => setShowBannerModal(true)}
+                className="absolute bottom-4 right-4 flex items-center gap-2 px-4 py-2 bg-white text-gray-700 rounded-lg shadow-md hover:bg-gray-100 transition-colors text-sm font-medium"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Edit cover photo
+              </button>
             )}
           </div>
 
@@ -1197,6 +1188,80 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
           </div>
         </div>
       </div>
+
+      {/* Banner Edit Modal */}
+      {showBannerModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Choose cover photo
+              </h3>
+              
+              <div className="space-y-2">
+                {/* Upload Photo Option */}
+                <label className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors">
+                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                  <span className="text-gray-700 font-medium">Upload photo</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      handleBannerUpload(e)
+                      setShowBannerModal(false)
+                    }}
+                    disabled={uploadingBanner}
+                    className="hidden"
+                  />
+                </label>
+
+                {/* Reposition Option (placeholder for future feature) */}
+                <button
+                  className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors w-full text-left opacity-50 cursor-not-allowed"
+                  disabled
+                >
+                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                  </svg>
+                  <span className="text-gray-700 font-medium">Reposition</span>
+                </button>
+
+                {/* Remove Option */}
+                {bannerUrl && (
+                  <>
+                    <div className="border-t border-gray-200 my-2"></div>
+                    <button
+                      onClick={() => {
+                        handleRemoveBanner()
+                        setShowBannerModal(false)
+                      }}
+                      className="flex items-center gap-3 p-3 hover:bg-red-50 rounded-lg transition-colors w-full text-left"
+                    >
+                      <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      <span className="text-red-600 font-medium">Remove</span>
+                    </button>
+                  </>
+                )}
+              </div>
+
+              {/* Close Button */}
+              <button
+                onClick={() => setShowBannerModal(false)}
+                className="mt-4 w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
