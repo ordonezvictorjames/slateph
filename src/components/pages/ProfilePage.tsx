@@ -172,6 +172,12 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
     try {
       setLoadingCourses(true)
       
+      // Skip if no user ID
+      if (!displayUserId) {
+        setEnrolledCourses([])
+        return
+      }
+      
       // Fetch enrollments with course details
       const { data, error } = await supabase
         .from('course_enrollments')
@@ -185,8 +191,10 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
         .order('created_at', { ascending: false })
 
       if (error) {
-        console.error('Error fetching enrolled courses:', error)
-        // Set empty array on error to show empty state
+        // Only log actual errors, not empty results
+        if (error.code !== 'PGRST116') {
+          console.error('Error fetching enrolled courses:', error)
+        }
         setEnrolledCourses([])
         return
       }
