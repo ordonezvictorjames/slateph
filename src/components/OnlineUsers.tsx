@@ -17,7 +17,11 @@ interface User {
   last_seen: string | null
 }
 
-export default function OnlineUsers() {
+interface OnlineUsersProps {
+  onNavigateToProfile?: (userId?: string) => void
+}
+
+export default function OnlineUsers({ onNavigateToProfile }: OnlineUsersProps = {}) {
   const { user } = useAuth()
   const [onlineUsers, setOnlineUsers] = useState<User[]>([])
   const [offlineUsers, setOfflineUsers] = useState<User[]>([])
@@ -190,9 +194,14 @@ export default function OnlineUsers() {
   }
 
   const renderUser = (u: User, isOnline: boolean) => (
-    <div
+    <button
       key={u.id}
-      className="p-3 hover:bg-gray-50 transition-colors"
+      onClick={() => {
+        if (onNavigateToProfile) {
+          onNavigateToProfile(u.id === user?.id ? undefined : u.id)
+        }
+      }}
+      className="w-full p-3 hover:bg-gray-50 transition-colors text-left"
     >
       <div className="flex items-center space-x-3">
         <div className="relative flex-shrink-0">
@@ -235,7 +244,7 @@ export default function OnlineUsers() {
           </div>
         </div>
       </div>
-    </div>
+    </button>
   )
 
   if (loading) {

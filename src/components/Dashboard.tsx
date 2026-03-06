@@ -63,7 +63,7 @@ export default function Dashboard() {
     
     switch (currentPage) {
       case 'dashboard': return <DashboardHome onNavigate={setCurrentPage} />
-      case 'user-management': return userRole === 'instructor' ? <MyStudentsPage /> : <UserManagementPage />
+      case 'user-management': return userRole === 'instructor' ? <MyStudentsPage /> : <UserManagementPage onNavigateToProfile={navigateToProfile} />
       case 'course-management': return <CourseManagementPage />
       case 'my-courses': return <MyCoursesPage />
       case 'schedule': return <SchedulePage />

@@ -678,7 +678,12 @@ export default function CourseChat({ isOpen, onClose, onNavigateToProfile }: Cou
 
           {/* Online Users Sidebar - Hidden on mobile */}
           <div className="hidden lg:flex w-64 border-l border-gray-200 flex-col">
-            <OnlineUsers />
+            <OnlineUsers onNavigateToProfile={(userId) => {
+              if (onNavigateToProfile) {
+                onNavigateToProfile(userId)
+                onClose() // Close chat when navigating to profile
+              }
+            }} />
           </div>
         </div>
       </div>

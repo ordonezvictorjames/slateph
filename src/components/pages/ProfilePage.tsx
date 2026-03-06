@@ -639,7 +639,7 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
         </div>
       </div>
 
-      {/* Tab Navigation */}
+      {/* Tab Navigation - Only show Newsfeed on own profile */}
       <div className="bg-white border-b sticky top-0 z-20">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex space-x-1 md:space-x-2">
@@ -653,16 +653,18 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
             >
               Home
             </button>
-            <button
-              onClick={() => setActiveTab('newsfeed')}
-              className={`flex-1 md:flex-none px-4 md:px-6 py-3 md:py-4 text-sm md:text-base font-medium border-b-2 transition-colors ${
-                activeTab === 'newsfeed'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
-              }`}
-            >
-              Newsfeed
-            </button>
+            {isOwnProfile && (
+              <button
+                onClick={() => setActiveTab('newsfeed')}
+                className={`flex-1 md:flex-none px-4 md:px-6 py-3 md:py-4 text-sm md:text-base font-medium border-b-2 transition-colors ${
+                  activeTab === 'newsfeed'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                }`}
+              >
+                Newsfeed
+              </button>
+            )}
           </div>
         </div>
       </div>

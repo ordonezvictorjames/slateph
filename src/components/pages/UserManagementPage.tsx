@@ -71,7 +71,11 @@ const scientistSections = [
   'Franklin'
 ]
 
-export default function UserManagementPage() {
+interface UserManagementPageProps {
+  onNavigateToProfile?: (userId?: string) => void
+}
+
+export default function UserManagementPage({ onNavigateToProfile }: UserManagementPageProps = {}) {
   const { user, refreshUser } = useAuth()
   const { showSuccess, showError } = useToast()
   const [showAddModal, setShowAddModal] = useState(false)
@@ -499,32 +503,10 @@ export default function UserManagementPage() {
   }
 
   const handleViewProfile = async (userData: UserData) => {
-    // Fetch course information based on role
-    let courseInfo: string[] = []
-    
-    if (userData.role === 'trainee' || userData.role === 'tesda_scholar') {
-      // Fetch enrolled courses for trainees
-      const { data: enrollments } = await supabase
-        .from('course_enrollments')
-        .select('courses(title)')
-        .eq('trainee_id', userData.id)
-        .eq('status', 'active')
-      
-      courseInfo = enrollments?.map((e: any) => e.courses?.title).filter(Boolean) || []
-    } else if (userData.role === 'instructor') {
-      // Fetch assigned courses for instructors (via subjects)
-      const { data: subjects } = await supabase
-        .from('subjects')
-        .select('courses(title)')
-        .eq('trainee_id', userData.id)
-      
-      // Get unique course titles
-      const courseTitles = subjects?.map((s: any) => s.courses?.title).filter(Boolean) || []
-      courseInfo = Array.from(new Set(courseTitles))
+    // Navigate to profile page instead of showing modal
+    if (onNavigateToProfile) {
+      onNavigateToProfile(userData.id)
     }
-    
-    setViewingProfile({ ...userData, courses: courseInfo })
-    setShowProfileModal(true)
   }
 
   const confirmDeleteUser = async () => {
@@ -1650,164 +1632,6 @@ export default function UserManagementPage() {
                 className="w-full px-6 py-3 bg-[#475569] text-white rounded-xl hover:bg-[#1E293B] transition-all font-medium"
               >
                 I Understand
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Profile View Modal */}
-      {showProfileModal && viewingProfile && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden">
-            {/* Banner Section */}
-            <div className="relative w-full h-48 bg-gradient-to-r from-indigo-500 to-purple-600 overflow-hidden">
-              {viewingProfile.banner_url ? (
-                <img 
-                  src={viewingProfile.banner_url} 
-                  alt="Banner" 
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-r from-indigo-500 to-purple-600" />
-              )}
-              
-              {/* Close Button */}
-              <button 
-                onClick={() => setShowProfileModal(false)}
-                className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white rounded-full transition-all"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Profile Content */}
-            <div className="relative px-8 pb-8">
-              {/* Avatar */}
-              <div className="flex justify-center -mt-16 mb-4">
-                {viewingProfile.avatar_url ? (
-                  viewingProfile.avatar_url.startsWith('data:') || viewingProfile.avatar_url.startsWith('http') ? (
-                    <img 
-                      className="h-32 w-32 rounded-full object-cover border-4 border-white shadow-xl" 
-                      src={viewingProfile.avatar_url} 
-                      alt={`${viewingProfile.first_name} ${viewingProfile.last_name}`}
-                    />
-                  ) : viewingProfile.avatar_url.length <= 2 ? (
-                    <div className="h-32 w-32 rounded-full bg-white border-4 border-white shadow-xl flex items-center justify-center text-6xl">
-                      {viewingProfile.avatar_url}
-                    </div>
-                  ) : (
-                    <img 
-                      className="h-32 w-32 rounded-full object-cover border-4 border-white shadow-xl" 
-                      src={viewingProfile.avatar_url} 
-                      alt={`${viewingProfile.first_name} ${viewingProfile.last_name}`}
-                    />
-                  )
-                ) : (
-                  <div className="h-32 w-32 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 border-4 border-white shadow-xl flex items-center justify-center text-4xl font-bold text-white">
-                    {viewingProfile.first_name.charAt(0)}{viewingProfile.last_name.charAt(0)}
-                  </div>
-                )}
-              </div>
-
-              {/* Name and Role */}
-              <div className="text-center mb-6">
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                  {viewingProfile.first_name} {viewingProfile.last_name}
-                </h2>
-                <div className="flex items-center justify-center space-x-2">
-                  <span className={`px-3 py-1 text-sm font-semibold rounded-full ${getRoleColor(viewingProfile.role)}`}>
-                    {getRoleLabel(viewingProfile.role)}
-                  </span>
-                  <span className={`px-3 py-1 text-sm font-semibold rounded-full ${
-                    viewingProfile.status === 'active' ? 'bg-green-100 text-green-800' :
-                    viewingProfile.status === 'inactive' ? 'bg-red-100 text-red-800' :
-                    'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {viewingProfile.status.charAt(0).toUpperCase() + viewingProfile.status.slice(1)}
-                  </span>
-                </div>
-              </div>
-
-              {/* Content */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Email */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">Email Address</label>
-                  <div className="flex items-center space-x-2">
-                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                    <p className="text-gray-900 font-medium">{viewingProfile.email}</p>
-                  </div>
-                </div>
-
-                {/* Strand (for trainees) */}
-                {viewingProfile.role === 'trainee' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-500 mb-1">SHS Strand</label>
-                    <div className="flex items-center space-x-2">
-                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                      </svg>
-                      <p className="text-gray-900 font-medium">{viewingProfile.strand || 'Not specified'}</p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Created Date */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">Member Since</label>
-                  <div className="flex items-center space-x-2">
-                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <p className="text-gray-900 font-medium">{new Date(viewingProfile.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Courses Section - Full Width */}
-              {(viewingProfile.role === 'trainee' || viewingProfile.role === 'tesda_scholar' || viewingProfile.role === 'instructor') && viewingProfile.courses && viewingProfile.courses.length > 0 && (
-                <div className="mt-6 pt-6 border-t border-gray-200">
-                  <label className="block text-sm font-medium text-gray-500 mb-3">
-                    {viewingProfile.role === 'instructor' ? 'Assigned Courses' : 'Enrolled Courses'}
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {viewingProfile.courses.map((course, index) => (
-                      <span 
-                        key={index}
-                        className="px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium"
-                      >
-                        {course}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* No Courses Message */}
-              {(viewingProfile.role === 'trainee' || viewingProfile.role === 'tesda_scholar' || viewingProfile.role === 'instructor') && (!viewingProfile.courses || viewingProfile.courses.length === 0) && (
-                <div className="mt-6 pt-6 border-t border-gray-200">
-                  <label className="block text-sm font-medium text-gray-500 mb-3">
-                    {viewingProfile.role === 'instructor' ? 'Assigned Courses' : 'Enrolled Courses'}
-                  </label>
-                  <p className="text-gray-400 text-sm italic">
-                    {viewingProfile.role === 'trainee' ? 'Not enrolled in any courses yet' : 'No courses assigned yet'}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Footer */}
-            <div className="bg-gray-50 px-8 py-4 border-t border-gray-200 flex justify-end">
-              <button
-                onClick={() => setShowProfileModal(false)}
-                className="px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-all font-medium"
-              >
-                Close
               </button>
             </div>
           </div>
