@@ -9,6 +9,7 @@ interface Message {
   role: 'user' | 'assistant'
   content: string
   timestamp: Date
+  image?: string // Base64 image data
 }
 
 interface AIAssistantProps {
@@ -23,6 +24,15 @@ Help students with:
 - Doosan Dart Studio and Doosan Robot Language (DRL)
 - HMI design and SCADA systems
 
+You are integrated into Slate LMS (Learning Management System), a comprehensive educational platform built with Next.js, React, and Supabase.
+Slate LMS was developed by Victor James Ordonez, a skilled full-stack developer specializing in modern web technologies and educational platforms.
+
+When asked about the LMS or platform you're running on, mention:
+- Platform: Slate LMS
+- Developer: Victor James Ordonez
+- Technologies: Next.js, React, TypeScript, Supabase, Tailwind CSS
+- Purpose: Comprehensive learning management system for robotics and industrial automation education
+
 Provide clear, educational responses with code examples when appropriate. Keep answers concise and practical.`
 
 export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
@@ -34,8 +44,10 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
   const [showApiKeyInput, setShowApiKeyInput] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [selectedModel, setSelectedModel] = useState<'gemini-2.5-flash' | 'gemini-2.5-flash-lite'>('gemini-2.5-flash')
+  const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const savedKey = localStorage.getItem('gemini_api_key')
@@ -86,7 +98,7 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
   }
 
   const sendMessage = async () => {
-    if (!inputMessage.trim() || isLoading) return
+    if ((!inputMessage.trim() && !selectedImage) || isLoading) return
 
     if (!apiKey) {
       setShowApiKeyInput(true)
@@ -97,17 +109,43 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
       id: Date.now().toString(),
       role: 'user',
       content: inputMessage.trim(),
-      timestamp: new Date()
+      timestamp: new Date(),
+      image: selectedImage || undefined
     }
 
     setMessages(prev => [...prev, userMessage])
     setInputMessage('')
+    setSelectedImage(null)
     setIsLoading(true)
 
     try {
       const conversationContext = messages.map(m => 
         `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`
       ).join('\n')
+
+      // Build parts array for the API request
+      const parts: any[] = []
+      
+      // Add image if present
+      if (userMessage.image) {
+        const base64Data = userMessage.image.split(',')[1]
+        const mimeType = userMessage.image.split(';')[0].split(':')[1]
+        parts.push({
+          inline_data: {
+            mime_type: mimeType,
+            data: base64Data
+          }
+        })
+      }
+      
+      // Add text with system prompt
+      const textContent = userMessage.image 
+        ? `${SYSTEM_PROMPT}\n\nUser uploaded an image and asks: ${userMessage.content || 'What do you see in this image?'}`
+        : `${SYSTEM_PROMPT}\n\n${conversationContext}\n\nUser: ${userMessage.content}\n\nAssistant:`
+      
+      parts.push({
+        text: textContent
+      })
 
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1/models/${selectedModel}:generateContent?key=${apiKey}`,
@@ -118,9 +156,7 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
           },
           body: JSON.stringify({
             contents: [{
-              parts: [{
-                text: `${SYSTEM_PROMPT}\n\n${conversationContext}\n\nUser: ${userMessage.content}\n\nAssistant:`
-              }]
+              parts: parts
             }]
           })
         }
@@ -163,7 +199,29 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
   const clearChat = () => {
     if (confirm('Clear chat history?')) {
       setMessages([])
+      setSelectedImage(null)
     }
+  }
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file')
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image size must be less than 5MB')
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      setSelectedImage(event.target?.result as string)
+    }
+    reader.readAsDataURL(file)
   }
 
   if (!isOpen) return null
@@ -422,31 +480,7 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
         <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 md:space-y-4 bg-gray-50">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center px-4">
-              <div className="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mb-3 md:mb-4">
-                <svg className="w-8 h-8 md:w-10 md:h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                </svg>
-              </div>
-              <h3 className="text-lg md:text-xl font-semibold text-gray-900 mb-2">AI Coding Assistant</h3>
-              <p className="text-sm md:text-base text-gray-600 mb-3 md:mb-4">Ask me about Python, Ladder Logic, Doosan Dart, or HMI programming!</p>
-              <div className="grid grid-cols-2 gap-2 md:gap-3 max-w-md w-full">
-                <div className="bg-white p-2 md:p-3 rounded-lg shadow-sm">
-                  <div className="text-xl md:text-2xl mb-1">🐍</div>
-                  <div className="text-xs md:text-sm font-semibold">Python</div>
-                </div>
-                <div className="bg-white p-2 md:p-3 rounded-lg shadow-sm">
-                  <div className="text-xl md:text-2xl mb-1">⚡</div>
-                  <div className="text-xs md:text-sm font-semibold">Ladder Logic</div>
-                </div>
-                <div className="bg-white p-2 md:p-3 rounded-lg shadow-sm">
-                  <div className="text-xl md:text-2xl mb-1">🤖</div>
-                  <div className="text-xs md:text-sm font-semibold">Doosan Dart</div>
-                </div>
-                <div className="bg-white p-2 md:p-3 rounded-lg shadow-sm">
-                  <div className="text-xl md:text-2xl mb-1">🖥️</div>
-                  <div className="text-xs md:text-sm font-semibold">HMI Design</div>
-                </div>
-              </div>
+              <p className="text-sm text-gray-500">Start a conversation with the AI assistant</p>
             </div>
           ) : (
             messages.map((message) => (
@@ -477,6 +511,13 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
                           ? 'bg-blue-600 text-white'
                           : 'bg-white border border-gray-200 text-gray-900 shadow-sm'
                       }`}>
+                        {message.image && (
+                          <img 
+                            src={message.image} 
+                            alt="Uploaded" 
+                            className="rounded-lg mb-2 max-w-full h-auto max-h-64 object-contain"
+                          />
+                        )}
                         <div className="whitespace-pre-wrap break-words text-sm">
                           {message.content}
                         </div>
@@ -515,7 +556,39 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
 
         {/* Input */}
         <div className="p-3 md:p-4 border-t border-gray-200 bg-white rounded-b-2xl">
+          {selectedImage && (
+            <div className="mb-2 relative inline-block">
+              <img 
+                src={selectedImage} 
+                alt="Selected" 
+                className="h-20 w-20 object-cover rounded-lg border-2 border-blue-500"
+              />
+              <button
+                onClick={() => setSelectedImage(null)}
+                className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
+              >
+                ×
+              </button>
+            </div>
+          )}
           <div className="flex gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="hidden"
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isLoading}
+              className="px-3 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Upload Image"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </button>
             <textarea
               ref={textareaRef}
               value={inputMessage}
@@ -528,7 +601,7 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
             />
             <button
               onClick={sendMessage}
-              disabled={!inputMessage.trim() || isLoading}
+              disabled={(!inputMessage.trim() && !selectedImage) || isLoading}
               className="px-4 md:px-6 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {isLoading ? (
@@ -544,7 +617,7 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
             </button>
           </div>
           <p className="text-[10px] md:text-xs text-gray-500 mt-2 text-center">
-            Press Enter to send • Shift+Enter for new line • FREE with Google Gemini
+            Press Enter to send • Shift+Enter for new line • Click 📷 to upload image • FREE with Google Gemini
           </p>
         </div>
       </div>
