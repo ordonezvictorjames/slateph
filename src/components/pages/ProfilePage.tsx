@@ -61,16 +61,6 @@ const reactions = [
   { type: 'angry', emoji: '😠', label: 'Angry' },
 ]
 
-interface EnrolledCourse {
-  id: string
-  course: {
-    id: string
-    title: string
-    description: string | null
-  }
-  status: string
-}
-
 interface ProfilePageProps {
   userId?: string // Optional userId to view other profiles
   onNavigateToProfile?: (userId?: string) => void // Callback to navigate to another profile
@@ -94,8 +84,6 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
   const [commentContent, setCommentContent] = useState('')
   const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'home' | 'newsfeed'>('home')
-  const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>([])
-  const [loadingCourses, setLoadingCourses] = useState(true)
   const [showBannerModal, setShowBannerModal] = useState(false)
   const [isRepositioning, setIsRepositioning] = useState(false)
   const [bannerPositionY, setBannerPositionY] = useState(50) // Percentage from top
@@ -119,7 +107,6 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
     if (displayUserId) {
       setIsInitialLoad(true)
       fetchPosts()
-      fetchEnrolledCourses()
       
       // Set up real-time subscription for posts
       const postsChannel = supabase
@@ -165,46 +152,6 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
       console.error('Error fetching profile user:', error)
     } finally {
       setLoadingProfile(false)
-    }
-  }
-
-  const fetchEnrolledCourses = async () => {
-    try {
-      setLoadingCourses(true)
-      
-      // Skip if no user ID
-      if (!displayUserId) {
-        setEnrolledCourses([])
-        return
-      }
-      
-      // Fetch enrollments with course details
-      const { data, error } = await supabase
-        .from('course_enrollments')
-        .select(`
-          id,
-          status,
-          course:course_id(id, title, description)
-        `)
-        .eq('trainee_id', displayUserId)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-
-      if (error) {
-        // Only log actual errors with meaningful content
-        if (error.code && error.code !== 'PGRST116') {
-          console.error('Error fetching enrolled courses:', error)
-        }
-        setEnrolledCourses([])
-        return
-      }
-
-      setEnrolledCourses(data || [])
-    } catch (error) {
-      console.error('Error fetching enrolled courses:', error)
-      setEnrolledCourses([])
-    } finally {
-      setLoadingCourses(false)
     }
   }
 
@@ -894,52 +841,6 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
                   <p className="text-sm text-gray-500">No friends yet</p>
                   <p className="text-xs text-gray-400 mt-1">Connect with others to see them here</p>
                 </div>
-              </div>
-
-              {/* Courses Enrolled Card */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 md:p-6">
-                <div className="flex items-center justify-between mb-3 md:mb-4">
-                  <h3 className="text-base md:text-lg font-semibold text-gray-900">Courses Enrolled</h3>
-                  <span className="text-xs md:text-sm text-gray-500">{enrolledCourses.length}</span>
-                </div>
-                {loadingCourses ? (
-                  <div className="flex justify-center py-8">
-                    <Loading size="sm" />
-                  </div>
-                ) : enrolledCourses.length === 0 ? (
-                  <div className="text-center py-8">
-                    <svg className="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                    <p className="text-sm text-gray-500">No courses enrolled</p>
-                    <p className="text-xs text-gray-400 mt-1">Enroll in courses to see them here</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {enrolledCourses.slice(0, 3).map((enrollment) => (
-                      <div key={enrollment.id} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                        <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-                          <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                          </svg>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="text-sm font-medium text-gray-900 truncate">
-                            {enrollment.course.title}
-                          </h4>
-                          <p className="text-xs text-gray-500 capitalize mt-0.5">
-                            {enrollment.status}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                    {enrolledCourses.length > 3 && (
-                      <button className="w-full text-center text-sm text-blue-600 hover:text-blue-700 font-medium py-2">
-                        View all {enrolledCourses.length} courses
-                      </button>
-                    )}
-                  </div>
-                )}
               </div>
 
               {/* Badges Card */}
