@@ -147,8 +147,8 @@ export default function LoginForm() {
         return
       }
 
-      // Determine role - set as null for new accounts
-      const role = null
+      // Determine role - set as trainee for new accounts
+      const role = 'trainee'
 
       // Create user account
       const { data, error } = await supabase.rpc('create_user_account', {
