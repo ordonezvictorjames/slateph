@@ -557,9 +557,9 @@ export default function ProfilePage() {
           {activeTab === 'home' && (
             <div className="w-full lg:w-80 flex-shrink-0 space-y-4">
               {/* Personal Details Card */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Personal Details</h3>
-                <div className="space-y-3">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 md:p-6">
+                <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-3 md:mb-4">Personal Details</h3>
+                <div className="space-y-2.5 md:space-y-3">
                   <div className="flex items-start space-x-3">
                     <svg className="w-5 h-5 text-gray-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -607,10 +607,10 @@ export default function ProfilePage() {
               </div>
 
               {/* Friends Card */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Friends</h3>
-                  <span className="text-sm text-gray-500">0</span>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 md:p-6">
+                <div className="flex items-center justify-between mb-3 md:mb-4">
+                  <h3 className="text-base md:text-lg font-semibold text-gray-900">Friends</h3>
+                  <span className="text-xs md:text-sm text-gray-500">0</span>
                 </div>
                 <div className="text-center py-8">
                   <svg className="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -622,10 +622,10 @@ export default function ProfilePage() {
               </div>
 
               {/* Courses Enrolled Card */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Courses Enrolled</h3>
-                  <span className="text-sm text-gray-500">{enrolledCourses.length}</span>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 md:p-6">
+                <div className="flex items-center justify-between mb-3 md:mb-4">
+                  <h3 className="text-base md:text-lg font-semibold text-gray-900">Courses Enrolled</h3>
+                  <span className="text-xs md:text-sm text-gray-500">{enrolledCourses.length}</span>
                 </div>
                 {loadingCourses ? (
                   <div className="flex justify-center py-8">

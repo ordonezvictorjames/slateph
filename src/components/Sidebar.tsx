@@ -484,7 +484,7 @@ export default function Sidebar({ currentPage, onPageChange, hideHamburger = fal
           {isHovered && (
             <div className="ml-3 overflow-hidden">
               <h1 
-                className="text-base font-semibold whitespace-nowrap"
+                className="text-lg font-bold whitespace-nowrap"
                 style={{ color: '#000000' }}
               >
                 Slate
@@ -494,7 +494,7 @@ export default function Sidebar({ currentPage, onPageChange, hideHamburger = fal
           {isMobileOpen && !isHovered && (
             <div className="ml-3 overflow-hidden lg:hidden">
               <h1 
-                className="text-base font-semibold whitespace-nowrap"
+                className="text-lg font-bold whitespace-nowrap"
                 style={{ color: '#000000' }}
               >
                 Slate
@@ -516,13 +516,13 @@ export default function Sidebar({ currentPage, onPageChange, hideHamburger = fal
                 {(isHovered || isMobileOpen) && (
                   <button
                     onClick={() => toggleGroup(group.title)}
-                    className="w-full px-3 py-1 mb-0.5 flex items-center justify-between hover:bg-gray-100 rounded transition-colors"
+                    className="w-full px-3 py-2 mb-1 flex items-center justify-between hover:bg-gray-100 rounded transition-colors"
                   >
-                    <h3 className="text-[10px] font-semibold text-black uppercase tracking-wider">
+                    <h3 className="text-xs font-bold text-black uppercase tracking-wider">
                       {group.title}
                     </h3>
                     <svg 
-                      className={`w-3 h-3 text-gray-500 transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`}
+                      className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`}
                       fill="none" 
                       stroke="currentColor" 
                       viewBox="0 0 24 24"
@@ -534,7 +534,7 @@ export default function Sidebar({ currentPage, onPageChange, hideHamburger = fal
                 
                 {/* Group Items - hidden when collapsed */}
                 {!isCollapsed && (
-                  <ul className={(isHovered || isMobileOpen) ? 'space-y-0.5' : 'space-y-2'}>
+                  <ul className={(isHovered || isMobileOpen) ? 'space-y-1' : 'space-y-2'}>
                     {group.items.map((item) => (
                       <li key={item.id}>
                         <button 
@@ -545,7 +545,7 @@ export default function Sidebar({ currentPage, onPageChange, hideHamburger = fal
                             }
                           }}
                           disabled={item.disabled}
-                          className={`w-full flex items-center ${(isHovered || isMobileOpen) ? 'px-3 py-1.5' : 'justify-center px-3 py-2'} ${
+                          className={`w-full flex items-center ${(isHovered || isMobileOpen) ? 'px-3 py-2' : 'justify-center px-3 py-2'} ${
                             item.disabled
                               ? 'cursor-not-allowed opacity-60'
                               : 'hover:opacity-80'
@@ -554,10 +554,10 @@ export default function Sidebar({ currentPage, onPageChange, hideHamburger = fal
                         >
                           <span className="flex-shrink-0">{item.icon}</span>
                           {(isHovered || isMobileOpen) && (
-                            <span className="ml-3 text-xs whitespace-nowrap overflow-hidden flex items-center gap-2">
+                            <span className="ml-3 text-sm font-medium whitespace-nowrap overflow-hidden flex items-center gap-2">
                               {item.label}
                               {item.disabled && (
-                                <span className="text-[10px] text-red-600 font-semibold">soon</span>
+                                <span className="text-xs text-red-600 font-semibold">soon</span>
                               )}
                             </span>
                           )}
@@ -569,7 +569,7 @@ export default function Sidebar({ currentPage, onPageChange, hideHamburger = fal
                 
                 {/* Group Separator - only show between groups when hovered */}
                 {(isHovered || isMobileOpen) && groupIndex < visibleMenuGroups.length - 1 && (
-                  <div className="my-1.5 border-t border-gray-200"></div>
+                  <div className="my-2 border-t border-gray-200"></div>
                 )}
               </div>
             )
@@ -590,7 +590,7 @@ export default function Sidebar({ currentPage, onPageChange, hideHamburger = fal
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
             {(isHovered || isMobileOpen) && (
-              <span className="ml-3 text-xs font-semibold whitespace-nowrap">Logout</span>
+              <span className="ml-3 text-sm font-bold whitespace-nowrap">Logout</span>
             )}
           </button>
         </div>
