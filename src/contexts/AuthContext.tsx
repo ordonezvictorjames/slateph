@@ -25,6 +25,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Check for active session from server
     const checkSession = async () => {
+      // Skip during SSR/build time
+      if (typeof window === 'undefined') {
+        if (mounted) setLoading(false)
+        return
+      }
+
       try {
         // Add timeout to prevent infinite loading
         const controller = new AbortController()

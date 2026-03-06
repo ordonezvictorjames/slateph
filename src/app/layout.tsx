@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from 'next'
-// import { AuthProvider } from '@/contexts/AuthContext'
-// import { ToastProvider } from '@/contexts/ToastContext'
-// import { ClientInitialLoader } from '@/components/ClientInitialLoader'
+import { AuthProvider } from '@/contexts/AuthContext'
+import { ToastProvider } from '@/contexts/ToastContext'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -80,8 +79,11 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="//fonts.gstatic.com" />
       </head>
       <body className="antialiased" suppressHydrationWarning>
-        {/* Temporarily removed all providers to diagnose timeout */}
-        {children}
+        <AuthProvider>
+          <ToastProvider>
+            {children}
+          </ToastProvider>
+        </AuthProvider>
       </body>
     </html>
   )
