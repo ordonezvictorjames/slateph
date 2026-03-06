@@ -5,7 +5,7 @@ import { ClientInitialLoader } from '@/components/ClientInitialLoader'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Slate - Modern Learning Management System',
+  title: 'Slate',
   description: 'A comprehensive Learning Management System built with Next.js, React, and Supabase. Features include course management, user authentication, scheduling, and analytics.',
   keywords: 'LMS, Learning Management System, Education, Courses, trainees, trainees, Online Learning, E-learning, Education Platform',
   authors: [{ name: 'Slate Team' }],
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     title: 'Slate'
   },
   openGraph: {
-    title: 'Slate - Modern Learning Management System',
+    title: 'Slate',
     description: 'A comprehensive Learning Management System for modern education',
     type: 'website',
     locale: 'en_US',
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Slate - Modern Learning Management System',
+    title: 'Slate',
     description: 'A comprehensive Learning Management System for modern education'
   },
   formatDetection: {

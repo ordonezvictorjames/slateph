@@ -22,7 +22,6 @@ export default function LoginForm() {
   const [lastName, setLastName] = useState('')
   const [signUpEmail, setSignUpEmail] = useState('')
   const [signUpPassword, setSignUpPassword] = useState('')
-  const [userType, setUserType] = useState('trainee')
   const [code, setCode] = useState('')
   const [showPasswordRequirements, setShowPasswordRequirements] = useState(false)
   const [acceptedTerms, setAcceptedTerms] = useState(false)
@@ -148,8 +147,8 @@ export default function LoginForm() {
         return
       }
 
-      // Determine role based on user_type (use 'trainee' not 'trainee')
-      const role = userType === 'trainee' ? 'trainee' : 'trainee'
+      // Determine role - set as null for new accounts
+      const role = null
 
       // Create user account
       const { data, error } = await supabase.rpc('create_user_account', {
@@ -188,7 +187,6 @@ export default function LoginForm() {
       setSignUpEmail('')
       setSignUpPassword('')
       setCode('')
-      setUserType('trainee')
       setAcceptedTerms(false)
       setIsSignUp(false)
       setLoading(false)
@@ -401,10 +399,10 @@ export default function LoginForm() {
             isSignUp ? 'opacity-100' : 'opacity-0 pointer-events-none'
           }`}
         >
-          <div className="w-full max-w-sm px-6 sm:px-8 py-8 overflow-y-auto max-h-full">
-            <h2 className="text-2xl sm:text-3xl font-bold text-black text-center mb-4 sm:mb-6">Create Account</h2>
+          <div className="w-full max-w-sm px-6 sm:px-8 py-4 overflow-y-auto max-h-full">
+            <h2 className="text-xl sm:text-2xl font-bold text-black text-center mb-3 sm:mb-4">Create Account</h2>
 
-            <form onSubmit={handleSignUp} className="space-y-3 sm:space-y-4">
+            <form onSubmit={handleSignUp} className="space-y-2 sm:space-y-3">
               {/* First Name */}
               <div className="relative">
                 <label className="absolute -top-2 left-3 bg-white px-2 font-medium text-black" style={{ fontSize: '10px' }}>
@@ -491,28 +489,6 @@ export default function LoginForm() {
                 )}
               </div>
 
-              {/* User Type Dropdown */}
-              <div className="relative">
-                <label className="absolute -top-2 left-3 bg-white px-2 font-medium text-black z-10" style={{ fontSize: '10px' }}>
-                  USER TYPE
-                </label>
-                <select
-                  value={userType}
-                  onChange={(e) => setUserType(e.target.value)}
-                  className="h-12 border-2 border-black rounded-xl focus:border-black focus:ring-0 focus:outline-none focus-visible:outline-none focus-visible:ring-0 w-full px-4 text-black bg-white appearance-none cursor-pointer"
-                  required
-                >
-                  <option value="trainee">trainee</option>
-                  <option value="trainee">trainee</option>
-                </select>
-                {/* Custom dropdown arrow */}
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <svg className="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
-              </div>
-
               {/* Code - 6 separate boxes */}
               <div className="relative">
                 <div className="font-medium text-black mb-2 ml-3" style={{ fontSize: '10px' }}>CODE</div>
@@ -546,7 +522,7 @@ export default function LoginForm() {
                           prevInput?.focus()
                         }
                       }}
-                      className="w-10 sm:w-12 lg:w-14 h-12 sm:h-14 lg:h-16 text-center text-xl sm:text-2xl font-semibold border-2 border-black rounded-xl focus:border-black focus:ring-0 focus:outline-none focus-visible:outline-none focus-visible:ring-0 transition-colors uppercase"
+                      className="w-7 sm:w-8 lg:w-10 h-8 sm:h-9 lg:h-10 text-center text-base sm:text-lg font-semibold border-2 border-black rounded-xl focus:border-black focus:ring-0 focus:outline-none focus-visible:outline-none focus-visible:ring-0 transition-colors uppercase overflow-hidden"
                       required
                     />
                   ))}
@@ -554,16 +530,16 @@ export default function LoginForm() {
               </div>
 
               {/* Privacy and Terms Checkbox */}
-              <div className="flex items-start space-x-3 p-4 bg-gray-50 rounded-xl border-2 border-gray-200">
+              <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-xl border-2 border-gray-200">
                 <input
                   type="checkbox"
                   id="acceptTerms"
                   checked={acceptedTerms}
                   onChange={(e) => setAcceptedTerms(e.target.checked)}
-                  className="mt-1 w-5 h-5 rounded border-2 border-black text-black focus:ring-2 focus:ring-black cursor-pointer"
+                  className="w-5 h-5 rounded border-2 border-black text-black focus:ring-2 focus:ring-black cursor-pointer flex-shrink-0"
                   required
                 />
-                <label htmlFor="acceptTerms" className="text-xs text-gray-700 leading-relaxed cursor-pointer">
+                <label htmlFor="acceptTerms" className="text-xs text-gray-700 cursor-pointer text-justify">
                   I have read and agree to the{' '}
                   <button
                     type="button"
@@ -592,7 +568,7 @@ export default function LoginForm() {
             </form>
 
             {/* Mobile/Tablet Toggle Button */}
-            <div className="lg:hidden mt-4 sm:mt-6 text-center">
+            <div className="lg:hidden mt-3 sm:mt-4 text-center">
               <p className="text-sm text-gray-600 mb-2">Already have an account?</p>
               <button
                 onClick={() => setIsSignUp(false)}
