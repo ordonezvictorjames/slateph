@@ -61,6 +61,16 @@ const reactions = [
   { type: 'angry', emoji: '😠', label: 'Angry' },
 ]
 
+interface EnrolledCourse {
+  id: string
+  course: {
+    id: string
+    title: string
+    description: string | null
+  }
+  status: string
+}
+
 export default function ProfilePage() {
   const { user, refreshUser } = useAuth()
   const [uploadingBanner, setUploadingBanner] = useState(false)
@@ -76,6 +86,8 @@ export default function ProfilePage() {
   const [commentContent, setCommentContent] = useState('')
   const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'home' | 'newsfeed'>('home')
+  const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>([])
+  const [loadingCourses, setLoadingCourses] = useState(true)
   const supabase = createClient()
 
   // Fetch posts
@@ -83,6 +95,7 @@ export default function ProfilePage() {
     if (user?.id) {
       setIsInitialLoad(true)
       fetchPosts()
+      fetchEnrolledCourses()
       
       // Set up real-time subscription for posts
       const postsChannel = supabase
@@ -112,6 +125,38 @@ export default function ProfilePage() {
       }
     }
   }, [user?.id, activeTab])
+
+  const fetchEnrolledCourses = async () => {
+    try {
+      setLoadingCourses(true)
+      
+      // Fetch enrollments with course details
+      const { data, error } = await supabase
+        .from('course_enrollments')
+        .select(`
+          id,
+          status,
+          course:course_id(id, title, description)
+        `)
+        .eq('trainee_id', user?.id)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Error fetching enrolled courses:', error)
+        // Set empty array on error to show empty state
+        setEnrolledCourses([])
+        return
+      }
+
+      setEnrolledCourses(data || [])
+    } catch (error) {
+      console.error('Error fetching enrolled courses:', error)
+      setEnrolledCourses([])
+    } finally {
+      setLoadingCourses(false)
+    }
+  }
 
   const fetchPosts = async (showLoading = true) => {
     try {
@@ -397,78 +442,80 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-gray-50">
       {/* Profile Header with Banner */}
       <div className="bg-white border-b">
-        {/* Banner Section */}
-        <div className="relative w-full h-48 bg-gradient-to-r from-blue-500 to-purple-600 overflow-hidden">
-          {bannerUrl ? (
-            <img 
-              src={bannerUrl} 
-              alt="Profile Banner"
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-r from-blue-500 to-purple-600"></div>
-          )}
-          
-          {/* Banner Upload Controls */}
-          <div className="absolute top-4 right-4 flex space-x-2">
-            <label className="px-4 py-2 bg-white text-gray-700 rounded-lg shadow-md hover:bg-gray-100 cursor-pointer transition-colors text-sm font-medium">
-              {uploadingBanner ? 'Uploading...' : bannerUrl ? 'Change Banner' : 'Upload Banner'}
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleBannerUpload}
-                disabled={uploadingBanner}
-                className="hidden"
+        <div className="max-w-7xl mx-auto">
+          {/* Banner Section */}
+          <div className="relative w-full h-32 md:h-48 bg-gradient-to-r from-blue-500 to-purple-600 overflow-hidden">
+            {bannerUrl ? (
+              <img 
+                src={bannerUrl} 
+                alt="Profile Banner"
+                className="w-full h-full object-cover"
               />
-            </label>
-            {bannerUrl && (
-              <button
-                onClick={handleRemoveBanner}
-                className="px-4 py-2 bg-red-500 text-white rounded-lg shadow-md hover:bg-red-600 transition-colors text-sm font-medium"
-              >
-                Remove
-              </button>
+            ) : (
+              <div className="w-full h-full bg-gradient-to-r from-blue-500 to-purple-600"></div>
             )}
-          </div>
-        </div>
-
-        {/* Profile Info */}
-        <div className="max-w-6xl mx-auto px-4 py-8">
-          <div className="flex items-center space-x-6 -mt-20 relative">
-            {/* Avatar */}
-            <div className="w-32 h-32 rounded-full bg-white border-4 border-white shadow-lg overflow-hidden flex items-center justify-center flex-shrink-0 relative z-10">
-              {(user?.profile as any)?.avatar_url ? (
-                (user.profile as any).avatar_url.startsWith('data:') || (user.profile as any).avatar_url.length > 2 ? (
-                  <img 
-                    src={(user.profile as any).avatar_url} 
-                    alt="Profile"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="text-5xl">{(user.profile as any).avatar_url}</span>
-                )
-              ) : (
-                <span className="text-4xl font-bold text-gray-400">
-                  {user?.profile?.first_name?.charAt(0)}{user?.profile?.last_name?.charAt(0)}
-                </span>
+            
+            {/* Banner Upload Controls */}
+            <div className="absolute top-2 md:top-4 right-2 md:right-4 flex flex-col md:flex-row gap-2">
+              <label className="px-3 md:px-4 py-1.5 md:py-2 bg-white text-gray-700 rounded-lg shadow-md hover:bg-gray-100 cursor-pointer transition-colors text-xs md:text-sm font-medium whitespace-nowrap">
+                {uploadingBanner ? 'Uploading...' : bannerUrl ? 'Change Banner' : 'Upload Banner'}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleBannerUpload}
+                  disabled={uploadingBanner}
+                  className="hidden"
+                />
+              </label>
+              {bannerUrl && (
+                <button
+                  onClick={handleRemoveBanner}
+                  className="px-3 md:px-4 py-1.5 md:py-2 bg-red-500 text-white rounded-lg shadow-md hover:bg-red-600 transition-colors text-xs md:text-sm font-medium whitespace-nowrap"
+                >
+                  Remove
+                </button>
               )}
             </div>
+          </div>
 
-            {/* User Info */}
-            <div className="flex-1 mt-16">
-              <h1 className="text-3xl font-bold text-gray-900">
-                {user?.profile?.first_name} {user?.profile?.last_name}
-              </h1>
-              <p className="text-gray-600 mt-1">{user?.email}</p>
-              <div className="flex items-center space-x-4 mt-3">
-                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium capitalize">
-                  {user?.profile?.role}
-                </span>
-                {(user?.profile as any)?.status && (
-                  <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium capitalize">
-                    {(user?.profile as any)?.status}
+          {/* Profile Info */}
+          <div className="px-4 py-4 md:py-8">
+            <div className="flex flex-col md:flex-row items-center md:items-start md:space-x-6 -mt-16 md:-mt-20 relative">
+              {/* Avatar */}
+              <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-white border-4 border-white shadow-lg overflow-hidden flex items-center justify-center flex-shrink-0 relative z-10">
+                {(user?.profile as any)?.avatar_url ? (
+                  (user.profile as any).avatar_url.startsWith('data:') || (user.profile as any).avatar_url.length > 2 ? (
+                    <img 
+                      src={(user.profile as any).avatar_url} 
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-4xl md:text-5xl">{(user.profile as any).avatar_url}</span>
+                  )
+                ) : (
+                  <span className="text-3xl md:text-4xl font-bold text-gray-400">
+                    {user?.profile?.first_name?.charAt(0)}{user?.profile?.last_name?.charAt(0)}
                   </span>
                 )}
+              </div>
+
+              {/* User Info */}
+              <div className="flex-1 mt-4 md:mt-16 text-center md:text-left">
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                  {user?.profile?.first_name} {user?.profile?.last_name}
+                </h1>
+                <p className="text-sm md:text-base text-gray-600 mt-1 truncate">{user?.email}</p>
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 md:gap-4 mt-3">
+                  <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs md:text-sm font-medium capitalize">
+                    {user?.profile?.role}
+                  </span>
+                  {(user?.profile as any)?.status && (
+                    <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs md:text-sm font-medium capitalize">
+                      {(user?.profile as any)?.status}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -477,11 +524,11 @@ export default function ProfilePage() {
 
       {/* Tab Navigation */}
       <div className="bg-white border-b sticky top-0 z-20">
-        <div className="max-w-4xl mx-auto px-4">
-          <div className="flex space-x-2">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex space-x-1 md:space-x-2">
             <button
               onClick={() => setActiveTab('home')}
-              className={`px-6 py-4 font-medium border-b-2 transition-colors ${
+              className={`flex-1 md:flex-none px-4 md:px-6 py-3 md:py-4 text-sm md:text-base font-medium border-b-2 transition-colors ${
                 activeTab === 'home'
                   ? 'border-blue-600 text-blue-600'
                   : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
@@ -491,7 +538,7 @@ export default function ProfilePage() {
             </button>
             <button
               onClick={() => setActiveTab('newsfeed')}
-              className={`px-6 py-4 font-medium border-b-2 transition-colors ${
+              className={`flex-1 md:flex-none px-4 md:px-6 py-3 md:py-4 text-sm md:text-base font-medium border-b-2 transition-colors ${
                 activeTab === 'newsfeed'
                   ? 'border-blue-600 text-blue-600'
                   : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
@@ -504,21 +551,155 @@ export default function ProfilePage() {
       </div>
 
       {/* Social Feed Section */}
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-4 md:py-8">
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Left Sidebar - Only show on Home tab */}
+          {activeTab === 'home' && (
+            <div className="w-full lg:w-80 flex-shrink-0 space-y-4">
+              {/* Personal Details Card */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Personal Details</h3>
+                <div className="space-y-3">
+                  <div className="flex items-start space-x-3">
+                    <svg className="w-5 h-5 text-gray-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-gray-500">Email</p>
+                      <p className="text-sm text-gray-900 truncate">{user?.email}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-3">
+                    <svg className="w-5 h-5 text-gray-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-500">Role</p>
+                      <p className="text-sm text-gray-900 capitalize">{user?.profile?.role}</p>
+                    </div>
+                  </div>
+                  {(user?.profile as any)?.status && (
+                    <div className="flex items-start space-x-3">
+                      <svg className="w-5 h-5 text-gray-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <div className="flex-1">
+                        <p className="text-xs text-gray-500">Status</p>
+                        <p className="text-sm text-gray-900 capitalize">{(user?.profile as any)?.status}</p>
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex items-start space-x-3">
+                    <svg className="w-5 h-5 text-gray-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-500">Joined</p>
+                      <p className="text-sm text-gray-900">
+                        {new Date(user?.profile?.created_at || '').toLocaleDateString('en-US', { 
+                          month: 'long', 
+                          year: 'numeric' 
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Friends Card */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Friends</h3>
+                  <span className="text-sm text-gray-500">0</span>
+                </div>
+                <div className="text-center py-8">
+                  <svg className="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  <p className="text-sm text-gray-500">No friends yet</p>
+                  <p className="text-xs text-gray-400 mt-1">Connect with others to see them here</p>
+                </div>
+              </div>
+
+              {/* Courses Enrolled Card */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Courses Enrolled</h3>
+                  <span className="text-sm text-gray-500">{enrolledCourses.length}</span>
+                </div>
+                {loadingCourses ? (
+                  <div className="flex justify-center py-8">
+                    <Loading size="sm" />
+                  </div>
+                ) : enrolledCourses.length === 0 ? (
+                  <div className="text-center py-8">
+                    <svg className="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                    <p className="text-sm text-gray-500">No courses enrolled</p>
+                    <p className="text-xs text-gray-400 mt-1">Enroll in courses to see them here</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {enrolledCourses.slice(0, 3).map((enrollment) => (
+                      <div key={enrollment.id} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                        <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                          <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                          </svg>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-medium text-gray-900 truncate">
+                            {enrollment.course.title}
+                          </h4>
+                          <p className="text-xs text-gray-500 capitalize mt-0.5">
+                            {enrollment.status}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                    {enrolledCourses.length > 3 && (
+                      <button className="w-full text-center text-sm text-blue-600 hover:text-blue-700 font-medium py-2">
+                        View all {enrolledCourses.length} courses
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Badges Card */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Badges</h3>
+                  <span className="text-sm text-gray-500">0</span>
+                </div>
+                <div className="text-center py-8">
+                  <svg className="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                  </svg>
+                  <p className="text-sm text-gray-500">No badges earned</p>
+                  <p className="text-xs text-gray-400 mt-1">Complete achievements to earn badges</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Main Content Area */}
+          <div className="flex-1 min-w-0">
         {/* Create Post Card - Only show on Home tab */}
         {activeTab === 'home' && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-          <div className="flex items-start space-x-4">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6 mb-4 md:mb-6">
+          <div className="flex items-start space-x-3 md:space-x-4">
             {/* User Avatar */}
-            <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 overflow-hidden">
+            <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 overflow-hidden">
               {(user?.profile as any)?.avatar_url ? (
                 (user.profile as any).avatar_url.length <= 2 ? (
-                  <span className="text-2xl">{(user.profile as any).avatar_url}</span>
+                  <span className="text-xl md:text-2xl">{(user.profile as any).avatar_url}</span>
                 ) : (
                   <img src={(user.profile as any).avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                 )
               ) : (
-                <span className="text-lg font-bold text-gray-400">
+                <span className="text-base md:text-lg font-bold text-gray-400">
                   {user?.profile?.first_name?.charAt(0)}{user?.profile?.last_name?.charAt(0)}
                 </span>
               )}
@@ -530,7 +711,7 @@ export default function ProfilePage() {
                 value={newPostContent}
                 onChange={(e) => setNewPostContent(e.target.value)}
                 placeholder={`What's on your mind, ${user?.profile?.first_name}?`}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                className="w-full px-3 md:px-4 py-2 md:py-3 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                 rows={3}
               />
 
@@ -567,14 +748,14 @@ export default function ProfilePage() {
               )}
 
               {/* Post Actions */}
-              <div className="mt-4 flex items-center justify-between">
-                <div className="flex items-center space-x-2">
+              <div className="mt-3 md:mt-4 flex flex-col md:flex-row items-stretch md:items-center md:justify-between gap-3">
+                <div className="flex items-center gap-2 overflow-x-auto">
                   {/* Image Upload */}
-                  <label className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg cursor-pointer transition-colors flex items-center space-x-2">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <label className="px-3 md:px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg cursor-pointer transition-colors flex items-center space-x-1 md:space-x-2 whitespace-nowrap">
+                    <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    <span className="text-sm font-medium">Photo</span>
+                    <span className="text-xs md:text-sm font-medium">Photo</span>
                     <input
                       type="file"
                       accept="image/*"
@@ -587,12 +768,12 @@ export default function ProfilePage() {
                   <div className="relative">
                     <button
                       onClick={() => setShowEmotionPicker(!showEmotionPicker)}
-                      className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors flex items-center space-x-2"
+                      className="px-3 md:px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors flex items-center space-x-1 md:space-x-2 whitespace-nowrap"
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      <span className="text-sm font-medium">Feeling</span>
+                      <span className="text-xs md:text-sm font-medium">Feeling</span>
                     </button>
 
                     {/* Emotion Dropdown */}
@@ -620,7 +801,7 @@ export default function ProfilePage() {
                 <button
                   onClick={handleCreatePost}
                   disabled={submittingPost || (!newPostContent.trim() && !postImage)}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                  className="w-full md:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-sm md:text-base min-h-[44px] md:min-h-0"
                 >
                   {submittingPost ? 'Posting...' : 'Post'}
                 </button>
@@ -632,49 +813,49 @@ export default function ProfilePage() {
 
         {/* Posts Feed */}
         {loadingPosts ? (
-          <div className="flex justify-center py-12">
+          <div className="flex justify-center py-8 md:py-12">
             <Loading size="md" />
           </div>
         ) : posts.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-            <svg className="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 md:p-12 text-center">
+            <svg className="w-12 h-12 md:w-16 md:h-16 mx-auto text-gray-300 mb-3 md:mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
             </svg>
-            <p className="text-gray-500 text-lg">No posts yet</p>
-            <p className="text-gray-400 text-sm mt-2">Be the first to share something!</p>
+            <p className="text-gray-500 text-base md:text-lg">No posts yet</p>
+            <p className="text-gray-400 text-xs md:text-sm mt-2">Be the first to share something!</p>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6">
             {posts.map((post) => (
               <div key={post.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 {/* Post Header */}
-                <div className="p-6 pb-4">
+                <div className="p-4 md:p-6 pb-3 md:pb-4">
                   <div className="flex items-start justify-between">
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-2 md:space-x-3 min-w-0 flex-1">
                       {/* User Avatar */}
-                      <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                      <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
                         {post.user.avatar_url ? (
                           post.user.avatar_url.length <= 2 ? (
-                            <span className="text-2xl">{post.user.avatar_url}</span>
+                            <span className="text-xl md:text-2xl">{post.user.avatar_url}</span>
                           ) : (
                             <img src={post.user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                           )
                         ) : (
-                          <span className="text-lg font-bold text-gray-400">
+                          <span className="text-base md:text-lg font-bold text-gray-400">
                             {post.user.first_name.charAt(0)}{post.user.last_name.charAt(0)}
                           </span>
                         )}
                       </div>
 
                       {/* User Info */}
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <h3 className="font-semibold text-gray-900">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-col md:flex-row md:items-center md:space-x-2">
+                          <h3 className="font-semibold text-sm md:text-base text-gray-900 truncate">
                             {post.user.first_name} {post.user.last_name}
                           </h3>
                           {post.emotion && (
-                            <span className="text-gray-500 text-sm flex items-center space-x-1">
-                              <span>is feeling</span>
+                            <span className="text-gray-500 text-xs md:text-sm flex items-center space-x-1">
+                              <span className="hidden md:inline">is feeling</span>
                               <span className="font-medium text-blue-600 flex items-center space-x-1">
                                 <span>{emotions.find(e => e.value === post.emotion)?.emoji}</span>
                                 <span>{emotions.find(e => e.value === post.emotion)?.label}</span>
@@ -682,7 +863,7 @@ export default function ProfilePage() {
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-xs md:text-sm text-gray-500">
                           {new Date(post.created_at).toLocaleDateString('en-US', { 
                             month: 'short', 
                             day: 'numeric', 
@@ -708,26 +889,26 @@ export default function ProfilePage() {
                   </div>
 
                   {/* Post Content */}
-                  <p className="mt-4 text-gray-800 whitespace-pre-wrap">{post.content}</p>
+                  <p className="mt-3 md:mt-4 text-sm md:text-base text-gray-800 whitespace-pre-wrap">{post.content}</p>
                 </div>
 
                 {/* Post Image */}
                 {post.image_url && (
-                  <div className="px-6 pb-4">
+                  <div className="px-4 md:px-6 pb-3 md:pb-4">
                     <img 
                       src={post.image_url} 
                       alt="Post" 
-                      className="w-full rounded-lg max-h-96 object-cover"
+                      className="w-full rounded-lg max-h-64 md:max-h-96 object-cover"
                     />
                   </div>
                 )}
 
                 {/* Reactions Summary */}
                 {Object.keys(post.reaction_counts).length > 0 && (
-                  <div className="px-6 pb-2 flex items-center space-x-2 text-sm text-gray-600">
+                  <div className="px-4 md:px-6 pb-2 flex items-center space-x-2 text-xs md:text-sm text-gray-600">
                     <div className="flex -space-x-1">
                       {Object.entries(post.reaction_counts).slice(0, 3).map(([type]) => (
-                        <span key={type} className="text-lg">
+                        <span key={type} className="text-base md:text-lg">
                           {reactions.find(r => r.type === type)?.emoji}
                         </span>
                       ))}
@@ -739,21 +920,21 @@ export default function ProfilePage() {
                 )}
 
                 {/* Action Buttons */}
-                <div className="border-t border-gray-200 px-6 py-2 flex items-center justify-around">
+                <div className="border-t border-gray-200 px-4 md:px-6 py-2 flex items-center justify-around gap-1">
                   {/* React Button */}
                   <div className="relative flex-1">
                     <button
                       onClick={() => setShowReactionPicker(showReactionPicker === post.id ? null : post.id)}
-                      className={`w-full py-2 rounded-lg hover:bg-gray-100 transition-colors flex items-center justify-center space-x-2 ${
+                      className={`w-full py-2 rounded-lg hover:bg-gray-100 transition-colors flex items-center justify-center space-x-1 md:space-x-2 ${
                         post.user_reaction ? 'text-blue-600 font-medium' : 'text-gray-600'
                       }`}
                     >
-                      <span className="text-xl">
+                      <span className="text-lg md:text-xl">
                         {post.user_reaction 
                           ? reactions.find(r => r.type === post.user_reaction)?.emoji 
                           : '👍'}
                       </span>
-                      <span className="text-sm">
+                      <span className="text-xs md:text-sm">
                         {post.user_reaction 
                           ? reactions.find(r => r.type === post.user_reaction)?.label 
                           : 'React'}
@@ -767,7 +948,7 @@ export default function ProfilePage() {
                           <button
                             key={reaction.type}
                             onClick={() => handleReaction(post.id, reaction.type)}
-                            className="hover:scale-125 transition-transform text-2xl p-1"
+                            className="hover:scale-125 transition-transform text-xl md:text-2xl p-1"
                             title={reaction.label}
                           >
                             {reaction.emoji}
@@ -780,28 +961,28 @@ export default function ProfilePage() {
                   {/* Comment Button */}
                   <button
                     onClick={() => setCommentingOnPost(commentingOnPost === post.id ? null : post.id)}
-                    className="flex-1 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-center space-x-2"
+                    className="flex-1 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-center space-x-1 md:space-x-2"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                     </svg>
-                    <span className="text-sm">Comment</span>
+                    <span className="text-xs md:text-sm">Comment</span>
                     {post.comments.length > 0 && (
-                      <span className="text-sm">({post.comments.length})</span>
+                      <span className="text-xs md:text-sm">({post.comments.length})</span>
                     )}
                   </button>
                 </div>
 
                 {/* Comments Section */}
                 {(post.comments.length > 0 || commentingOnPost === post.id) && (
-                  <div className="border-t border-gray-200 px-6 py-4 bg-gray-50">
+                  <div className="border-t border-gray-200 px-4 md:px-6 py-3 md:py-4 bg-gray-50">
                     {/* Existing Comments */}
                     {post.comments.map((comment) => (
-                      <div key={comment.id} className="flex items-start space-x-3 mb-3">
-                        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                      <div key={comment.id} className="flex items-start space-x-2 md:space-x-3 mb-3">
+                        <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
                           {comment.user.avatar_url ? (
                             comment.user.avatar_url.length <= 2 ? (
-                              <span className="text-sm">{comment.user.avatar_url}</span>
+                              <span className="text-xs md:text-sm">{comment.user.avatar_url}</span>
                             ) : (
                               <img src={comment.user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                             )
@@ -811,14 +992,14 @@ export default function ProfilePage() {
                             </span>
                           )}
                         </div>
-                        <div className="flex-1">
-                          <div className="bg-white rounded-lg px-4 py-2">
-                            <p className="font-semibold text-sm text-gray-900">
+                        <div className="flex-1 min-w-0">
+                          <div className="bg-white rounded-lg px-3 md:px-4 py-2">
+                            <p className="font-semibold text-xs md:text-sm text-gray-900">
                               {comment.user.first_name} {comment.user.last_name}
                             </p>
-                            <p className="text-sm text-gray-800 mt-1">{comment.content}</p>
+                            <p className="text-xs md:text-sm text-gray-800 mt-1 break-words">{comment.content}</p>
                           </div>
-                          <p className="text-xs text-gray-500 mt-1 ml-4">
+                          <p className="text-xs text-gray-500 mt-1 ml-3 md:ml-4">
                             {new Date(comment.created_at).toLocaleDateString('en-US', { 
                               month: 'short', 
                               day: 'numeric',
@@ -832,11 +1013,11 @@ export default function ProfilePage() {
 
                     {/* Comment Input */}
                     {commentingOnPost === post.id && (
-                      <div className="flex items-start space-x-3 mt-3">
-                        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                      <div className="flex items-start space-x-2 md:space-x-3 mt-3">
+                        <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
                           {(user?.profile as any)?.avatar_url ? (
                             (user.profile as any).avatar_url.length <= 2 ? (
-                              <span className="text-sm">{(user.profile as any).avatar_url}</span>
+                              <span className="text-xs md:text-sm">{(user.profile as any).avatar_url}</span>
                             ) : (
                               <img src={(user.profile as any).avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                             )
@@ -858,14 +1039,14 @@ export default function ProfilePage() {
                               }
                             }}
                             placeholder="Write a comment..."
-                            className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                            className="flex-1 px-3 md:px-4 py-2 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xs md:text-sm"
                           />
                           <button
                             onClick={() => handleComment(post.id)}
                             disabled={!commentContent.trim()}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-full disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-full disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex-shrink-0"
                           >
-                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-4 h-4 md:w-5 md:h-5" fill="currentColor" viewBox="0 0 24 24">
                               <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
                             </svg>
                           </button>
@@ -878,6 +1059,8 @@ export default function ProfilePage() {
             ))}
           </div>
         )}
+          </div>
+        </div>
       </div>
     </div>
   )

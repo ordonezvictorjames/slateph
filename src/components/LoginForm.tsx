@@ -50,7 +50,7 @@ export default function LoginForm() {
       setEmail('')
       setPassword('')
       showSuccess('Welcome back!', 'Logging you in...')
-      // Don't set loading to false here - let AuthContext handle it
+      setLoading(false) // Clear loading state immediately
     } catch (err) {
       console.error('Authentication error:', err)
       const errorMessage = err instanceof Error ? err.message : 'Login failed'

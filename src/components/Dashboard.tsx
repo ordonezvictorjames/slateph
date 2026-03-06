@@ -22,8 +22,9 @@ import CodeGeneratorPage from '@/components/pages/CodeGeneratorPage'
 import FeatureRequestsPage from '@/components/pages/FeatureRequestsPage'
 import TasksPage from '@/components/pages/TasksPage'
 import AIAssistantPage from '@/components/pages/AIAssistantPage'
+import LibraryPage from '@/components/pages/LibraryPage'
 
-export type PageType = 'dashboard' | 'user-management' | 'course-management' | 'my-courses' | 'schedule' | 'analytics' | 'profile' | 'settings' | 'system-tracker' | 'code-generator' | 'feature-requests' | 'tasks' | 'games' | 'activity' | 'ai-assistant'
+export type PageType = 'dashboard' | 'user-management' | 'course-management' | 'my-courses' | 'schedule' | 'analytics' | 'profile' | 'settings' | 'system-tracker' | 'code-generator' | 'feature-requests' | 'tasks' | 'games' | 'activity' | 'ai-assistant' | 'library'
 
 export default function Dashboard() {
   const { signOut } = useAuth()
@@ -43,9 +44,8 @@ export default function Dashboard() {
   }, [currentPage])
 
   useIdleTimeout({
-    onIdle: async () => {
-      await signOut()
-      window.location.replace('/')
+    onIdle: () => {
+      signOut()
     },
     idleTime: 30 * 60 * 1000
   })
@@ -68,6 +68,7 @@ export default function Dashboard() {
       case 'feature-requests': return <FeatureRequestsPage />
       case 'tasks': return <TasksPage />
       case 'ai-assistant': return <AIAssistantPage />
+      case 'library': return <LibraryPage />
       default: return <DashboardHome onNavigate={setCurrentPage} />
     }
   }
