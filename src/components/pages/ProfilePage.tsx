@@ -191,8 +191,8 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
         .order('created_at', { ascending: false })
 
       if (error) {
-        // Only log actual errors, not empty results
-        if (error.code !== 'PGRST116') {
+        // Only log actual errors with meaningful content
+        if (error.code && error.code !== 'PGRST116') {
           console.error('Error fetching enrolled courses:', error)
         }
         setEnrolledCourses([])
