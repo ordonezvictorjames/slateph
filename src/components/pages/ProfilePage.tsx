@@ -735,6 +735,21 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
                       </button>
                     </div>
                   )}
+                  
+                  {/* Back to My Profile Button - Only show when viewing other profiles */}
+                  {!isOwnProfile && onNavigateToProfile && (
+                    <div className="flex justify-center md:justify-end">
+                      <button
+                        onClick={() => onNavigateToProfile(undefined)}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        Back to My Profile
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
