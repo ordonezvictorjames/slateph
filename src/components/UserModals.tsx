@@ -9,7 +9,7 @@ export interface NewUser {
   last_name: string
   email: string
   password: string
-  role: 'admin' | 'instructor' | 'trainee' | 'tesda_scholar' | 'developer'
+  role: 'admin' | 'developer' | 'instructor' | 'student'
   status: 'active' | 'inactive' | 'pending'
   bio: string
   avatar_url: string | null
@@ -232,10 +232,10 @@ export function UserModal({
                       onChange={(e) => onInputChange('role', e.target.value)}
                       className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-white"
                     >
-                      <option value="trainee">Trainee</option>
-                      <option value="tesda_scholar">TESDA Scholar</option>
+                      <option value="student">Student</option>
                       <option value="instructor">Instructor</option>
                       <option value="admin">Admin</option>
+                      <option value="developer">Developer</option>
                     </select>
                   </div>
                 </div>
