@@ -60,8 +60,7 @@ interface DashboardStats {
 }
 
 interface UserStats {
-  totaltrainees: number
-  totalScholars: number
+  totalStudents: number
   totalInstructors: number
   totalDevelopers: number
   totalAdmins: number
@@ -472,8 +471,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false)
   const [showChangelogModal, setShowChangelogModal] = useState(false)
   const [userStats, setUserStats] = useState<UserStats>({
-    totaltrainees: 0,
-    totalScholars: 0,
+    totalStudents: 0,
     totalInstructors: 0,
     totalDevelopers: 0,
     totalAdmins: 0
@@ -935,22 +933,19 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
       // Fetch user statistics by role
       const [
-        { count: totaltrainees },
-        { count: totalScholars },
+        { count: totalStudents },
         { count: totalInstructors },
         { count: totalDevelopers },
         { count: totalAdmins }
       ] = await Promise.all([
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'trainee'),
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'tesda_scholar'),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'student'),
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'instructor'),
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'developer'),
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'admin')
       ])
 
       setUserStats({
-        totaltrainees: totaltrainees || 0,
-        totalScholars: totalScholars || 0,
+        totalStudents: totalStudents || 0,
         totalInstructors: totalInstructors || 0,
         totalDevelopers: totalDevelopers || 0,
         totalAdmins: totalAdmins || 0
@@ -1663,22 +1658,9 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
                           </svg>
                         </div>
-                        <div className="text-xl font-bold text-black">{userStats.totaltrainees}</div>
+                        <div className="text-xl font-bold text-black">{userStats.totalStudents}</div>
                       </div>
-                      <div className="text-sm text-gray-600 font-medium">Trainees</div>
-                    </div>
-
-                    {/* TESDA Scholars Card */}
-                    <div className="bg-white rounded-xl p-4 border border-gray-200">
-                      <div className="flex items-center space-x-3 mb-3">
-                        <div className="p-2 bg-gray-200 rounded-lg">
-                          <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                          </svg>
-                        </div>
-                        <div className="text-xl font-bold text-black">{userStats.totalScholars}</div>
-                      </div>
-                      <div className="text-sm text-gray-600 font-medium">Scholars</div>
+                      <div className="text-sm text-gray-600 font-medium">Students</div>
                     </div>
 
                     {/* Instructors Card */}
@@ -1805,9 +1787,9 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
                       </svg>
                     </div>
-                    <div className="text-3xl font-bold text-black">{userStats.totaltrainees}</div>
+                    <div className="text-3xl font-bold text-black">{userStats.totalStudents}</div>
                   </div>
-                  <div className="text-sm text-gray-600 font-medium">Total trainees</div>
+                  <div className="text-sm text-gray-600 font-medium">Total Students</div>
                 </div>
 
                 {/* Active Subjects */}

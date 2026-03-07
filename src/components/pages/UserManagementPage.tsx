@@ -14,7 +14,7 @@ interface UserData {
   first_name: string
   last_name: string
   email: string
-  role: 'admin' | 'instructor' | 'trainee' | 'tesda_scholar' | 'developer'
+  role: 'admin' | 'developer' | 'instructor' | 'student'
   status: string
   teams: string[]
   avatar_url: string | null
@@ -33,7 +33,7 @@ interface Profile {
   first_name: string
   last_name: string
   email?: string
-  role: 'admin' | 'instructor' | 'trainee' | 'tesda_scholar' | 'developer'
+  role: 'admin' | 'developer' | 'instructor' | 'student'
   status?: string
   avatar_url: string | null
   banner_url?: string | null
@@ -311,7 +311,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
       last_name: userData.last_name,
       email: userData.email,
       password: '',
-      role: userData.role as 'admin' | 'instructor' | 'trainee' | 'tesda_scholar' | 'developer',
+      role: userData.role as 'admin' | 'developer' | 'instructor' | 'student',
       status: userData.status as 'active' | 'inactive' | 'pending',
       bio: '',
       avatar_url: userData.avatar_url,
