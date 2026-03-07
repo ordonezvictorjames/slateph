@@ -16,7 +16,7 @@ interface Course {
   course_group?: string
   course_type: 'academic' | 'tesda' | 'upskill'
   status: 'active' | 'inactive' | 'draft'
-  enrollment_type: 'trainee' | 'tesda_scholar' | 'both'
+  enrollment_type: 'student' | 'all'
   created_at: string
   subjects?: Subject[]
 }
@@ -28,14 +28,14 @@ interface Subject {
   description: string
   order_index: number
   status: 'active' | 'inactive' | 'draft'
-  enrollment_type: 'trainee' | 'tesda_scholar' | 'both'
-  trainee_id?: string
+  enrollment_type: 'student' | 'all'
+  instructor_id?: string
   created_at: string
-  trainee?: {
+  instructor?: {
     first_name: string
     last_name: string
   }
-  trainee_name?: string
+  instructor_name?: string
 }
 
 interface Module {
@@ -82,7 +82,7 @@ export default function MyCoursesPage() {
   const fetchEnrolledCourses = async () => {
     try {
       setLoading(true)
-      const userRole = user?.profile?.role || 'trainee'
+      const userRole = user?.profile?.role || 'student'
 
       let courseIds: string[] = []
 
@@ -103,11 +103,11 @@ export default function MyCoursesPage() {
         const courseIdsSet = new Set<string>(instructorSubjects?.map((s: { course_id: string }) => s.course_id) || [])
         courseIds = Array.from(courseIdsSet)
       } else {
-        // Trainees and TESDA scholars see courses they are enrolled in
+        // Students see courses they are enrolled in
         const { data: enrollments, error: enrollmentError } = await supabase
           .from('course_enrollments')
           .select('course_id')
-          .eq('trainee_id', user?.id)
+          .eq('student_id', user?.id)
           .eq('status', 'active')
 
         if (enrollmentError) {
@@ -147,20 +147,20 @@ export default function MyCoursesPage() {
 
   const fetchSubjects = async (courseId: string) => {
     try {
-      const userRole = user?.profile?.role || 'trainee'
+      const userRole = user?.profile?.role || 'student'
       
       // Build query
       let query = supabase
         .from('subjects')
         .select(`
           *,
-          trainee:profiles(first_name, last_name)
+          instructor:profiles(first_name, last_name)
         `)
         .eq('course_id', courseId)
       
       // Filter by status based on user role
-      // Trainee and scholar can only see active subjects
-      if (userRole === 'trainee' || userRole === 'tesda_scholar') {
+      // Students can only see active subjects
+      if (userRole === 'student') {
         query = query.eq('status', 'active')
       }
       // Admin, developer, and instructor can see all subjects
@@ -172,14 +172,14 @@ export default function MyCoursesPage() {
         return
       }
 
-      const subjectsWithtrainee = (data || []).map((subject: Subject) => ({
+      const subjectsWithInstructor = (data || []).map((subject: Subject) => ({
         ...subject,
-        trainee_name: subject.trainee 
-          ? `${subject.trainee.first_name} ${subject.trainee.last_name}`
+        instructor_name: subject.instructor 
+          ? `${subject.instructor.first_name} ${subject.instructor.last_name}`
           : 'Unassigned'
       }))
 
-      setSubjects(subjectsWithtrainee)
+      setSubjects(subjectsWithInstructor)
     } catch (error) {
       console.error('Error fetching subjects:', error)
     }
