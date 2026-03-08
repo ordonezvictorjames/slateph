@@ -10,6 +10,11 @@ interface Message {
   content: string
   timestamp: Date
   image?: string // Base64 image data
+  file?: {
+    name: string
+    type: string
+    content: string // Text content or base64 for images
+  }
 }
 
 interface AIAssistantProps {
@@ -45,6 +50,7 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
   const [showSettings, setShowSettings] = useState(false)
   const [selectedModel, setSelectedModel] = useState<'gemini-2.5-flash' | 'gemini-2.5-flash-lite'>('gemini-2.5-flash')
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const [selectedFile, setSelectedFile] = useState<{name: string, type: string, content: string} | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -98,7 +104,7 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
   }
 
   const sendMessage = async () => {
-    if ((!inputMessage.trim() && !selectedImage) || isLoading) return
+    if ((!inputMessage.trim() && !selectedImage && !selectedFile) || isLoading) return
 
     if (!apiKey) {
       setShowApiKeyInput(true)
@@ -110,12 +116,14 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
       role: 'user',
       content: inputMessage.trim(),
       timestamp: new Date(),
-      image: selectedImage || undefined
+      image: selectedImage || undefined,
+      file: selectedFile || undefined
     }
 
     setMessages(prev => [...prev, userMessage])
     setInputMessage('')
     setSelectedImage(null)
+    setSelectedFile(null)
     setIsLoading(true)
 
     try {
@@ -138,9 +146,29 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
         })
       }
       
+      // Add file content if present
+      let fileContext = ''
+      if (userMessage.file) {
+        if (userMessage.file.type.startsWith('image/')) {
+          // Handle image files
+          const base64Data = userMessage.file.content.split(',')[1]
+          const mimeType = userMessage.file.content.split(';')[0].split(':')[1]
+          parts.push({
+            inline_data: {
+              mime_type: mimeType,
+              data: base64Data
+            }
+          })
+          fileContext = `\n\nUser uploaded an image file: ${userMessage.file.name}`
+        } else {
+          // Handle text-based files
+          fileContext = `\n\nUser uploaded a file: ${userMessage.file.name}\nFile content:\n\`\`\`\n${userMessage.file.content}\n\`\`\``
+        }
+      }
+      
       // Add text with system prompt
-      const textContent = userMessage.image 
-        ? `${SYSTEM_PROMPT}\n\nUser uploaded an image and asks: ${userMessage.content || 'What do you see in this image?'}`
+      const textContent = userMessage.image || userMessage.file
+        ? `${SYSTEM_PROMPT}${fileContext}\n\nUser asks: ${userMessage.content || 'Please analyze this file.'}`
         : `${SYSTEM_PROMPT}\n\n${conversationContext}\n\nUser: ${userMessage.content}\n\nAssistant:`
       
       parts.push({
@@ -200,28 +228,83 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
     if (confirm('Clear chat history?')) {
       setMessages([])
       setSelectedImage(null)
+      setSelectedFile(null)
     }
   }
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    if (!file.type.startsWith('image/')) {
-      alert('Please select an image file')
-      return
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Image size must be less than 5MB')
+    // Check file size (10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('File size must be less than 10MB')
       return
     }
 
     const reader = new FileReader()
-    reader.onload = (event) => {
-      setSelectedImage(event.target?.result as string)
+
+    // Handle different file types
+    if (file.type.startsWith('image/')) {
+      // Image files - read as data URL
+      reader.onload = (event) => {
+        setSelectedImage(event.target?.result as string)
+      }
+      reader.readAsDataURL(file)
+    } else if (
+      file.type === 'text/plain' ||
+      file.type === 'application/json' ||
+      file.type === 'text/csv' ||
+      file.type === 'text/html' ||
+      file.type === 'text/css' ||
+      file.type === 'text/javascript' ||
+      file.type === 'application/javascript' ||
+      file.type === 'application/x-python' ||
+      file.name.endsWith('.py') ||
+      file.name.endsWith('.js') ||
+      file.name.endsWith('.ts') ||
+      file.name.endsWith('.tsx') ||
+      file.name.endsWith('.jsx') ||
+      file.name.endsWith('.java') ||
+      file.name.endsWith('.cpp') ||
+      file.name.endsWith('.c') ||
+      file.name.endsWith('.h') ||
+      file.name.endsWith('.cs') ||
+      file.name.endsWith('.php') ||
+      file.name.endsWith('.rb') ||
+      file.name.endsWith('.go') ||
+      file.name.endsWith('.rs') ||
+      file.name.endsWith('.swift') ||
+      file.name.endsWith('.kt') ||
+      file.name.endsWith('.md') ||
+      file.name.endsWith('.xml') ||
+      file.name.endsWith('.yaml') ||
+      file.name.endsWith('.yml') ||
+      file.name.endsWith('.sql') ||
+      file.name.endsWith('.sh') ||
+      file.name.endsWith('.bat') ||
+      file.name.endsWith('.log')
+    ) {
+      // Text-based files - read as text
+      reader.onload = (event) => {
+        setSelectedFile({
+          name: file.name,
+          type: file.type || 'text/plain',
+          content: event.target?.result as string
+        })
+      }
+      reader.readAsText(file)
+    } else if (file.type === 'application/pdf') {
+      alert('PDF support coming soon! For now, please copy and paste the text content.')
+      return
+    } else {
+      alert('Unsupported file type. Supported: Images, Text files, Code files (.py, .js, .java, etc.)')
+      return
     }
-    reader.readAsDataURL(file)
+  }
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    handleFileUpload(e)
   }
 
   if (!isOpen) return null
@@ -518,6 +601,16 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
                             className="rounded-lg mb-2 max-w-full h-auto max-h-64 object-contain"
                           />
                         )}
+                        {message.file && !message.file.type.startsWith('image/') && (
+                          <div className="mb-2 p-2 bg-gray-100 rounded-lg border border-gray-300">
+                            <div className="flex items-center gap-2 text-xs">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                              <span className="font-medium">{message.file.name}</span>
+                            </div>
+                          </div>
+                        )}
                         <div className="whitespace-pre-wrap break-words text-sm">
                           {message.content}
                         </div>
@@ -556,37 +649,57 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
 
         {/* Input */}
         <div className="p-3 md:p-4 border-t border-gray-200 bg-white rounded-b-2xl">
-          {selectedImage && (
-            <div className="mb-2 relative inline-block">
-              <img 
-                src={selectedImage} 
-                alt="Selected" 
-                className="h-20 w-20 object-cover rounded-lg border-2 border-blue-500"
-              />
-              <button
-                onClick={() => setSelectedImage(null)}
-                className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
-              >
-                ×
-              </button>
+          {(selectedImage || selectedFile) && (
+            <div className="mb-2 flex gap-2">
+              {selectedImage && (
+                <div className="relative inline-block">
+                  <img 
+                    src={selectedImage} 
+                    alt="Selected" 
+                    className="h-20 w-20 object-cover rounded-lg border-2 border-blue-500"
+                  />
+                  <button
+                    onClick={() => setSelectedImage(null)}
+                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+              {selectedFile && (
+                <div className="relative inline-block p-3 bg-gray-100 rounded-lg border-2 border-blue-500">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span className="text-sm font-medium text-gray-700">{selectedFile.name}</span>
+                  </div>
+                  <button
+                    onClick={() => setSelectedFile(null)}
+                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
             </div>
           )}
           <div className="flex gap-2">
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
+              accept="image/*,.txt,.py,.js,.ts,.tsx,.jsx,.java,.cpp,.c,.h,.cs,.php,.rb,.go,.rs,.swift,.kt,.md,.json,.xml,.yaml,.yml,.sql,.sh,.bat,.log,.html,.css"
+              onChange={handleFileUpload}
               className="hidden"
             />
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={isLoading}
               className="px-3 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Upload Image"
+              title="Upload File (Images, Code, Text)"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
               </svg>
             </button>
             <textarea
@@ -601,7 +714,7 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
             />
             <button
               onClick={sendMessage}
-              disabled={(!inputMessage.trim() && !selectedImage) || isLoading}
+              disabled={(!inputMessage.trim() && !selectedImage && !selectedFile) || isLoading}
               className="px-4 md:px-6 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {isLoading ? (
@@ -617,7 +730,7 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
             </button>
           </div>
           <p className="text-[10px] md:text-xs text-gray-500 mt-2 text-center">
-            Press Enter to send • Shift+Enter for new line • Click 📷 to upload image • FREE with Google Gemini
+            Press Enter to send • Shift+Enter for new line • Click 📎 to upload files (images, code, text) • FREE with Google Gemini
           </p>
         </div>
       </div>
