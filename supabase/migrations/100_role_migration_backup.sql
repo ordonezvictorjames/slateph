@@ -12,8 +12,15 @@ CREATE TABLE IF NOT EXISTS profiles_backup_20260308 AS
 SELECT * FROM profiles;
 
 -- Backup enrollments table (if exists)
-CREATE TABLE IF NOT EXISTS enrollments_backup_20260308 AS 
-SELECT * FROM enrollments;
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'enrollments') THEN
+        EXECUTE 'CREATE TABLE IF NOT EXISTS enrollments_backup_20260308 AS SELECT * FROM enrollments';
+        RAISE NOTICE 'Enrollments table backed up';
+    ELSE
+        RAISE NOTICE 'Enrollments table does not exist - skipping backup';
+    END IF;
+END $$;
 
 -- ============================================
 -- STEP 2: DOCUMENT CURRENT STATE
