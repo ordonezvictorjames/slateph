@@ -356,13 +356,24 @@ export default function Sidebar({ currentPage, onPageChange, hideHamburger = fal
 
   const userRole = user?.profile?.role || displayUser?.profile?.role || 'user'
   
+  // Normalize role for backward compatibility with old database values
+  const normalizeRole = (role: string): string => {
+    const roleMap: Record<string, string> = {
+      'trainee': 'student',
+      'tesda_scholar': 'scholar'
+    }
+    return roleMap[role] || role
+  }
+  
+  const normalizedUserRole = normalizeRole(userRole)
+  
   // Filter menu groups to show only groups and items the user has access to
   const visibleMenuGroups = menuGroups
-    .filter(group => group.roles.includes(userRole))
+    .filter(group => group.roles.includes(normalizedUserRole))
     .map(group => ({
       ...group,
       items: group.items.filter(item => 
-        item.roles.includes(userRole) && isSectionEnabled(item.id)
+        item.roles.includes(normalizedUserRole) && isSectionEnabled(item.id)
       )
     }))
     .filter(group => group.items.length > 0)
