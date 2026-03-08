@@ -33,10 +33,10 @@ export default function InactiveDeletionCountdown({ inactiveSince, isDeveloper }
       const seconds = Math.floor((diff % (1000 * 60)) / 1000)
 
       if (days > 0) {
-        setTimeLeft(`Deletes in ${days}d ${hours}h`)
+        setTimeLeft(`Deletes in ${days}d ${hours}h ${minutes}m`)
         setColorClass('bg-yellow-100 text-yellow-800')
       } else if (hours > 0) {
-        setTimeLeft(`⏰ Deletes in ${hours}h ${minutes}m`)
+        setTimeLeft(`⏰ Deletes in ${hours}h ${minutes}m ${seconds}s`)
         setColorClass('bg-orange-100 text-orange-800')
       } else {
         setTimeLeft(`⏰ Deletes in ${minutes}m ${seconds}s`)
