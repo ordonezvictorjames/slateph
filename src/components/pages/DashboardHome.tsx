@@ -959,7 +959,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
         const { data: alltrainees } = await supabase
           .from('profiles')
           .select('id')
-          .eq('role', 'trainee')
+          .eq('role', 'student')
 
         const { data: enrolledtrainees } = await supabase
           .from('course_enrollments')

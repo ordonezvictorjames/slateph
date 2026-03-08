@@ -601,7 +601,7 @@ export default function CourseManagementPage() {
       const { data, error } = await supabase
         .from('profiles')
         .select('id, first_name, last_name, email, role')
-        .in('role', ['trainee', 'tesda_scholar'])
+        .in('role', ['student', 'scholar'])
         .order('first_name', { ascending: true })
 
       if (error) {
@@ -743,7 +743,7 @@ export default function CourseManagementPage() {
       const { count: studentsCount } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
-        .in('role', ['trainee', 'tesda_scholar'])
+        .in('role', ['student', 'scholar'])
 
       // Fetch total instructors count
       const { count: instructorsCount } = await supabase

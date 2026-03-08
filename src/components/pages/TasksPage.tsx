@@ -107,7 +107,7 @@ export default function TasksPage() {
       const { data: alltrainees } = await supabase
         .from('profiles')
         .select('id, first_name, last_name, email, created_at')
-        .eq('role', 'trainee')
+        .eq('role', 'student')
         .order('created_at', { ascending: false })
 
       // Fetch enrolled trainees
