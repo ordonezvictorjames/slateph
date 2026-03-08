@@ -483,13 +483,15 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
     ongoingFeatureRequests: number
     passwordResets: number
     bugReports: number
+    guestUsers: number
   }>({
     unenrolledtrainees: 0,
     unassignedtrainees: 0,
     pendingFeatureRequests: 0,
     ongoingFeatureRequests: 0,
     passwordResets: 0,
-    bugReports: 0
+    bugReports: 0,
+    guestUsers: 0
   })
   const supabase = createClient()
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -1022,13 +1024,20 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
           passwordResetsCount = passwordCount || 0
         }
 
+        // Get guest users count
+        const { count: guestCount } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .eq('role', 'guest')
+
         setPendingTasks({
           unenrolledtrainees: unenrolledCount,
           unassignedtrainees: unassignedCount,
           pendingFeatureRequests: pendingRequests,
           ongoingFeatureRequests: ongoingRequests,
           passwordResets: passwordResetsCount,
-          bugReports: bugReportsCount
+          bugReports: bugReportsCount,
+          guestUsers: guestCount || 0
         })
       }
 
@@ -1136,7 +1145,8 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                      pendingTasks.pendingFeatureRequests === 0 && 
                      pendingTasks.ongoingFeatureRequests === 0 &&
                      pendingTasks.passwordResets === 0 &&
-                     pendingTasks.bugReports === 0 ? (
+                     pendingTasks.bugReports === 0 &&
+                     pendingTasks.guestUsers === 0 ? (
                       <div className="text-center py-6 sm:col-span-2">
                         <div className="w-12 h-12 bg-gray-200 rounded-2xl flex items-center justify-center mx-auto mb-3">
                           <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1281,6 +1291,29 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                             <div className="flex-shrink-0">
                               <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-blue-600 bg-blue-100 rounded-full">
                                 {pendingTasks.unassignedtrainees}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Guest Users */}
+                        {(userRole === 'admin' || userRole === 'developer') && pendingTasks.guestUsers > 0 && (
+                          <div 
+                            onClick={() => onNavigate('tasks')}
+                            className="flex items-start space-x-2 p-3 bg-white rounded-xl border border-indigo-200 hover:shadow-sm transition-all cursor-pointer"
+                          >
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-indigo-100">
+                              <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                              </svg>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-semibold text-black">{pendingTasks.guestUsers} Guest User{pendingTasks.guestUsers > 1 ? 's' : ''}</div>
+                              <div className="text-xs text-gray-500 mt-0.5">Need role assignment</div>
+                            </div>
+                            <div className="flex-shrink-0">
+                              <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-indigo-600 bg-indigo-100 rounded-full">
+                                {pendingTasks.guestUsers}
                               </span>
                             </div>
                           </div>

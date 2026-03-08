@@ -14,7 +14,7 @@ interface UserData {
   first_name: string
   last_name: string
   email: string
-  role: 'admin' | 'developer' | 'instructor' | 'student'
+  role: 'admin' | 'developer' | 'instructor' | 'scholar' | 'student' | 'guest'
   status: string
   teams: string[]
   avatar_url: string | null
@@ -26,6 +26,10 @@ interface UserData {
   grade?: number | null
   batch_number?: number | null
   courses?: string[]
+  account_tier?: 'visitor' | 'beginner' | 'intermediate' | 'expert' | 'vip'
+  account_expires_at?: string | null
+  account_duration_days?: number | null
+  inactive_since?: string | null
 }
 
 interface Profile {
@@ -33,7 +37,7 @@ interface Profile {
   first_name: string
   last_name: string
   email?: string
-  role: 'admin' | 'developer' | 'instructor' | 'student'
+  role: 'admin' | 'developer' | 'instructor' | 'scholar' | 'student' | 'guest'
   status?: string
   avatar_url: string | null
   banner_url?: string | null
@@ -121,14 +125,15 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
     last_name: '',
     email: '',
     password: '',
-    role: 'trainee',
+    role: 'guest',
     status: 'active',
     bio: '',
     avatar_url: '',
     strand: null,
     section: null,
     grade: null,
-    batch_number: null
+    batch_number: null,
+    account_tier: 'visitor'
   })
 
   const handleInputChange = (field: keyof NewUser, value: string | number | null) => {
@@ -145,14 +150,15 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
       last_name: '',
       email: '',
       password: '',
-      role: 'trainee',
+      role: 'guest',
       status: 'active',
       bio: '',
       avatar_url: '',
       strand: null,
       section: null,
       grade: null,
-      batch_number: null
+      batch_number: null,
+      account_tier: 'visitor'
     })
     setSelectedAvatar('cat')
     setAvatarType('animal')
@@ -281,14 +287,15 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
         last_name: '',
         email: '',
         password: '',
-        role: 'trainee',
+        role: 'guest',
         status: 'active',
         bio: '',
         avatar_url: '',
         strand: null,
         section: null,
         grade: null,
-        batch_number: null
+        batch_number: null,
+        account_tier: 'visitor'
       })
       setSelectedAvatar('cat')
       setAvatarType('animal')
@@ -311,14 +318,15 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
       last_name: userData.last_name,
       email: userData.email,
       password: '',
-      role: userData.role as 'admin' | 'developer' | 'instructor' | 'student',
+      role: userData.role as 'admin' | 'developer' | 'instructor' | 'scholar' | 'student' | 'guest',
       status: userData.status as 'active' | 'inactive' | 'pending',
       bio: '',
       avatar_url: userData.avatar_url,
       strand: userData.strand || null,
       section: userData.section || null,
       grade: userData.grade || null,
-      batch_number: userData.batch_number || null
+      batch_number: userData.batch_number || null,
+      account_tier: userData.account_tier || 'visitor'
     })
     
     // Reset avatar states first
@@ -383,6 +391,27 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
       }
 
       console.log('Updating user with avatar:', finalAvatarUrl) // Debug log
+
+      // Update account tier if changed
+      if (newUser.account_tier && editingUser.account_tier !== newUser.account_tier) {
+        const { data: tierData, error: tierError } = await supabase.rpc('update_account_tier', {
+          p_user_id: editingUser.id,
+          p_tier: newUser.account_tier
+        })
+
+        if (tierError) {
+          console.error('Error updating account tier:', tierError)
+          showError('Error updating account tier', tierError.message)
+          setSubmitting(false)
+          return
+        }
+
+        if (tierData && !tierData.success) {
+          showError('Error updating account tier', tierData.message)
+          setSubmitting(false)
+          return
+        }
+      }
 
       const { error } = await supabase
         .from('profiles')
@@ -467,14 +496,15 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
         last_name: '',
         email: '',
         password: '',
-        role: 'trainee',
+        role: 'guest',
         status: 'active',
         bio: '',
         avatar_url: '',
         strand: null,
         section: null,
         grade: null,
-        batch_number: null
+        batch_number: null,
+        account_tier: 'visitor'
       })
       setEditingUser(null)
       setSelectedAvatar('cat')
@@ -629,10 +659,11 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
             >
               <option value="all">All Roles</option>
               <option value="admin">Admin</option>
-              <option value="instructor">Instructor</option>
-              <option value="trainee">Trainee</option>
-              <option value="tesda_scholar">Scholar</option>
               <option value="developer">Developer</option>
+              <option value="instructor">Instructor</option>
+              <option value="scholar">Scholar</option>
+              <option value="student">Student</option>
+              <option value="guest">Guest</option>
             </select>
           </div>
 
@@ -733,12 +764,12 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
           </div>
         </div>
 
-        {/* Trainees */}
+        {/* Students */}
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500 mb-1">Trainees</p>
-              <p className="text-2xl font-bold text-orange-600">{users.filter(u => u.role === 'trainee').length}</p>
+              <p className="text-sm text-gray-500 mb-1">Students</p>
+              <p className="text-2xl font-bold text-orange-600">{users.filter(u => u.role === 'student').length}</p>
             </div>
             <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
               <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -754,7 +785,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500 mb-1">Scholars</p>
-              <p className="text-2xl font-bold text-[#475569]">{users.filter(u => u.role === 'tesda_scholar').length}</p>
+              <p className="text-2xl font-bold text-[#475569]">{users.filter(u => u.role === 'scholar').length}</p>
             </div>
             <div className="w-12 h-12 bg-[#475569]/20 rounded-lg flex items-center justify-center">
               <svg className="w-6 h-6 text-[#475569]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -777,6 +808,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account Life</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
@@ -784,13 +816,13 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
               <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center">
+                  <td colSpan={7} className="px-6 py-12 text-center">
                     <Loading size="md" />
                   </td>
                 </tr>
               ) : filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center">
+                  <td colSpan={7} className="px-6 py-12 text-center">
                     <div className="text-gray-400 mb-2">
                       <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -861,6 +893,61 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                       }`}>
                         {u.status || 'active'}
                       </span>
+                    </td>
+                    <td className="px-6 py-3 whitespace-nowrap">
+                      <div className="flex flex-col gap-1">
+                        {u.account_expires_at ? (
+                          (() => {
+                            const expirationDate = new Date(u.account_expires_at)
+                            const now = new Date()
+                            const daysLeft = Math.ceil((expirationDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+                            const isExpired = daysLeft < 0
+                            const isExpiringSoon = daysLeft <= 7 && daysLeft >= 0
+                            
+                            return (
+                              <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                isExpired ? 'bg-red-100 text-red-800' :
+                                isExpiringSoon ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-blue-100 text-blue-800'
+                              }`}>
+                                {isExpired ? 'Expired' : `${daysLeft}d left`}
+                              </span>
+                            )
+                          })()
+                        ) : (
+                          <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                            Permanent
+                          </span>
+                        )}
+                        {u.status === 'inactive' && u.inactive_since && u.role !== 'developer' && (
+                          (() => {
+                            const inactiveSince = new Date(u.inactive_since)
+                            const deletionDate = new Date(inactiveSince.getTime() + 3 * 24 * 60 * 60 * 1000)
+                            const hoursLeft = Math.ceil((deletionDate.getTime() - Date.now()) / (1000 * 60 * 60))
+                            
+                            if (hoursLeft <= 0) {
+                              return (
+                                <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                  ⚠️ Pending Deletion
+                                </span>
+                              )
+                            } else if (hoursLeft <= 24) {
+                              return (
+                                <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">
+                                  ⏰ Deletes in {hoursLeft}h
+                                </span>
+                              )
+                            } else {
+                              const daysLeft = Math.ceil(hoursLeft / 24)
+                              return (
+                                <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                  Deletes in {daysLeft}d
+                                </span>
+                              )
+                            }
+                          })()
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-500">
                       {new Date(u.created_at).toLocaleDateString()}
@@ -1002,6 +1089,57 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                     }`}>
                       {u.status || 'active'}
                     </span>
+                    {u.account_expires_at ? (
+                      (() => {
+                        const expirationDate = new Date(u.account_expires_at)
+                        const now = new Date()
+                        const daysLeft = Math.ceil((expirationDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+                        const isExpired = daysLeft < 0
+                        const isExpiringSoon = daysLeft <= 7 && daysLeft >= 0
+                        
+                        return (
+                          <span className={`px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            isExpired ? 'bg-red-100 text-red-800' :
+                            isExpiringSoon ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-blue-100 text-blue-800'
+                          }`}>
+                            {isExpired ? 'Expired' : `${daysLeft}d left`}
+                          </span>
+                        )
+                      })()
+                    ) : (
+                      <span className="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                        Permanent
+                      </span>
+                    )}
+                    {u.status === 'inactive' && u.inactive_since && u.role !== 'developer' && (
+                      (() => {
+                        const inactiveSince = new Date(u.inactive_since)
+                        const deletionDate = new Date(inactiveSince.getTime() + 3 * 24 * 60 * 60 * 1000)
+                        const hoursLeft = Math.ceil((deletionDate.getTime() - Date.now()) / (1000 * 60 * 60))
+                        
+                        if (hoursLeft <= 0) {
+                          return (
+                            <span className="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                              ⚠️ Pending Deletion
+                            </span>
+                          )
+                        } else if (hoursLeft <= 24) {
+                          return (
+                            <span className="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">
+                              ⏰ Deletes in {hoursLeft}h
+                            </span>
+                          )
+                        } else {
+                          const daysLeft = Math.ceil(hoursLeft / 24)
+                          return (
+                            <span className="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                              Deletes in {daysLeft}d
+                            </span>
+                          )
+                        }
+                      })()
+                    )}
                   </div>
 
                   <div className="text-xs text-gray-500 mb-4 flex items-center">

@@ -21,6 +21,14 @@ interface trainee {
   created_at: string
 }
 
+interface GuestUser {
+  id: string
+  first_name: string
+  last_name: string
+  email: string
+  created_at: string
+}
+
 interface Course {
   id: string
   title: string
@@ -71,12 +79,16 @@ export default function TasksPage() {
   const [featureRequests, setFeatureRequests] = useState<FeatureRequest[]>([])
   const [passwordResets, setPasswordResets] = useState<PasswordResetRequest[]>([])
   const [bugReports, setBugReports] = useState<BugReport[]>([])
-  const [selectedTab, setSelectedTab] = useState<'all' | 'trainees' | 'instructors' | 'features' | 'passwords' | 'bugs'>('all')
+  const [guestUsers, setGuestUsers] = useState<GuestUser[]>([])
+  const [selectedTab, setSelectedTab] = useState<'all' | 'trainees' | 'instructors' | 'features' | 'passwords' | 'bugs' | 'guests'>('all')
   const [showEnrollModal, setShowEnrollModal] = useState(false)
   const [showAssignModal, setShowAssignModal] = useState(false)
   const [selectedtrainee, setSelectedtrainee] = useState<trainee | null>(null)
   const [selectedCourse, setSelectedCourse] = useState<string>('')
   const [processing, setProcessing] = useState(false)
+  const [showRoleChangeModal, setShowRoleChangeModal] = useState(false)
+  const [selectedGuest, setSelectedGuest] = useState<GuestUser | null>(null)
+  const [selectedRole, setSelectedRole] = useState<string>('')
   const supabase = createClient()
 
   const userRole = user?.profile?.role || 'trainee'
@@ -233,6 +245,15 @@ export default function TasksPage() {
 
         setPasswordResets(passwordRequests)
       }
+
+      // Fetch guest users
+      const { data: guests } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, email, created_at')
+        .eq('role', 'guest')
+        .order('created_at', { ascending: false})
+
+      setGuestUsers(guests || [])
 
     } catch (error) {
       console.error('Error fetching tasks:', error)
@@ -435,6 +456,45 @@ export default function TasksPage() {
     }
   }
 
+  const handleChangeGuestRole = async () => {
+    if (!selectedGuest || !selectedRole) return
+
+    try {
+      setProcessing(true)
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ role: selectedRole })
+        .eq('id', selectedGuest.id)
+
+      if (error) throw error
+
+      // Create notification for the user
+      await supabase
+        .from('notifications')
+        .insert({
+          user_id: selectedGuest.id,
+          type: 'system_alert',
+          title: 'Role Updated',
+          message: `Your account role has been updated to ${selectedRole}`,
+          link: '/dashboard'
+        })
+
+      // Refresh tasks
+      await fetchTasks()
+      setShowRoleChangeModal(false)
+      setSelectedGuest(null)
+      setSelectedRole('')
+      
+      alert(`${selectedGuest.first_name} ${selectedGuest.last_name}'s role has been changed to ${selectedRole}`)
+    } catch (error) {
+      console.error('Error changing guest role:', error)
+      alert('Failed to change guest role')
+    } finally {
+      setProcessing(false)
+    }
+  }
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
@@ -500,9 +560,9 @@ export default function TasksPage() {
             }`}
           >
             All Tasks
-            {(unenrolledtrainees.length + unassignedInstructors.length + featureRequests.length + passwordResets.length + bugReports.length) > 0 && (
+            {(unenrolledtrainees.length + unassignedInstructors.length + featureRequests.length + passwordResets.length + bugReports.length + guestUsers.length) > 0 && (
               <span className="ml-2 bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full text-xs font-semibold">
-                {unenrolledtrainees.length + unassignedInstructors.length + featureRequests.length + passwordResets.length + bugReports.length}
+                {unenrolledtrainees.length + unassignedInstructors.length + featureRequests.length + passwordResets.length + bugReports.length + guestUsers.length}
               </span>
             )}
           </button>
@@ -587,6 +647,23 @@ export default function TasksPage() {
               )}
             </button>
           )}
+          {(userRole === 'admin' || userRole === 'developer') && (
+            <button
+              onClick={() => setSelectedTab('guests')}
+              className={`pb-4 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
+                selectedTab === 'guests'
+                  ? 'border-black text-black'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Guest Users
+              {guestUsers.length > 0 && (
+                <span className="ml-2 bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs font-semibold">
+                  {guestUsers.length}
+                </span>
+              )}
+            </button>
+          )}
         </div>
       </div>
 
@@ -598,7 +675,8 @@ export default function TasksPage() {
               unassignedInstructors.length === 0 && 
               featureRequests.length === 0 && 
               passwordResets.length === 0 && 
-              bugReports.length === 0) ? (
+              bugReports.length === 0 &&
+              guestUsers.length === 0) ? (
               <div className="text-center py-12">
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -774,6 +852,40 @@ export default function TasksPage() {
                           className="text-yellow-600 hover:text-yellow-900 font-semibold"
                         >
                           View
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+
+                  {/* Guest Users */}
+                  {(userRole === 'admin' || userRole === 'developer') && guestUsers.map((guest) => (
+                    <tr key={`guest-${guest.id}`} className="hover:bg-gray-50">
+                      <td className="px-6 py-3 whitespace-nowrap">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          Guest User
+                        </span>
+                      </td>
+                      <td className="px-6 py-3 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">
+                          {guest.first_name} {guest.last_name}
+                        </div>
+                      </td>
+                      <td className="px-6 py-3">
+                        <div className="text-sm text-gray-600">{guest.email}</div>
+                        <div className="text-xs text-gray-500">Needs role assignment</div>
+                      </td>
+                      <td className="px-6 py-3 whitespace-nowrap">
+                        <div className="text-sm text-gray-600">{formatDate(guest.created_at)}</div>
+                      </td>
+                      <td className="px-6 py-3 whitespace-nowrap text-right text-sm font-medium">
+                        <button
+                          onClick={() => {
+                            setSelectedGuest(guest)
+                            setShowRoleChangeModal(true)
+                          }}
+                          className="text-blue-600 hover:text-blue-900 font-semibold"
+                        >
+                          Assign Role
                         </button>
                       </td>
                     </tr>
@@ -1097,6 +1209,61 @@ export default function TasksPage() {
             )}
           </div>
         )}
+
+        {selectedTab === 'guests' && (userRole === 'admin' || userRole === 'developer') && (
+          <div className="overflow-x-auto">
+            {guestUsers.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">No guest users</h3>
+                <p className="text-gray-600 mt-1">All users have been assigned roles.</p>
+              </div>
+            ) : (
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Registered</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {guestUsers.map((guest) => (
+                    <tr key={guest.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-3 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">
+                          {guest.first_name} {guest.last_name}
+                        </div>
+                      </td>
+                      <td className="px-6 py-3 whitespace-nowrap">
+                        <div className="text-sm text-gray-600">{guest.email}</div>
+                      </td>
+                      <td className="px-6 py-3 whitespace-nowrap">
+                        <div className="text-sm text-gray-600">{formatDate(guest.created_at)}</div>
+                      </td>
+                      <td className="px-6 py-3 whitespace-nowrap text-right text-sm font-medium">
+                        <button
+                          onClick={() => {
+                            setSelectedGuest(guest)
+                            setShowRoleChangeModal(true)
+                          }}
+                          className="text-black hover:text-gray-700 font-semibold"
+                        >
+                          Assign Role
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Enroll trainee Modal */}
@@ -1181,6 +1348,54 @@ export default function TasksPage() {
                 className="flex-1 px-4 py-2 bg-[#588157] text-white rounded-lg hover:bg-[#3a5a40] font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {processing ? 'Assigning...' : 'Assign'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Change Guest Role Modal */}
+      {showRoleChangeModal && selectedGuest && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Assign Role to Guest User</h3>
+            <p className="text-gray-600 mb-4">
+              Assign a role to <span className="font-semibold">{selectedGuest.first_name} {selectedGuest.last_name}</span>:
+            </p>
+            <select
+              value={selectedRole}
+              onChange={(e) => setSelectedRole(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent mb-6"
+            >
+              <option value="">Select a role</option>
+              <option value="admin">Admin</option>
+              <option value="instructor">Instructor</option>
+              <option value="student">Student</option>
+              <option value="scholar">Scholar</option>
+            </select>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">
+              <p className="text-xs text-blue-800">
+                <strong>Note:</strong> Once a guest user is assigned a role, they cannot be reverted back to guest status.
+              </p>
+            </div>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => {
+                  setShowRoleChangeModal(false)
+                  setSelectedGuest(null)
+                  setSelectedRole('')
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-semibold"
+                disabled={processing}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleChangeGuestRole}
+                disabled={!selectedRole || processing}
+                className="flex-1 px-4 py-2 bg-[#588157] text-white rounded-lg hover:bg-[#3a5a40] font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {processing ? 'Assigning...' : 'Assign Role'}
               </button>
             </div>
           </div>

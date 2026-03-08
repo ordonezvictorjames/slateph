@@ -345,7 +345,10 @@ export default function CourseChat({ isOpen, onClose, onNavigateToProfile }: Cou
           hint: error.hint,
           code: error.code,
           tableName,
-          messageData
+          messageData,
+          errorType: typeof error,
+          errorKeys: Object.keys(error),
+          fullError: JSON.stringify(error, null, 2)
         })
         
         // More helpful error message

@@ -1,0 +1,3 @@
+ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'student';
+ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'scholar';
+ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'guest';

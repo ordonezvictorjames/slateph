@@ -1,4 +1,6 @@
 // Database types
+export type AccountTier = 'visitor' | 'beginner' | 'intermediate' | 'expert' | 'vip'
+
 export interface Profile {
   id: string
   first_name: string
@@ -8,6 +10,9 @@ export interface Profile {
   avatar_url?: string
   banner_url?: string
   spotify_url?: string
+  account_tier?: AccountTier
+  account_duration_days?: number | null
+  account_expires_at?: string | null
   created_at: string
   updated_at: string
 }

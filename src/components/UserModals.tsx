@@ -17,6 +17,7 @@ export interface NewUser {
   section: string | null
   grade: number | null
   batch_number: number | null
+  account_tier?: 'visitor' | 'beginner' | 'intermediate' | 'expert' | 'vip'
 }
 
 interface UserModalProps {
@@ -245,6 +246,25 @@ export function UserModal({
                         Guest accounts must be approved and assigned a role
                       </p>
                     )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Account Tier <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={user.account_tier || 'visitor'}
+                      onChange={(e) => onInputChange('account_tier', e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-white"
+                    >
+                      <option value="visitor">Visitor (2 days)</option>
+                      <option value="beginner">Beginner (7 days)</option>
+                      <option value="intermediate">Intermediate (25 days)</option>
+                      <option value="expert">Expert (30 days)</option>
+                      <option value="vip">VIP (Permanent)</option>
+                    </select>
+                    <p className="mt-1 text-xs text-gray-500">
+                      Determines account duration before expiration
+                    </p>
                   </div>
                 </div>
               </div>
