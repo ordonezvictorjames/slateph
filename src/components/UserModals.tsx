@@ -9,7 +9,7 @@ export interface NewUser {
   last_name: string
   email: string
   password: string
-  role: 'admin' | 'developer' | 'instructor' | 'student'
+  role: 'admin' | 'developer' | 'instructor' | 'scholar' | 'student'
   status: 'active' | 'inactive' | 'pending'
   bio: string
   avatar_url: string | null
@@ -233,6 +233,7 @@ export function UserModal({
                       className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-white"
                     >
                       <option value="student">Student</option>
+                      <option value="scholar">Scholar</option>
                       <option value="instructor">Instructor</option>
                       <option value="admin">Admin</option>
                       <option value="developer">Developer</option>
