@@ -9,6 +9,7 @@ import { UserModal, type NewUser } from '@/components/UserModals'
 import { Loading, ButtonLoading } from '@/components/ui/loading'
 import { getRoleColor, getRoleLabel } from '@/utils/roleUtils'
 import InactiveDeletionCountdown from '@/components/InactiveDeletionCountdown'
+import LastLoginCountdown from '@/components/LastLoginCountdown'
 
 interface UserData {
   id: string
@@ -50,6 +51,7 @@ interface Profile {
   account_expires_at?: string | null
   account_duration_days?: number | null
   inactive_since?: string | null
+  last_login_at?: string | null
 }
 
 const animalAvatars = [
@@ -813,6 +815,8 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tier</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tier Expiration</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account Life</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -821,13 +825,13 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
               <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center">
+                  <td colSpan={9} className="px-6 py-12 text-center">
                     <Loading size="md" />
                   </td>
                 </tr>
               ) : filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center">
+                  <td colSpan={9} className="px-6 py-12 text-center">
                     <div className="text-gray-400 mb-2">
                       <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -899,38 +903,65 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                         {u.status || 'active'}
                       </span>
                     </td>
+                    {/* Tier Badge Column */}
                     <td className="px-6 py-3 whitespace-nowrap">
-                      <div className="flex flex-col gap-1">
-                        {u.account_expires_at ? (
-                          (() => {
-                            const expirationDate = new Date(u.account_expires_at)
-                            const now = new Date()
-                            const daysLeft = Math.ceil((expirationDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-                            const isExpired = daysLeft < 0
-                            const isExpiringSoon = daysLeft <= 7 && daysLeft >= 0
-                            
-                            return (
-                              <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                isExpired ? 'bg-red-100 text-red-800' :
-                                isExpiringSoon ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-blue-100 text-blue-800'
-                              }`}>
-                                {isExpired ? 'Expired' : `${daysLeft}d left`}
-                              </span>
-                            )
-                          })()
-                        ) : (
-                          <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                            Permanent
-                          </span>
-                        )}
-                        {u.status === 'inactive' && u.inactive_since && (
-                          <InactiveDeletionCountdown 
-                            inactiveSince={u.inactive_since} 
-                            isDeveloper={u.role === 'developer'}
-                          />
-                        )}
-                      </div>
+                      {u.account_tier && (
+                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          u.account_tier === 'visitor' ? 'bg-gray-100 text-gray-800' :
+                          u.account_tier === 'beginner' ? 'bg-blue-100 text-blue-800' :
+                          u.account_tier === 'intermediate' ? 'bg-purple-100 text-purple-800' :
+                          u.account_tier === 'expert' ? 'bg-orange-100 text-orange-800' :
+                          'bg-green-100 text-green-800'
+                        }`}>
+                          {u.account_tier.charAt(0).toUpperCase() + u.account_tier.slice(1)}
+                        </span>
+                      )}
+                    </td>
+                    {/* Tier Expiration Column */}
+                    <td className="px-6 py-3 whitespace-nowrap">
+                      {u.account_expires_at && u.account_tier !== 'vip' ? (
+                        (() => {
+                          const expirationDate = new Date(u.account_expires_at)
+                          const now = new Date()
+                          const diff = expirationDate.getTime() - now.getTime()
+                          const daysLeft = Math.floor(diff / (1000 * 60 * 60 * 24))
+                          const hoursLeft = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+                          const minutesLeft = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+                          const isExpired = diff <= 0
+                          const isExpiringSoon = daysLeft === 0
+                          
+                          return (
+                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              isExpired ? 'bg-red-100 text-red-800' :
+                              isExpiringSoon ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-blue-100 text-blue-800'
+                            }`}>
+                              {isExpired ? 'Expired' : `${daysLeft}d ${hoursLeft}h ${minutesLeft}m`}
+                            </span>
+                          )
+                        })()
+                      ) : u.account_tier === 'vip' ? (
+                        <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                          Permanent
+                        </span>
+                      ) : null}
+                    </td>
+                    {/* Account Life Column */}
+                    <td className="px-6 py-3 whitespace-nowrap">
+                      {u.account_tier !== 'vip' && u.last_login_at ? (
+                        <LastLoginCountdown 
+                          lastLoginAt={u.last_login_at} 
+                          isDeveloper={u.role === 'developer'}
+                        />
+                      ) : u.account_tier === 'vip' ? (
+                        <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                          No limit
+                        </span>
+                      ) : (
+                        <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                          Never logged in
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-500">
                       {new Date(u.created_at).toLocaleDateString()}
@@ -1072,13 +1103,29 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                     }`}>
                       {u.status || 'active'}
                     </span>
-                    {u.account_expires_at ? (
+                    {/* Account Tier Badge */}
+                    {u.account_tier && (
+                      <span className={`px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        u.account_tier === 'visitor' ? 'bg-gray-100 text-gray-800' :
+                        u.account_tier === 'beginner' ? 'bg-blue-100 text-blue-800' :
+                        u.account_tier === 'intermediate' ? 'bg-purple-100 text-purple-800' :
+                        u.account_tier === 'expert' ? 'bg-orange-100 text-orange-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        Tier: {u.account_tier.charAt(0).toUpperCase() + u.account_tier.slice(1)}
+                      </span>
+                    )}
+                    {/* Tier Expiration Countdown (from creation date) */}
+                    {u.account_expires_at && u.account_tier !== 'vip' ? (
                       (() => {
                         const expirationDate = new Date(u.account_expires_at)
                         const now = new Date()
-                        const daysLeft = Math.ceil((expirationDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-                        const isExpired = daysLeft < 0
-                        const isExpiringSoon = daysLeft <= 7 && daysLeft >= 0
+                        const diff = expirationDate.getTime() - now.getTime()
+                        const daysLeft = Math.floor(diff / (1000 * 60 * 60 * 24))
+                        const hoursLeft = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+                        const minutesLeft = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+                        const isExpired = diff <= 0
+                        const isExpiringSoon = daysLeft === 0
                         
                         return (
                           <span className={`px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -1086,20 +1133,29 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                             isExpiringSoon ? 'bg-yellow-100 text-yellow-800' :
                             'bg-blue-100 text-blue-800'
                           }`}>
-                            {isExpired ? 'Expired' : `${daysLeft}d left`}
+                            Expires: {isExpired ? 'Now' : `${daysLeft}d ${hoursLeft}h ${minutesLeft}m`}
                           </span>
                         )
                       })()
-                    ) : (
+                    ) : u.account_tier === 'vip' ? (
                       <span className="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                         Permanent
                       </span>
-                    )}
-                    {u.status === 'inactive' && u.inactive_since && (
-                      <InactiveDeletionCountdown 
-                        inactiveSince={u.inactive_since} 
+                    ) : null}
+                    {/* Account Life - Inactivity Countdown (3 days from last login) */}
+                    {u.account_tier !== 'vip' && u.last_login_at ? (
+                      <LastLoginCountdown 
+                        lastLoginAt={u.last_login_at} 
                         isDeveloper={u.role === 'developer'}
                       />
+                    ) : u.account_tier === 'vip' ? (
+                      <span className="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                        Activity: No limit
+                      </span>
+                    ) : (
+                      <span className="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                        Never logged in
+                      </span>
                     )}
                   </div>
 

@@ -10,14 +10,14 @@ ALTER TABLE profiles
 ADD COLUMN IF NOT EXISTS account_tier account_tier DEFAULT 'visitor';
 
 -- Add comment
-COMMENT ON COLUMN profiles.account_tier IS 'Account tier determining duration: visitor(2d), beginner(7d), intermediate(25d), expert(30d), vip(permanent)';
+COMMENT ON COLUMN profiles.account_tier IS 'Account tier determining duration: visitor(3d), beginner(7d), intermediate(25d), expert(30d), vip(permanent)';
 
 -- Function to get duration days from tier
 CREATE OR REPLACE FUNCTION get_tier_duration(tier account_tier)
 RETURNS INTEGER AS $$
 BEGIN
     CASE tier
-        WHEN 'visitor' THEN RETURN 2;
+        WHEN 'visitor' THEN RETURN 3;
         WHEN 'beginner' THEN RETURN 7;
         WHEN 'intermediate' THEN RETURN 25;
         WHEN 'expert' THEN RETURN 30;
@@ -73,7 +73,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 UPDATE profiles
 SET account_tier = CASE
     WHEN account_duration_days IS NULL THEN 'vip'::account_tier
-    WHEN account_duration_days <= 2 THEN 'visitor'::account_tier
+    WHEN account_duration_days <= 3 THEN 'visitor'::account_tier
     WHEN account_duration_days <= 7 THEN 'beginner'::account_tier
     WHEN account_duration_days <= 25 THEN 'intermediate'::account_tier
     WHEN account_duration_days <= 30 THEN 'expert'::account_tier
@@ -213,7 +213,7 @@ $$;
 -- Verify setup
 SELECT 
     'Account tier system installed!' as status,
-    'Visitor: 2 days' as visitor,
+    'Visitor: 3 days' as visitor,
     'Beginner: 7 days' as beginner,
     'Intermediate: 25 days' as intermediate,
     'Expert: 30 days' as expert,

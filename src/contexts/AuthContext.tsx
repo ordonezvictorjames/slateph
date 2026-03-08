@@ -159,6 +159,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       setUser(userData)
       
+      // Update last login timestamp
+      try {
+        await supabase.rpc('update_last_login', { p_user_id: userData.id })
+      } catch (error) {
+        console.error('Failed to update last login:', error)
+        // Continue anyway - login is successful
+      }
+      
       // Log the login activity
       await logActivity({
         userId: userData.id,

@@ -388,7 +388,7 @@ export default function CourseChat({ isOpen, onClose, onNavigateToProfile }: Cou
     switch (role) {
       case 'admin':
         return 'bg-red-100 text-red-700'
-      case 'trainee':
+      case 'student':
         return 'bg-blue-100 text-blue-700'
       case 'developer':
         return 'bg-purple-100 text-purple-700'

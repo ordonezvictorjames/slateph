@@ -7,7 +7,7 @@ Added a 5-tier account system with customizable durations in the Edit User modal
 
 | Tier | Duration | Description |
 |------|----------|-------------|
-| **Visitor** | 2 days | Trial/temporary access |
+| **Visitor** | 3 days | Trial/temporary access |
 | **Beginner** | 7 days | Short-term users |
 | **Intermediate** | 25 days | Medium-term users |
 | **Expert** | 30 days | Standard users |
@@ -43,7 +43,7 @@ npm run dev
 
 ### 2. Automatic Expiration Calculation
 When you change a user's tier:
-- Visitor: Account expires in 2 days from now
+- Visitor: Account expires in 3 days from now
 - Beginner: Account expires in 7 days from now
 - Intermediate: Account expires in 25 days from now
 - Expert: Account expires in 30 days from now
@@ -90,7 +90,7 @@ You can have:
 ## Default Tier Assignment
 
 When creating new accounts:
-- Guest role → Visitor tier (2 days)
+- Guest role → Visitor tier (3 days)
 - Student role → Expert tier (30 days)
 - Scholar role → VIP tier (permanent)
 - Admin/Developer/Instructor → VIP tier (permanent)
