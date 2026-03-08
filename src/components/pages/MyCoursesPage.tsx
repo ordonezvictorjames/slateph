@@ -460,10 +460,10 @@ export default function MyCoursesPage() {
                   </svg>
                 </div>
                 <h3 className="text-lg font-medium text-black mb-2">
-                  {user?.profile?.role === 'trainee' ? 'No assigned courses' : 'No enrolled courses'}
+                  {user?.profile?.role === 'student' ? 'No assigned courses' : 'No enrolled courses'}
                 </h3>
                 <p className="text-gray-500">
-                  {user?.profile?.role === 'trainee' 
+                  {user?.profile?.role === 'student' 
                     ? 'You have not been assigned to any courses yet. Contact your administrator.' 
                     : 'You are not enrolled in any courses yet. Contact your administrator to enroll.'}
                 </p>
@@ -612,8 +612,8 @@ export default function MyCoursesPage() {
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                               </svg>
-                              <span className={subject.trainee_name === 'Unassigned' ? 'text-gray-400' : 'text-gray-700 font-medium'}>
-                                {subject.trainee_name}
+                              <span className={subject.instructor_name === 'Unassigned' ? 'text-gray-400' : 'text-gray-700 font-medium'}>
+                                {subject.instructor_name}
                               </span>
                             </div>
                           </div>

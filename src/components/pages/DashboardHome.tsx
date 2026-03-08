@@ -770,8 +770,8 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
         .order('created_at', { ascending: false })
         .limit(6)
 
-      // Filter courses for trainees - only show courses they're enrolled in
-      if (userRole === 'trainee') {
+      // Filter courses for students - only show courses they're enrolled in
+      if (userRole === 'student') {
         // First, get all course IDs where this trainee is enrolled
         const { data: traineeEnrollments, error: enrollmentsError } = await supabase
           .from('course_enrollments')
@@ -818,7 +818,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
             // Check if current user is enrolled in this course
             let isUserEnrolled = false
-            if (user?.id && user?.profile?.role === 'trainee') {
+            if (user?.id && user?.profile?.role === 'student') {
               try {
                 const { data: userEnrollment, error: enrollmentError } = await supabase
                   .from('course_enrollments')
@@ -849,9 +849,9 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
           })
         )
         
-        // Sort courses: enrolled courses first for trainees
+        // Sort courses: enrolled courses first for students
         const sortedCourses = coursesWithEnrollments.sort((a, b) => {
-          if (user?.profile?.role === 'trainee') {
+          if (user?.profile?.role === 'student') {
             // Enrolled courses come first
             if (a.is_user_enrolled && !b.is_user_enrolled) return -1
             if (!a.is_user_enrolled && b.is_user_enrolled) return 1
@@ -1096,7 +1096,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                     Welcome back, {displayUser.profile?.first_name || displayUser?.email?.split('@')[0] || 'User'}!
                   </h2>
                   <p className="text-gray-600">
-                    {userRole === 'trainee' 
+                    {userRole === 'student' 
                       ? 'Ready to continue your learning journey? Check out your courses below.'
                       : 'Manage your platform and keep everything running smoothly.'}
                   </p>
@@ -1382,7 +1382,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
         <div>
           <div className="flex items-center justify-between mb-4 md:mb-6">
             <h2 className="text-lg md:text-xl font-bold text-black">
-              {userRole === 'trainee' ? (
+              {userRole === 'student' ? (
                 <>
                   My Courses
                   {courses.filter(c => c.is_user_enrolled).length > 0 && (
@@ -1411,8 +1411,8 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                       })
                       const enrollmentTypeBadges = getEnrollmentTypeDisplay(course.enrollment_type)
                       
-                      const istraineeOrtrainee = userRole === 'trainee'
-                      const isLocked = istraineeOrtrainee && !course.is_user_enrolled
+                      const isStudentOrStudent = userRole === 'student'
+                      const isLocked = isStudentOrStudent && !course.is_user_enrolled
                       
                       return (
                         <div 
@@ -1431,8 +1431,8 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                             </div>
                           )}
 
-                          {/* Enrolled Badge for trainees who ARE enrolled */}
-                          {istraineeOrtrainee && course.is_user_enrolled && (
+                          {/* Enrolled Badge for students who ARE enrolled */}
+                          {isStudentOrStudent && course.is_user_enrolled && (
                             <div className="absolute top-2 left-2 z-10">
                               <div className="bg-green-500/90 backdrop-blur-sm text-white px-3 py-1.5 rounded-full flex items-center space-x-2">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1494,7 +1494,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                                   </svg>
                                   <span>Contact Admin</span>
                                 </button>
-                              ) : istraineeOrtrainee && course.is_user_enrolled ? (
+                              ) : isStudentOrStudent && course.is_user_enrolled ? (
                                 <button 
                                   onClick={() => onNavigate('my-courses')}
                                   className="w-full px-4 py-3 text-white rounded-xl font-semibold text-sm transition-colors duration-200 flex items-center justify-center space-x-2"
@@ -1507,7 +1507,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                   </svg>
                                 </button>
-                              ) : userRole === 'trainee' ? (
+                              ) : userRole === 'student' ? (
                                 <button 
                                   onClick={() => onNavigate('my-courses')}
                                   className="w-full px-4 py-3 text-white rounded-xl font-semibold text-sm transition-colors duration-200 flex items-center justify-center space-x-2"
@@ -1740,8 +1740,8 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             </div>
             )}
 
-            {/* My Learning - For trainees and trainees */}
-            {userRole === 'trainee' && (
+            {/* My Learning - For students */}
+            {userRole === 'student' && (
             <div>
               <div className="flex items-center justify-between mb-4 md:mb-6">
                 <h2 className="text-lg md:text-xl font-bold text-black">My Learning Progress</h2>

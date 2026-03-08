@@ -45,6 +45,10 @@ interface Profile {
   strand?: string | null
   section?: string | null
   grade?: number | null
+  account_tier?: 'visitor' | 'beginner' | 'intermediate' | 'expert' | 'vip'
+  account_expires_at?: string | null
+  account_duration_days?: number | null
+  inactive_since?: string | null
 }
 
 const animalAvatars = [
@@ -1067,17 +1071,17 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                     <span className={`px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getRoleColor(u.role as string)}`}>
                       {getRoleLabel(u.role as string)}
                     </span>
-                    {u.role === 'trainee' && u.strand && (
+                    {u.role === 'student' && u.strand && (
                       <span className="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-[#475569]/10 text-[#475569]">
                         {u.strand}
                       </span>
                     )}
-                    {u.role === 'trainee' && u.section && (
+                    {u.role === 'student' && u.section && (
                       <span className="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-indigo-50 text-indigo-700">
                         {u.section}
                       </span>
                     )}
-                    {u.role === 'trainee' && u.grade && (
+                    {u.role === 'student' && u.grade && (
                       <span className="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-50 text-purple-700">
                         Grade {u.grade}
                       </span>
@@ -1362,7 +1366,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                   </div>
 
                   {/* SHS Strand - Only for trainees */}
-                  {newUser.role === 'trainee' && (
+                  {newUser.role === 'student' && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         SHS Strand
@@ -1388,7 +1392,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                   )}
 
                   {/* Section and Grade - Only for trainees */}
-                  {newUser.role === 'trainee' && (
+                  {newUser.role === 'student' && (
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1592,7 +1596,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                   </div>
 
                   {/* SHS Strand - Only for trainees */}
-                  {newUser.role === 'trainee' && (
+                  {newUser.role === 'student' && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         SHS Strand
@@ -1618,7 +1622,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                   )}
 
                   {/* Section and Grade - Only for trainees */}
-                  {newUser.role === 'trainee' && (
+                  {newUser.role === 'student' && (
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1778,3 +1782,4 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
     </div>
   )
 }
+
