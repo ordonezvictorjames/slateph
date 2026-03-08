@@ -9,7 +9,7 @@ export interface NewUser {
   last_name: string
   email: string
   password: string
-  role: 'admin' | 'developer' | 'instructor' | 'scholar' | 'student'
+  role: 'admin' | 'developer' | 'guest' | 'instructor' | 'scholar' | 'student'
   status: 'active' | 'inactive' | 'pending'
   bio: string
   avatar_url: string | null
@@ -232,12 +232,19 @@ export function UserModal({
                       onChange={(e) => onInputChange('role', e.target.value)}
                       className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-white"
                     >
+                      {/* Show Guest option only if current role is guest */}
+                      {user.role === 'guest' && <option value="guest">Guest (Pending Approval)</option>}
                       <option value="student">Student</option>
                       <option value="scholar">Scholar</option>
                       <option value="instructor">Instructor</option>
                       <option value="admin">Admin</option>
                       <option value="developer">Developer</option>
                     </select>
+                    {user.role === 'guest' && (
+                      <p className="mt-1 text-xs text-gray-500">
+                        Guest accounts must be approved and assigned a role
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

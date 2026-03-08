@@ -3,7 +3,7 @@ export interface Profile {
   id: string
   first_name: string
   last_name: string
-  role: 'admin' | 'developer' | 'instructor' | 'scholar' | 'student'
+  role: 'admin' | 'developer' | 'guest' | 'instructor' | 'scholar' | 'student'
   email: string
   avatar_url?: string
   banner_url?: string
@@ -45,6 +45,6 @@ export interface Assignment {
 export interface AuthUser {
   id: string
   email: string
-  role: 'admin' | 'developer' | 'instructor' | 'scholar' | 'student'
+  role: 'admin' | 'developer' | 'guest' | 'instructor' | 'scholar' | 'student'
   profile: Profile
 }
