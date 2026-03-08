@@ -8,6 +8,7 @@ import { logUserCreation, logActivity } from '@/lib/activityLogger'
 import { UserModal, type NewUser } from '@/components/UserModals'
 import { Loading, ButtonLoading } from '@/components/ui/loading'
 import { getRoleColor, getRoleLabel } from '@/utils/roleUtils'
+import InactiveDeletionCountdown from '@/components/InactiveDeletionCountdown'
 
 interface UserData {
   id: string
@@ -923,33 +924,11 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                             Permanent
                           </span>
                         )}
-                        {u.status === 'inactive' && u.inactive_since && u.role !== 'developer' && (
-                          (() => {
-                            const inactiveSince = new Date(u.inactive_since)
-                            const deletionDate = new Date(inactiveSince.getTime() + 3 * 24 * 60 * 60 * 1000)
-                            const hoursLeft = Math.ceil((deletionDate.getTime() - Date.now()) / (1000 * 60 * 60))
-                            
-                            if (hoursLeft <= 0) {
-                              return (
-                                <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                                  ⚠️ Pending Deletion
-                                </span>
-                              )
-                            } else if (hoursLeft <= 24) {
-                              return (
-                                <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">
-                                  ⏰ Deletes in {hoursLeft}h
-                                </span>
-                              )
-                            } else {
-                              const daysLeft = Math.ceil(hoursLeft / 24)
-                              return (
-                                <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                  Deletes in {daysLeft}d
-                                </span>
-                              )
-                            }
-                          })()
+                        {u.status === 'inactive' && u.inactive_since && (
+                          <InactiveDeletionCountdown 
+                            inactiveSince={u.inactive_since} 
+                            isDeveloper={u.role === 'developer'}
+                          />
                         )}
                       </div>
                     </td>
@@ -1116,33 +1095,11 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                         Permanent
                       </span>
                     )}
-                    {u.status === 'inactive' && u.inactive_since && u.role !== 'developer' && (
-                      (() => {
-                        const inactiveSince = new Date(u.inactive_since)
-                        const deletionDate = new Date(inactiveSince.getTime() + 3 * 24 * 60 * 60 * 1000)
-                        const hoursLeft = Math.ceil((deletionDate.getTime() - Date.now()) / (1000 * 60 * 60))
-                        
-                        if (hoursLeft <= 0) {
-                          return (
-                            <span className="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                              ⚠️ Pending Deletion
-                            </span>
-                          )
-                        } else if (hoursLeft <= 24) {
-                          return (
-                            <span className="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">
-                              ⏰ Deletes in {hoursLeft}h
-                            </span>
-                          )
-                        } else {
-                          const daysLeft = Math.ceil(hoursLeft / 24)
-                          return (
-                            <span className="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                              Deletes in {daysLeft}d
-                            </span>
-                          )
-                        }
-                      })()
+                    {u.status === 'inactive' && u.inactive_since && (
+                      <InactiveDeletionCountdown 
+                        inactiveSince={u.inactive_since} 
+                        isDeveloper={u.role === 'developer'}
+                      />
                     )}
                   </div>
 
