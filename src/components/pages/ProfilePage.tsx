@@ -3,7 +3,20 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
-import { Loading } from '@/components/ui/loading'
+import { Loading, ButtonLoading } from '@/components/ui/loading'
+import { useToast } from '@/contexts/ToastContext'
+import { getRoleLabel } from '@/utils/roleUtils'
+
+interface Friend {
+  id: string
+  first_name: string
+  last_name: string
+  email: string
+  role: string
+  avatar_url: string | null
+  status?: string
+  created_at?: string
+}
 
 interface Post {
   id: string
@@ -68,6 +81,7 @@ interface ProfilePageProps {
 
 export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePageProps = {}) {
   const { user, refreshUser } = useAuth()
+  const { showSuccess, showError } = useToast()
   const [profileUser, setProfileUser] = useState<any>(null)
   const [loadingProfile, setLoadingProfile] = useState(false)
   const [uploadingBanner, setUploadingBanner] = useState(false)
@@ -87,6 +101,17 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
   const [showBannerModal, setShowBannerModal] = useState(false)
   const [isRepositioning, setIsRepositioning] = useState(false)
   const [bannerPositionY, setBannerPositionY] = useState(50) // Percentage from top
+  
+  // Friends-related state
+  const [friends, setFriends] = useState<Friend[]>([])
+  const [pendingRequests, setPendingRequests] = useState<Friend[]>([])
+  const [allUsers, setAllUsers] = useState<Friend[]>([])
+  const [connectionStatus, setConnectionStatus] = useState<string>('none')
+  const [loadingFriends, setLoadingFriends] = useState(true)
+  const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [showAddFriendModal, setShowAddFriendModal] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  
   const supabase = createClient()
 
   // Determine which user profile to display
@@ -153,6 +178,334 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
     } finally {
       setLoadingProfile(false)
     }
+  }
+
+  // Load friends when viewing a profile
+  useEffect(() => {
+    if (displayUserId) {
+      loadFriends()
+      if (isOwnProfile) {
+        loadPendingRequests()
+      } else {
+        checkConnectionStatus()
+      }
+    }
+  }, [displayUserId, isOwnProfile])
+
+  const loadFriends = async () => {
+    if (!displayUserId) {
+      console.error('Cannot load friends: displayUserId is undefined')
+      return
+    }
+
+    try {
+      setLoadingFriends(true)
+      console.log('Loading friends for user:', displayUserId)
+      
+      // Query connections table directly instead of using RPC
+      const { data: connections, error: connError } = await supabase
+        .from('connections')
+        .select('user_id, friend_id')
+        .or(`user_id.eq.${displayUserId},friend_id.eq.${displayUserId}`)
+        .eq('status', 'accepted')
+
+      if (connError) {
+        console.error('Error loading connections:', connError)
+        throw connError
+      }
+
+      if (!connections || connections.length === 0) {
+        console.log('No friends found')
+        setFriends([])
+        return
+      }
+
+      // Get friend IDs (the other user in each connection)
+      const friendIds = connections.map(conn => 
+        conn.user_id === displayUserId ? conn.friend_id : conn.user_id
+      )
+
+      console.log('Friend IDs:', friendIds)
+
+      // Fetch friend profiles
+      const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, email, role, avatar_url')
+        .in('id', friendIds)
+
+      if (profileError) {
+        console.error('Error loading friend profiles:', profileError)
+        throw profileError
+      }
+
+      console.log('Friends loaded successfully:', profiles)
+      setFriends(profiles || [])
+    } catch (error: any) {
+      console.error('Error loading friends:', error)
+      showError('Error', 'Failed to load friends')
+    } finally {
+      setLoadingFriends(false)
+    }
+  }
+
+  const loadPendingRequests = async () => {
+    if (!user?.id) {
+      console.error('Cannot load pending requests: user.id is undefined')
+      return
+    }
+
+    try {
+      console.log('Loading pending requests for user:', user.id)
+      
+      // Query connections where current user is the friend_id and status is pending
+      const { data: connections, error: connError } = await supabase
+        .from('connections')
+        .select('user_id')
+        .eq('friend_id', user.id)
+        .eq('status', 'pending')
+
+      if (connError) {
+        console.error('Error loading pending connections:', connError)
+        throw connError
+      }
+
+      if (!connections || connections.length === 0) {
+        console.log('No pending requests found')
+        setPendingRequests([])
+        return
+      }
+
+      // Get sender IDs
+      const senderIds = connections.map(conn => conn.user_id)
+
+      console.log('Sender IDs:', senderIds)
+
+      // Fetch sender profiles
+      const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, email, role, avatar_url')
+        .in('id', senderIds)
+
+      if (profileError) {
+        console.error('Error loading sender profiles:', profileError)
+        throw profileError
+      }
+
+      console.log('Pending requests loaded successfully:', profiles)
+      setPendingRequests(profiles || [])
+    } catch (error: any) {
+      console.error('Error loading pending requests:', error)
+      showError('Error', 'Failed to load pending requests')
+    }
+  }
+
+  const checkConnectionStatus = async () => {
+    if (!user?.id || !displayUserId) {
+      console.log('Cannot check connection status: missing user IDs', { userId: user?.id, displayUserId })
+      return
+    }
+
+    try {
+      console.log('Checking connection status between:', user.id, 'and', displayUserId)
+      
+      // Try a simpler query approach - check both directions separately
+      const { data: connection1, error: error1 } = await supabase
+        .from('connections')
+        .select('status')
+        .eq('user_id', user.id)
+        .eq('friend_id', displayUserId)
+        .maybeSingle()
+
+      if (error1) {
+        console.error('Error checking connection (direction 1):', error1)
+      }
+
+      const { data: connection2, error: error2 } = await supabase
+        .from('connections')
+        .select('status')
+        .eq('user_id', displayUserId)
+        .eq('friend_id', user.id)
+        .maybeSingle()
+
+      if (error2) {
+        console.error('Error checking connection (direction 2):', error2)
+      }
+
+      // Use whichever connection exists
+      const connection = connection1 || connection2
+      const status = connection?.status || 'none'
+      
+      console.log('Connection found:', connection)
+      console.log('Connection status:', status)
+      setConnectionStatus(status)
+    } catch (error) {
+      console.error('Error checking connection status:', error)
+      setConnectionStatus('none')
+    }
+  }
+
+  const loadAllUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, email, role, avatar_url')
+        .neq('id', user?.id)
+        .order('first_name')
+
+      if (error) throw error
+      setAllUsers(data || [])
+    } catch (error) {
+      console.error('Error loading users:', error)
+    }
+  }
+
+  const sendFriendRequest = async (friendId: string) => {
+    if (!user?.id) return
+
+    try {
+      setActionLoading(friendId)
+      console.log('Sending friend request from', user.id, 'to', friendId)
+      
+      const { data, error } = await supabase.rpc('send_friend_request', {
+        p_user_id: user.id,
+        p_friend_id: friendId
+      })
+
+      if (error) {
+        console.error('Error sending friend request:', error)
+        throw error
+      }
+
+      console.log('Friend request response:', data)
+
+      if (data.success) {
+        showSuccess('Request Sent', data.message)
+        console.log('Friend request sent successfully, refreshing connection status')
+        
+        // Small delay to ensure database transaction is committed
+        await new Promise(resolve => setTimeout(resolve, 500))
+        
+        // Refresh connection status from database
+        if (!isOwnProfile) {
+          await checkConnectionStatus()
+        }
+        
+        setShowAddFriendModal(false)
+      } else {
+        // Even if it says "already sent", refresh the status
+        if (data.message && data.message.includes('already')) {
+          console.log('Request already exists, refreshing connection status')
+          if (!isOwnProfile) {
+            await checkConnectionStatus()
+          }
+        }
+        showError('Error', data.message)
+      }
+    } catch (error: any) {
+      console.error('Error in sendFriendRequest:', error)
+      showError('Error', error.message || 'Failed to send friend request')
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const acceptFriendRequest = async (friendId: string) => {
+    if (!user?.id) return
+
+    try {
+      setActionLoading(friendId)
+      const { data, error } = await supabase.rpc('accept_friend_request', {
+        p_user_id: user.id,
+        p_friend_id: friendId
+      })
+
+      if (error) throw error
+
+      if (data.success) {
+        showSuccess('Success', data.message)
+        loadFriends()
+        loadPendingRequests()
+      } else {
+        showError('Error', data.message)
+      }
+    } catch (error: any) {
+      showError('Error', error.message)
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const rejectFriendRequest = async (friendId: string) => {
+    if (!user?.id) return
+
+    try {
+      setActionLoading(friendId)
+      const { data, error} = await supabase.rpc('reject_friend_request', {
+        p_user_id: user.id,
+        p_friend_id: friendId
+      })
+
+      if (error) throw error
+
+      if (data.success) {
+        showSuccess('Success', data.message)
+        loadPendingRequests()
+      } else {
+        showError('Error', data.message)
+      }
+    } catch (error: any) {
+      showError('Error', error.message)
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const removeFriend = async (friendId: string, isCancelRequest: boolean = false) => {
+    if (!user?.id) return
+
+    // Different confirmation messages based on action
+    const confirmMessage = isCancelRequest 
+      ? 'Are you sure you want to cancel this friend request?'
+      : 'Are you sure you want to remove this friend?'
+    
+    if (!confirm(confirmMessage)) return
+
+    try {
+      setActionLoading(friendId)
+      const { data, error } = await supabase.rpc('remove_friend', {
+        p_user_id: user.id,
+        p_friend_id: friendId
+      })
+
+      if (error) throw error
+
+      if (data.success) {
+        const successMessage = isCancelRequest ? 'Friend request cancelled' : 'Friend removed'
+        showSuccess('Success', successMessage)
+        loadFriends()
+        if (!isOwnProfile) {
+          setConnectionStatus('none')
+        }
+      } else {
+        showError('Error', data.message)
+      }
+    } catch (error: any) {
+      showError('Error', error.message)
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const getAvatarDisplay = (avatarUrl: string | null) => {
+    if (!avatarUrl) return '👤'
+    
+    const animalAvatars: { [key: string]: string } = {
+      'cat': '🐱', 'dog': '🐶', 'rabbit': '🐰', 'fox': '🦊',
+      'bear': '🐻', 'panda': '🐼', 'koala': '🐨', 'tiger': '🐯',
+      'lion': '🦁', 'monkey': '🐵', 'pig': '🐷', 'frog': '🐸'
+    }
+    
+    return animalAvatars[avatarUrl] || avatarUrl
   }
 
   const fetchPosts = async (showLoading = true) => {
@@ -721,22 +1074,55 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
                     </div>
                   </div>
                   
-                  {/* Edit Profile Button - Only show for own profile */}
-                  {isOwnProfile && (
-                    <div className="flex justify-center md:justify-end">
-                      <button
-                        onClick={() => alert('Edit profile feature coming soon!')}
-                        className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                        Edit Profile
-                      </button>
-                    </div>
-                  )}
+                  {/* Action Buttons */}
+                  <div className="flex justify-center md:justify-end gap-2">
+                    {!isOwnProfile && user?.id ? (
+                      <>
+                        {/* Dynamic Friend Button */}
+                        {connectionStatus === 'none' && (
+                          <button
+                            onClick={() => sendFriendRequest(displayUserId!)}
+                            disabled={actionLoading === displayUserId}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50"
+                          >
+                            {actionLoading === displayUserId && <ButtonLoading />}
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                            </svg>
+                            Add friend
+                          </button>
+                        )}
+                        {connectionStatus === 'pending' && (
+                          <button
+                            onClick={() => removeFriend(displayUserId!, true)}
+                            disabled={actionLoading === displayUserId}
+                            className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium disabled:opacity-50"
+                          >
+                            {actionLoading === displayUserId && <ButtonLoading />}
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                            Cancel request
+                          </button>
+                        )}
+                        {connectionStatus === 'accepted' && (
+                          <button
+                            onClick={() => removeFriend(displayUserId!, false)}
+                            disabled={actionLoading === displayUserId}
+                            className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium disabled:opacity-50"
+                          >
+                            {actionLoading === displayUserId && <ButtonLoading />}
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            Friends
+                          </button>
+                        )}
+                      </>
+                    ) : null}
+                  </div>
                   
-                  {/* Back to My Profile Button - Only show when viewing other profiles */}
+                  {/* Home Button - Only show when viewing other profiles */}
                   {!isOwnProfile && onNavigateToProfile && (
                     <div className="flex justify-center md:justify-end">
                       <button
@@ -744,9 +1130,9 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
                         className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                         </svg>
-                        Back to My Profile
+                        Home
                       </button>
                     </div>
                   )}
@@ -847,15 +1233,114 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 md:p-6">
                 <div className="flex items-center justify-between mb-3 md:mb-4">
                   <h3 className="text-base md:text-lg font-semibold text-gray-900">Friends</h3>
-                  <span className="text-xs md:text-sm text-gray-500">0</span>
+                  <span className="text-xs md:text-sm text-gray-500">{friends.length}</span>
                 </div>
-                <div className="text-center py-8">
-                  <svg className="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                  <p className="text-sm text-gray-500">No friends yet</p>
-                  <p className="text-xs text-gray-400 mt-1">Connect with others to see them here</p>
-                </div>
+
+                {/* Pending Requests (Own Profile Only) */}
+                {isOwnProfile && pendingRequests.length > 0 && (
+                  <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+                    <p className="text-xs font-semibold text-blue-900 mb-2 flex items-center gap-1">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                      </svg>
+                      {pendingRequests.length} Friend Request{pendingRequests.length > 1 ? 's' : ''}
+                    </p>
+                    <div className="space-y-2">
+                      {pendingRequests.slice(0, 2).map((request) => (
+                        <div key={request.id} className="flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            {/* Avatar */}
+                            <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                              {request.avatar_url ? (
+                                request.avatar_url.startsWith('data:') ? (
+                                  <img src={request.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                                ) : request.avatar_url.length <= 2 ? (
+                                  <span className="text-sm">{request.avatar_url}</span>
+                                ) : (
+                                  <span className="text-sm">{getAvatarDisplay(request.avatar_url)}</span>
+                                )
+                              ) : (
+                                <span className="text-xs text-gray-400">
+                                  {request.first_name?.charAt(0)}{request.last_name?.charAt(0)}
+                                </span>
+                              )}
+                            </div>
+                            <span className="font-medium text-gray-900 truncate">
+                              {request.first_name} {request.last_name}
+                            </span>
+                          </div>
+                          <div className="flex gap-1 flex-shrink-0">
+                            <button
+                              onClick={() => acceptFriendRequest(request.id)}
+                              disabled={actionLoading === request.id}
+                              className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs"
+                            >
+                              ✓
+                            </button>
+                            <button
+                              onClick={() => rejectFriendRequest(request.id)}
+                              disabled={actionLoading === request.id}
+                              className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-2 py-1 rounded text-xs"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Friends List */}
+                {loadingFriends ? (
+                  <div className="text-center py-8 text-gray-500 text-sm">Loading...</div>
+                ) : friends.length === 0 ? (
+                  <div className="text-center py-8">
+                    <svg className="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    <p className="text-sm text-gray-500">No friends yet</p>
+                    <p className="text-xs text-gray-400 mt-1">Connect with others to see them here</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {friends.slice(0, 6).map((friend) => (
+                      <div
+                        key={friend.id}
+                        onClick={() => onNavigateToProfile?.(friend.id)}
+                        className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors"
+                      >
+                        {/* Avatar */}
+                        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                          {friend.avatar_url ? (
+                            friend.avatar_url.startsWith('data:') ? (
+                              <img src={friend.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                            ) : friend.avatar_url.length <= 2 ? (
+                              <span className="text-lg">{friend.avatar_url}</span>
+                            ) : (
+                              <span className="text-lg">{getAvatarDisplay(friend.avatar_url)}</span>
+                            )
+                          ) : (
+                            <span className="text-xs text-gray-400">
+                              {friend.first_name?.charAt(0)}{friend.last_name?.charAt(0)}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {friend.first_name} {friend.last_name}
+                          </p>
+                          <p className="text-xs text-gray-500 truncate">{getRoleLabel(friend.role)}</p>
+                        </div>
+                      </div>
+                    ))}
+                    {friends.length > 6 && (
+                      <p className="text-xs text-center text-gray-500 pt-2">
+                        +{friends.length - 6} more
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Badges Card */}
@@ -1269,6 +1754,64 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
           </div>
         </div>
       </div>
+
+      {/* Add Friend Modal */}
+      {showAddFriendModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-gray-900">Add Friends</h2>
+                <button
+                  onClick={() => setShowAddFriendModal(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <input
+                type="text"
+                placeholder="Search users..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="space-y-3">
+                {allUsers
+                  .filter(u => 
+                    `${u.first_name} ${u.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    u.email.toLowerCase().includes(searchQuery.toLowerCase())
+                  )
+                  .map((u) => (
+                    <div key={u.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="text-3xl">{getAvatarDisplay(u.avatar_url)}</div>
+                        <div>
+                          <p className="font-medium text-gray-900">
+                            {u.first_name} {u.last_name}
+                          </p>
+                          <p className="text-sm text-gray-500">{getRoleLabel(u.role)}</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => sendFriendRequest(u.id)}
+                        disabled={actionLoading === u.id}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+                      >
+                        {actionLoading === u.id && <ButtonLoading />}
+                        Add
+                      </button>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
