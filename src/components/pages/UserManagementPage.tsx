@@ -10,6 +10,7 @@ import { Loading, ButtonLoading } from '@/components/ui/loading'
 import { getRoleColor, getRoleLabel } from '@/utils/roleUtils'
 import InactiveDeletionCountdown from '@/components/InactiveDeletionCountdown'
 import LastLoginCountdown from '@/components/LastLoginCountdown'
+import UserSessionsModal from '@/components/UserSessionsModal'
 
 interface UserData {
   id: string
@@ -94,6 +95,8 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showPermissionDeniedModal, setShowPermissionDeniedModal] = useState(false)
   const [showProfileModal, setShowProfileModal] = useState(false)
+  const [showSessionsModal, setShowSessionsModal] = useState(false)
+  const [selectedUserForSessions, setSelectedUserForSessions] = useState<UserData | null>(null)
   const [viewingProfile, setViewingProfile] = useState<UserData | null>(null)
   const [selectedAvatar, setSelectedAvatar] = useState<string>('cat')
   const [avatarType, setAvatarType] = useState<'animal' | 'upload'>('animal')
@@ -636,6 +639,19 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
         </div>
       </div>
 
+      {/* Add User Button */}
+      <div className="mb-6">
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="px-6 py-3 bg-[#475569] text-white rounded-xl hover:bg-[#1E293B] transition-all font-medium flex items-center gap-2 shadow-lg hover:shadow-xl"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          Add New User
+        </button>
+      </div>
+
       {/* Filters */}
       <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -808,18 +824,18 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
         {/* List View (Table) */}
         {viewMode === 'list' && (
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full text-base">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tier</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tier Expiration</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account Life</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tier</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tier Expiration</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account Life</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -843,7 +859,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
               ) : (
                 filteredUsers.map((u) => (
                   <tr key={u.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-3 whitespace-nowrap">
+                    <td className="px-4 py-2 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10">
                           {u.avatar_url ? (
@@ -862,7 +878,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                             </div>
                           )}
                         </div>
-                        <div className="ml-4">
+                        <div className="ml-3">
                           <button
                             onClick={() => handleViewProfile({
                               id: u.id,
@@ -886,39 +902,99 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-3 whitespace-nowrap">
+                    <td className="px-4 py-2 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{u.email}</div>
                     </td>
-                    <td className="px-6 py-3 whitespace-nowrap">
-                      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getRoleColor(u.role as string)}`}>
-                        {getRoleLabel(u.role as string)}
-                      </span>
+                    {/* Role Icon */}
+                    <td className="px-4 py-2 whitespace-nowrap">
+                      <div 
+                        className={`w-10 h-10 rounded-full flex items-center justify-center ${getRoleColor(u.role as string)}`}
+                        title={getRoleLabel(u.role as string)}
+                      >
+                        {u.role === 'admin' ? (
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                          </svg>
+                        ) : u.role === 'developer' ? (
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                        ) : u.role === 'instructor' ? (
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
+                          </svg>
+                        ) : u.role === 'scholar' ? (
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
+                          </svg>
+                        ) : u.role === 'student' ? (
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" />
+                          </svg>
+                        ) : (
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </div>
                     </td>
-                    <td className="px-6 py-3 whitespace-nowrap">
-                      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        u.status === 'active' ? 'bg-green-100 text-green-800' :
-                        u.status === 'inactive' ? 'bg-red-100 text-red-800' :
-                        'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {u.status || 'active'}
-                      </span>
+                    {/* Status Icon */}
+                    <td className="px-4 py-2 whitespace-nowrap">
+                      <div 
+                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          u.status === 'active' ? 'bg-green-100 text-green-800' :
+                          u.status === 'inactive' ? 'bg-red-100 text-red-800' :
+                          'bg-yellow-100 text-yellow-800'
+                        }`}
+                        title={u.status || 'active'}
+                      >
+                        {u.status === 'active' ? (
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                        ) : u.status === 'inactive' ? (
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                          </svg>
+                        ) : (
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </div>
                     </td>
-                    {/* Tier Badge Column */}
-                    <td className="px-6 py-3 whitespace-nowrap">
+                    {/* Tier Icon */}
+                    <td className="px-4 py-2 whitespace-nowrap">
                       {u.account_tier && (
-                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          u.account_tier === 'visitor' ? 'bg-gray-100 text-gray-800' :
-                          u.account_tier === 'beginner' ? 'bg-blue-100 text-blue-800' :
-                          u.account_tier === 'intermediate' ? 'bg-purple-100 text-purple-800' :
-                          u.account_tier === 'expert' ? 'bg-orange-100 text-orange-800' :
-                          'bg-green-100 text-green-800'
-                        }`}>
-                          {u.account_tier.charAt(0).toUpperCase() + u.account_tier.slice(1)}
-                        </span>
+                        <div 
+                          className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                            u.account_tier === 'visitor' ? 'bg-gray-100 text-gray-800' :
+                            u.account_tier === 'beginner' ? 'bg-blue-100 text-blue-800' :
+                            u.account_tier === 'intermediate' ? 'bg-purple-100 text-purple-800' :
+                            u.account_tier === 'expert' ? 'bg-orange-100 text-orange-800' :
+                            'bg-green-100 text-green-800'
+                          }`}
+                          title={u.account_tier.charAt(0).toUpperCase() + u.account_tier.slice(1)}
+                        >
+                          {u.account_tier === 'visitor' ? (
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                              <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                            </svg>
+                          ) : u.account_tier === 'vip' ? (
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                            </svg>
+                          ) : (
+                            <span className="text-sm font-bold">
+                              {u.account_tier.charAt(0).toUpperCase()}
+                            </span>
+                          )}
+                        </div>
                       )}
                     </td>
                     {/* Tier Expiration Column */}
-                    <td className="px-6 py-3 whitespace-nowrap">
+                    <td className="px-4 py-2 whitespace-nowrap">
                       {u.account_expires_at && u.account_tier !== 'vip' ? (
                         (() => {
                           const expirationDate = new Date(u.account_expires_at)
@@ -947,7 +1023,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                       ) : null}
                     </td>
                     {/* Account Life Column */}
-                    <td className="px-6 py-3 whitespace-nowrap">
+                    <td className="px-4 py-2 whitespace-nowrap">
                       {u.account_tier !== 'vip' && u.last_login_at ? (
                         <LastLoginCountdown 
                           lastLoginAt={u.last_login_at} 
@@ -963,10 +1039,35 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
                       {new Date(u.created_at).toLocaleDateString()}
                     </td>
-                    <td className="px-6 py-3 whitespace-nowrap text-right text-sm font-medium">
+                    <td className="px-4 py-2 whitespace-nowrap text-right text-sm font-medium">
+                      <button
+                        onClick={() => {
+                          setSelectedUserForSessions({
+                            id: u.id,
+                            first_name: u.first_name,
+                            last_name: u.last_name,
+                            email: u.email || '',
+                            role: u.role,
+                            status: u.status || 'active',
+                            teams: [],
+                            avatar_url: u.avatar_url,
+                            created_at: u.created_at,
+                            strand: u.strand,
+                            section: u.section,
+                            grade: u.grade
+                          })
+                          setShowSessionsModal(true)
+                        }}
+                        className="text-blue-600 hover:text-blue-900 mr-2"
+                        title="View Sessions"
+                      >
+                        <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                      </button>
                       <button
                         onClick={() => handleEditUser({
                           id: u.id,
@@ -982,9 +1083,12 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                           section: u.section,
                           grade: u.grade
                         })}
-                        className="text-indigo-600 hover:text-indigo-900 mr-4"
+                        className="text-indigo-600 hover:text-indigo-900 mr-2"
+                        title="Edit User"
                       >
-                        Edit
+                        <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
                       </button>
                       <button
                         onClick={() => handleDeleteUser({
@@ -1002,8 +1106,11 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                           grade: u.grade
                         })}
                         className="text-red-600 hover:text-red-900"
+                        title="Delete User"
                       >
-                        Delete
+                        <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
                       </button>
                     </td>
                   </tr>
@@ -1791,6 +1898,18 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
             </div>
           </div>
         </div>
+      )}
+
+      {/* User Sessions Modal */}
+      {showSessionsModal && selectedUserForSessions && (
+        <UserSessionsModal
+          userId={selectedUserForSessions.id}
+          userName={`${selectedUserForSessions.first_name} ${selectedUserForSessions.last_name}`}
+          onClose={() => {
+            setShowSessionsModal(false)
+            setSelectedUserForSessions(null)
+          }}
+        />
       )}
     </div>
   )
