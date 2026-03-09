@@ -221,7 +221,7 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
       }
 
       // Get friend IDs (the other user in each connection)
-      const friendIds = connections.map(conn => 
+      const friendIds = connections.map((conn: any) => 
         conn.user_id === displayUserId ? conn.friend_id : conn.user_id
       )
 
@@ -276,7 +276,7 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
       }
 
       // Get sender IDs
-      const senderIds = connections.map(conn => conn.user_id)
+      const senderIds = connections.map((conn: any) => conn.user_id)
 
       console.log('Sender IDs:', senderIds)
 
