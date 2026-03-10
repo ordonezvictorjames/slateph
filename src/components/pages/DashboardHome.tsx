@@ -1215,6 +1215,31 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
               </div>
             </div>
 
+            {/* Welcome Card - Moved from main content */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 overflow-visible relative min-h-[120px]">
+              <div className="flex items-center justify-between">
+                <div className="z-10 pr-4">
+                  <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">
+                    Welcome back, {displayUser.profile?.first_name || displayUser?.email?.split('@')[0] || 'User'}!
+                  </h2>
+                  <p className="text-gray-600 text-sm">
+                    {userRole === 'student' 
+                      ? 'Ready to continue your learning journey?'
+                      : 'Manage your platform efficiently.'}
+                  </p>
+                </div>
+                
+                {/* Book Illustration - Smaller for sidebar */}
+                <div className="hidden md:block absolute -top-8 w-24 h-24 z-0" style={{ right: '5px' }}>
+                  <img 
+                    src="/book.png" 
+                    alt="Book illustration" 
+                    className="w-full h-full object-contain opacity-90"
+                  />
+                </div>
+              </div>
+            </div>
+
             {/* Calendar */}
             <div className="rounded-2xl p-4 shadow-sm border-2 border-gray-200" style={{ backgroundColor: '#FFFFFF' }}>
               <div className="flex items-center justify-between mb-4">
@@ -1323,31 +1348,6 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
           {/* Left Section - Main Content - Shows second on mobile, first on desktop */}
           <div className="xl:col-span-5 xl:order-1 space-y-6 md:space-y-8 mt-8">
-            {/* Welcome Card */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 overflow-visible relative min-h-[120px]">
-              <div className="flex items-center justify-between">
-                <div className="z-10 pr-4">
-                  <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
-                    Welcome back, {displayUser.profile?.first_name || displayUser?.email?.split('@')[0] || 'User'}!
-                  </h2>
-                  <p className="text-gray-600">
-                    {userRole === 'student' 
-                      ? 'Ready to continue your learning journey? Check out your courses below.'
-                      : 'Manage your platform and keep everything running smoothly.'}
-                  </p>
-                </div>
-                
-                {/* Book Illustration - Overlapping */}
-                <div className="hidden md:block absolute -top-16 w-48 h-48 z-0" style={{ right: '5px' }}>
-                  <img 
-                    src="/book.png" 
-                    alt="Book illustration" 
-                    className="w-full h-full object-contain opacity-90"
-                  />
-                </div>
-              </div>
-            </div>
-
             {/* Top Section - Action Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
               {/* Tasks Card - Only for Admin and Developer */}

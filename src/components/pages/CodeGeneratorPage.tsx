@@ -253,7 +253,7 @@ export default function CodeGeneratorPage() {
         </div>
 
         {/* Table Content */}
-        <div className="overflow-x-auto">
+        <>
           {loadingUsedCodes ? (
             <div className="p-12 text-center">
               <Loading size="lg" />
@@ -272,7 +272,10 @@ export default function CodeGeneratorPage() {
               </p>
             </div>
           ) : (
-            <table className="w-full">
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden lg:block overflow-x-auto">
+                <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Code</th>
@@ -322,9 +325,53 @@ export default function CodeGeneratorPage() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+                </table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="lg:hidden p-4 space-y-4">
+                {filteredCodes.map((codeData) => (
+                  <div key={codeData.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <div className="flex items-start justify-between mb-3">
+                      <span className="font-mono font-bold text-lg bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                        {codeData.code}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {new Date(codeData.used_at).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </span>
+                    </div>
+                    <div className="flex items-center mb-2">
+                      <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
+                        {codeData.user_name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <div className="font-medium text-gray-900">{codeData.user_name}</div>
+                        <div className="text-sm text-gray-600">{codeData.user_email}</div>
+                      </div>
+                    </div>
+                    <div className="flex justify-end">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        codeData.role === 'admin' ? 'bg-red-100 text-red-800' :
+                        codeData.role === 'developer' ? 'bg-purple-100 text-purple-800' :
+                        codeData.role === 'instructor' ? 'bg-blue-100 text-blue-800' :
+                        codeData.role === 'scholar' ? 'bg-green-100 text-green-800' :
+                        codeData.role === 'student' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {codeData.role.charAt(0).toUpperCase() + codeData.role.slice(1)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
-        </div>
+        </>
 
         {/* Results Count */}
         {!loadingUsedCodes && filteredCodes.length > 0 && (
