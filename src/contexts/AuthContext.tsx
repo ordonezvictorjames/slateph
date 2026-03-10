@@ -96,6 +96,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
+  // Session heartbeat - update last_active every 5 minutes
+  useEffect(() => {
+    if (!user?.id) return
+
+    const updateSessionHeartbeat = async () => {
+      try {
+        const deviceInfo = getDeviceInfo()
+        await supabase.rpc('record_user_session', {
+          p_user_id: user.id,
+          p_ip_address: deviceInfo.ip_address,
+          p_device_type: deviceInfo.device_type,
+          p_browser: deviceInfo.browser,
+          p_os: deviceInfo.os,
+          p_user_agent: deviceInfo.user_agent
+        })
+      } catch (error) {
+        console.error('Failed to update session heartbeat:', error)
+      }
+    }
+
+    // Update session immediately, then every 5 minutes
+    updateSessionHeartbeat()
+    const interval = setInterval(updateSessionHeartbeat, 5 * 60 * 1000)
+    
+    return () => clearInterval(interval)
+  }, [user?.id])
+
   const signIn = async (email: string, password: string): Promise<void> => {
     setLoading(true)
     
@@ -134,6 +161,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }
+      }
+
+      // Get device and browser information
+      const deviceInfo = getDeviceInfo()
+
+      // Record user session
+      try {
+        await supabase.rpc('record_user_session', {
+          p_user_id: userData.id,
+          p_ip_address: deviceInfo.ip_address,
+          p_device_type: deviceInfo.device_type,
+          p_browser: deviceInfo.browser,
+          p_os: deviceInfo.os,
+          p_user_agent: deviceInfo.user_agent
+        })
+      } catch (sessionError) {
+        console.error('Failed to record session:', sessionError)
+        // Continue anyway - login is successful
       }
 
       // Store minimal session data in HTTP-only cookie via API
@@ -177,7 +222,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           role: userData.role,
           first_name: userData.profile.first_name,
           last_name: userData.profile.last_name,
-          login_method: 'email_password'
+          login_method: 'email_password',
+          device_type: deviceInfo.device_type,
+          browser: deviceInfo.browser,
+          os: deviceInfo.os
         }
       })
       
@@ -293,4 +341,65 @@ export function useAuth() {
     throw new Error('useAuth must be used within an AuthProvider')
   }
   return context
+}
+
+// Helper function to get device information
+function getDeviceInfo() {
+  if (typeof window === 'undefined') {
+    return {
+      ip_address: 'unknown',
+      device_type: 'unknown',
+      browser: 'unknown',
+      os: 'unknown',
+      user_agent: 'unknown'
+    }
+  }
+
+  const userAgent = navigator.userAgent
+  
+  // Detect device type
+  let deviceType = 'desktop'
+  if (/Mobile|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent)) {
+    if (/iPad|Android(?=.*Mobile)/i.test(userAgent)) {
+      deviceType = 'tablet'
+    } else {
+      deviceType = 'mobile'
+    }
+  }
+
+  // Detect browser
+  let browser = 'unknown'
+  if (userAgent.includes('Chrome') && !userAgent.includes('Edg')) {
+    browser = 'Chrome'
+  } else if (userAgent.includes('Firefox')) {
+    browser = 'Firefox'
+  } else if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) {
+    browser = 'Safari'
+  } else if (userAgent.includes('Edg')) {
+    browser = 'Edge'
+  } else if (userAgent.includes('Opera') || userAgent.includes('OPR')) {
+    browser = 'Opera'
+  }
+
+  // Detect OS
+  let os = 'unknown'
+  if (userAgent.includes('Windows')) {
+    os = 'Windows'
+  } else if (userAgent.includes('Mac OS X')) {
+    os = 'macOS'
+  } else if (userAgent.includes('Linux')) {
+    os = 'Linux'
+  } else if (userAgent.includes('Android')) {
+    os = 'Android'
+  } else if (userAgent.includes('iOS') || userAgent.includes('iPhone') || userAgent.includes('iPad')) {
+    os = 'iOS'
+  }
+
+  return {
+    ip_address: 'client-side', // Will be determined server-side
+    device_type: deviceType,
+    browser: browser,
+    os: os,
+    user_agent: userAgent
+  }
 }

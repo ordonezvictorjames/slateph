@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useAuth } from '@/contexts/AuthContext'
 import { Loading } from '@/components/ui/loading'
 
 interface UserSession {
@@ -25,7 +26,7 @@ interface UserSessionsModalProps {
 export default function UserSessionsModal({ userId, userName, onClose }: UserSessionsModalProps) {
   const [sessions, setSessions] = useState<UserSession[]>([])
   const [loading, setLoading] = useState(true)
-  const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const { user } = useAuth()
   const supabase = createClient()
 
   useEffect(() => {
@@ -35,9 +36,9 @@ export default function UserSessionsModal({ userId, userName, onClose }: UserSes
   const loadSessions = async () => {
     try {
       setLoading(true)
-      const { data, error } = await supabase.rpc('get_user_sessions', {
+      const { data, error } = await supabase.rpc('get_user_sessions_info', {
         p_user_id: userId,
-        p_active_only: false
+        p_requesting_user_role: user?.role
       })
 
       if (error) throw error
@@ -46,30 +47,6 @@ export default function UserSessionsModal({ userId, userName, onClose }: UserSes
       console.error('Error loading sessions:', error)
     } finally {
       setLoading(false)
-    }
-  }
-
-  const endSession = async (sessionId: string) => {
-    if (!confirm('Are you sure you want to end this session?')) return
-
-    try {
-      setActionLoading(sessionId)
-      const { error } = await supabase.rpc('end_user_session', {
-        p_session_id: sessionId,
-        p_user_id: userId
-      })
-
-      if (error) throw error
-      
-      // Update local state
-      setSessions(prev => 
-        prev.map(s => s.id === sessionId ? { ...s, is_active: false } : s)
-      )
-    } catch (error) {
-      console.error('Error ending session:', error)
-      alert('Failed to end session')
-    } finally {
-      setActionLoading(null)
     }
   }
 
@@ -117,7 +94,7 @@ export default function UserSessionsModal({ userId, userName, onClose }: UserSes
         {/* Header */}
         <div className="p-6 border-b border-gray-200 flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">User Sessions</h2>
+            <h2 className="text-2xl font-bold text-gray-900">User Sessions & Devices</h2>
             <p className="text-sm text-gray-600 mt-1">{userName}</p>
           </div>
           <button
@@ -157,29 +134,23 @@ export default function UserSessionsModal({ userId, userName, onClose }: UserSes
                         key={session.id}
                         className="bg-green-50 border border-green-200 rounded-lg p-4"
                       >
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-start gap-3 flex-1">
-                            <div className="text-green-600 mt-1">
-                              {getDeviceIcon(session.device_type)}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-gray-900">{session.device_name}</p>
-                              <div className="mt-2 space-y-1 text-sm text-gray-600">
-                                <p>IP: {session.ip_address}</p>
-                                <p>Last active: {formatTimeAgo(session.last_active)}</p>
-                                <p className="text-xs text-gray-500">
-                                  First seen: {new Date(session.created_at).toLocaleString()}
-                                </p>
-                              </div>
+                        <div className="flex items-start gap-3">
+                          <div className="text-green-600 mt-1">
+                            {getDeviceIcon(session.device_type)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-gray-900">{session.device_name}</p>
+                            <div className="mt-2 space-y-1 text-sm text-gray-600">
+                              <p><span className="font-medium">IP:</span> {session.ip_address}</p>
+                              <p><span className="font-medium">Last active:</span> {formatTimeAgo(session.last_active)}</p>
+                              <p className="text-xs text-gray-500">
+                                <span className="font-medium">First seen:</span> {new Date(session.created_at).toLocaleString()}
+                              </p>
                             </div>
                           </div>
-                          <button
-                            onClick={() => endSession(session.id)}
-                            disabled={actionLoading === session.id}
-                            className="ml-4 px-3 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
-                          >
-                            {actionLoading === session.id ? 'Ending...' : 'End Session'}
-                          </button>
+                          <div className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                            Active
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -191,7 +162,7 @@ export default function UserSessionsModal({ userId, userName, onClose }: UserSes
               {inactiveSessions.length > 0 && (
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    Inactive Sessions ({inactiveSessions.length})
+                    Previous Sessions ({inactiveSessions.length})
                   </h3>
                   <div className="space-y-3">
                     {inactiveSessions.map((session) => (
@@ -206,12 +177,15 @@ export default function UserSessionsModal({ userId, userName, onClose }: UserSes
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-gray-700">{session.device_name}</p>
                             <div className="mt-2 space-y-1 text-sm text-gray-500">
-                              <p>IP: {session.ip_address}</p>
-                              <p>Last active: {formatTimeAgo(session.last_active)}</p>
+                              <p><span className="font-medium">IP:</span> {session.ip_address}</p>
+                              <p><span className="font-medium">Last active:</span> {formatTimeAgo(session.last_active)}</p>
                               <p className="text-xs">
-                                First seen: {new Date(session.created_at).toLocaleString()}
+                                <span className="font-medium">First seen:</span> {new Date(session.created_at).toLocaleString()}
                               </p>
                             </div>
+                          </div>
+                          <div className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                            Inactive
                           </div>
                         </div>
                       </div>
@@ -224,7 +198,12 @@ export default function UserSessionsModal({ userId, userName, onClose }: UserSes
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-gray-200 flex justify-end">
+        <div className="p-6 border-t border-gray-200 flex justify-between items-center">
+          <div className="text-sm text-gray-500">
+            {sessions.length > 0 && (
+              <span>Total sessions: {sessions.length} ({activeSessions.length} active)</span>
+            )}
+          </div>
           <button
             onClick={onClose}
             className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
