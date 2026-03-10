@@ -1215,8 +1215,8 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
               </div>
             </div>
 
-            {/* Welcome Card - Moved from main content */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 overflow-visible relative min-h-[120px]">
+            {/* Welcome Card - Mobile only */}
+            <div className="xl:hidden bg-white rounded-2xl p-6 shadow-sm border border-gray-100 overflow-visible relative min-h-[120px]">
               <div className="flex items-center justify-between">
                 <div className="z-10 pr-4">
                   <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">
@@ -1348,6 +1348,32 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
           {/* Left Section - Main Content - Shows second on mobile, first on desktop */}
           <div className="xl:col-span-5 xl:order-1 space-y-6 md:space-y-8 mt-8">
+            
+            {/* Welcome Card - Desktop only */}
+            <div className="hidden xl:block bg-white rounded-2xl p-6 shadow-sm border border-gray-100 overflow-visible relative min-h-[120px]">
+              <div className="flex items-center justify-between">
+                <div className="z-10 pr-4">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                    Welcome back, {displayUser.profile?.first_name || displayUser?.email?.split('@')[0] || 'User'}!
+                  </h2>
+                  <p className="text-gray-600">
+                    {userRole === 'student' 
+                      ? 'Ready to continue your learning journey? Explore your courses and track your progress.'
+                      : 'Manage your platform efficiently and keep track of all activities.'}
+                  </p>
+                </div>
+                
+                {/* Book Illustration - Full size for main content */}
+                <div className="absolute -top-8 w-32 h-32 z-0" style={{ right: '20px' }}>
+                  <img 
+                    src="/book.png" 
+                    alt="Book illustration" 
+                    className="w-full h-full object-contain opacity-90"
+                  />
+                </div>
+              </div>
+            </div>
+
             {/* Top Section - Action Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
               {/* Tasks Card - Only for Admin and Developer */}
