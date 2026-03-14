@@ -314,7 +314,7 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
       {/* Settings Modal */}
       {showSettings && (
         <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60 p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
             <h3 className="text-xl font-bold text-gray-900 mb-4">AI Settings</h3>
             
             {/* API Key */}
@@ -414,7 +414,7 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
       {/* API Key Modal */}
       {showApiKeyInput && (
         <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60 p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
             <h3 className="text-xl font-bold text-gray-900 mb-4">Welcome to AI Assistant!</h3>
             <p className="text-sm text-gray-600 mb-4">
               Get started by entering your FREE Google Gemini API key and choosing your preferred model.
@@ -514,7 +514,7 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
       )}
 
       {/* Main Chat Window */}
-      <div className="bg-white rounded-2xl w-full max-w-4xl h-[calc(100vh-2rem)] md:h-[600px] flex flex-col shadow-2xl">
+      <div className="bg-white rounded-xl w-full max-w-4xl h-[calc(100vh-2rem)] md:h-[600px] flex flex-col shadow-2xl">
         {/* Header */}
         <div className="p-3 md:p-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-blue-500 to-purple-600 rounded-t-2xl">
           <div className="flex items-center gap-2 md:gap-3">
@@ -589,7 +589,7 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
                       )}
                     </div>
                     <div className={`flex-1 ${message.role === 'user' ? 'text-right' : ''}`}>
-                      <div className={`inline-block px-4 py-2 rounded-2xl ${
+                      <div className={`inline-block px-4 py-2 rounded-xl ${
                         message.role === 'user'
                           ? 'bg-primary-500 text-white'
                           : 'bg-white border border-gray-200 text-gray-900 shadow-sm'
@@ -633,7 +633,7 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                   </svg>
                 </div>
-                <div className="bg-white border border-gray-200 rounded-2xl px-4 py-2 shadow-sm">
+                <div className="bg-white border border-gray-200 rounded-xl px-4 py-2 shadow-sm">
                   <div className="flex gap-1">
                     <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
                     <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>

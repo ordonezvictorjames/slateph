@@ -304,7 +304,7 @@ export default function DesignTestPage() {
         <section>
           <h2 className="text-3xl font-display font-bold text-hunter-900 mb-6">Typography</h2>
           
-          <div className="space-y-4 bg-white p-6 rounded-2xl border border-dust-200">
+          <div className="space-y-4 bg-white p-6 rounded-xl border border-dust-200">
             <h1 className="text-5xl font-display font-bold text-hunter-900">Heading 1</h1>
             <h2 className="text-4xl font-display font-bold text-hunter-900">Heading 2</h2>
             <h3 className="text-3xl font-display font-bold text-hunter-900">Heading 3</h3>

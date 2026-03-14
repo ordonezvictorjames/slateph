@@ -362,7 +362,7 @@ export default function MyCoursesPage() {
       <div className="space-y-6">
         {/* Welcome Banner - Show on all views */}
         {currentView === 'courses' && (
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 overflow-visible relative min-h-[120px]">
+          <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100 overflow-visible relative min-h-[120px]">
             <div className="flex items-center justify-between">
               <div className="z-10 pr-4">
                 <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
@@ -389,7 +389,7 @@ export default function MyCoursesPage() {
 
         {/* Subjects View Banner */}
         {currentView === 'subjects' && selectedCourse && (
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 overflow-visible relative min-h-[120px]">
+          <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100 overflow-visible relative min-h-[120px]">
             <div className="flex items-center justify-between">
               <div className="z-10 pr-4">
                 <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
@@ -414,7 +414,7 @@ export default function MyCoursesPage() {
 
         {/* Modules View Banner */}
         {currentView === 'modules' && selectedSubject && (
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 overflow-visible relative min-h-[120px]">
+          <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100 overflow-visible relative min-h-[120px]">
             <div className="flex items-center justify-between">
               <div className="z-10 pr-4">
                 <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
@@ -439,7 +439,7 @@ export default function MyCoursesPage() {
 
       {/* Courses View */}
       {currentView === 'courses' && (
-        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-100">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
@@ -471,7 +471,11 @@ export default function MyCoursesPage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {courses.map((course) => (
-                  <BookCard key={course.id} hover spine>
+                  <BookCard 
+                    key={course.id} 
+                    hover 
+                    spine={!(user?.profile?.role === 'student' || user?.profile?.role === 'scholar')}
+                  >
                     <BookCardHeader 
                       icon={
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -541,7 +545,7 @@ export default function MyCoursesPage() {
           <div className={`grid grid-cols-1 ${user?.profile?.role && !['trainee', 'tesda_scholar'].includes(user.profile.role) ? 'lg:grid-cols-3' : ''} gap-6`}>
             {/* Subject Cards Container */}
             <div className={user?.profile?.role && !['trainee', 'tesda_scholar'].includes(user.profile.role) ? 'lg:col-span-2' : ''}>
-              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                 <div className="px-6 py-4 border-b border-gray-100">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
@@ -649,7 +653,7 @@ export default function MyCoursesPage() {
             {/* Sidebar Container - Only show for admin/developer/instructor */}
             {user?.profile?.role && !['trainee', 'tesda_scholar'].includes(user.profile.role) && (
             <div className="lg:col-span-1">
-              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden h-full">
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden h-full">
                 <div className="p-6">
                   {/* Stats - Only show for admin, developer, instructor */}
                   <div className="space-y-4">
@@ -714,7 +718,7 @@ export default function MyCoursesPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Module Cards Container */}
             <div className="lg:col-span-2">
-              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                 <div className="px-6 py-4 border-b border-gray-100">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
@@ -869,7 +873,7 @@ export default function MyCoursesPage() {
 
             {/* Sidebar Container */}
             <div className="lg:col-span-1">
-              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden h-full">
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden h-full">
                 <div className="p-6">
                   {/* Stats - Only show for admin, developer, instructor */}
                   {user?.profile?.role && !['trainee', 'tesda_scholar'].includes(user.profile.role) && (

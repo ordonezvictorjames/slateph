@@ -215,7 +215,7 @@ export default function SystemTrackerPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-6">
+      <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100 mb-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Search */}
           <div>
@@ -282,7 +282,7 @@ export default function SystemTrackerPage() {
       </div>
 
       {/* Activities Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
         {/* Desktop Table View */}
         <div className="hidden lg:block overflow-x-auto">
           <table className="w-full">

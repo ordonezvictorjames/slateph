@@ -129,9 +129,12 @@ module.exports = {
         '128': '32rem',
       },
       borderRadius: {
-        'xl': '1rem',
-        '2xl': '1.5rem',
-        '3xl': '2rem',
+        'sm': '0.375rem',  // 6px - Small elements
+        'md': '0.5rem',    // 8px - Small cards, buttons
+        'lg': '0.75rem',   // 12px - Medium cards, dashboard widgets
+        'xl': '1rem',      // 16px - Large cards, content cards, modals
+        '2xl': '1rem',     // 16px - Keep same as xl for consistency
+        '3xl': '1rem',     // 16px - Keep same as xl for consistency
       },
       boxShadow: {
         'soft': '0 2px 15px -3px rgba(31, 122, 140, 0.1), 0 10px 20px -2px rgba(31, 122, 140, 0.05)',

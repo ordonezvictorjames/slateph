@@ -172,7 +172,7 @@ export default function LibraryPage() {
   return (
     <div className="p-4 md:p-8">
       {/* Header */}
-      <div className="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-gray-100 mb-4 md:mb-6">
+      <div className="bg-white rounded-lg p-4 md:p-6 shadow-sm border border-gray-100 mb-4 md:mb-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1 md:mb-2">Library</h1>
@@ -187,7 +187,7 @@ export default function LibraryPage() {
       </div>
 
       {/* Search and Filters */}
-      <div className="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-gray-100 mb-4 md:mb-6">
+      <div className="bg-white rounded-lg p-4 md:p-6 shadow-sm border border-gray-100 mb-4 md:mb-6">
         <div className="flex flex-col gap-3 md:gap-4 mb-3 md:mb-4">
           {/* Search */}
           <div className="w-full">
@@ -292,7 +292,7 @@ export default function LibraryPage() {
       </div>
 
       {/* Resources Display */}
-      <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         {filteredResources.length === 0 ? (
           <div className="text-center py-8 md:py-12 px-4">
             <svg className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-3 md:mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

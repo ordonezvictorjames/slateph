@@ -463,7 +463,7 @@ export default function SchedulePage() {
                   return (
                     <div 
                       key={index} 
-                      className={`bg-gray-50 rounded-xl min-h-[110px] p-3 transition-all duration-200 hover:shadow-md cursor-pointer ${
+                      className={`bg-gray-50 rounded-lg min-h-[110px] p-3 transition-all duration-200 hover:shadow-md cursor-pointer ${
                         !isCurrentMonth ? 'opacity-40' : 'hover:bg-white'
                       }`}
                       onClick={() => {
@@ -519,7 +519,7 @@ export default function SchedulePage() {
               <div className="space-y-3 max-h-[700px] overflow-y-auto custom-scrollbar">
                 {schedules.length === 0 ? (
                   <div className="text-center py-16">
-                    <div className="w-20 h-20 mx-auto mb-4 flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl">
+                    <div className="w-20 h-20 mx-auto mb-4 flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-50 rounded-xl">
                       <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
@@ -542,7 +542,7 @@ export default function SchedulePage() {
                     const isExpanded = expandedScheduleId === schedule.id
                     
                     return (
-                      <div key={schedule.id} className="group rounded-2xl transition-all duration-200 border border-gray-200 hover:border-gray-300 hover:shadow-lg bg-white overflow-hidden">
+                      <div key={schedule.id} className="group rounded-xl transition-all duration-200 border border-gray-200 hover:border-gray-300 hover:shadow-lg bg-white overflow-hidden">
                         {/* Compact View */}
                         <div className="p-4">
                           <div className="flex items-center gap-3">
@@ -692,7 +692,7 @@ export default function SchedulePage() {
       {/* Add Schedule Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-black">Schedule Course</h2>
@@ -843,7 +843,7 @@ export default function SchedulePage() {
       {/* Edit Schedule Modal */}
       {showEditModal && scheduleToEdit && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-black">Edit Schedule</h2>
@@ -999,7 +999,7 @@ export default function SchedulePage() {
       {/* Delete Confirmation Modal */}
       {showDeleteModal && scheduleToDelete && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full">
+          <div className="bg-white rounded-xl max-w-md w-full">
             <div className="p-6">
               <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full">
                 <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1056,7 +1056,7 @@ export default function SchedulePage() {
       {/* Date Details Modal */}
       {showDateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
             {/* Modal Header */}
             <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
               <div className="flex items-center justify-between">

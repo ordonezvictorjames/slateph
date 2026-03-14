@@ -653,7 +653,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-6">
+      <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100 mb-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Search */}
           <div className="md:col-span-1">
@@ -743,7 +743,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
       {/* Statistics Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         {/* Total Users */}
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500 mb-1">Total Users</p>
@@ -758,7 +758,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
         </div>
 
         {/* Admins */}
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500 mb-1">Admins</p>
@@ -773,7 +773,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
         </div>
 
         {/* Instructors */}
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500 mb-1">Instructors</p>
@@ -788,7 +788,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
         </div>
 
         {/* Students */}
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500 mb-1">Students</p>
@@ -804,7 +804,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
         </div>
 
         {/* Scholars */}
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500 mb-1">Scholars</p>
@@ -820,7 +820,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
       </div>
 
       {/* Users Display */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
         {/* List View (Table) */}
         {viewMode === 'list' && (
           <div className="overflow-x-auto">
@@ -1834,7 +1834,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
 
       {showDeleteModal && deletingUser && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full">
+          <div className="bg-white rounded-xl max-w-md w-full">
             <div className="p-6">
               <div className="flex items-center mb-4">
                 <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
@@ -1884,7 +1884,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                 <img 
                   src="/dev.gif" 
                   alt="Permission Denied" 
-                  className="w-full h-auto mx-auto rounded-2xl"
+                  className="w-full h-auto mx-auto rounded-xl"
                 />
               </div>
 

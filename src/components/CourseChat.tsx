@@ -401,7 +401,7 @@ export default function CourseChat({ isOpen, onClose, onNavigateToProfile }: Cou
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-0 sm:p-2 md:p-4">
-      <div className="bg-white rounded-none sm:rounded-2xl w-full h-full sm:h-[95vh] sm:max-w-6xl md:h-[600px] flex flex-col shadow-2xl">
+      <div className="bg-white rounded-none sm:rounded-xl w-full h-full sm:h-[95vh] sm:max-w-6xl md:h-[600px] flex flex-col shadow-2xl">
         {/* Header */}
         <div className="p-2 sm:p-3 md:p-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-blue-500 to-purple-600">
           <div className="flex items-center space-x-2">

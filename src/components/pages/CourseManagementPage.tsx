@@ -120,7 +120,7 @@ export default function CourseManagementPage() {
   if (!hasPermission) {
     return (
       <div className="p-8">
-        <div className="bg-white border border-gray-200 rounded-2xl p-8 text-center">
+        <div className="bg-white border border-gray-200 rounded-xl p-8 text-center">
           <div className="text-gray-600 mb-4">
             <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -2022,7 +2022,7 @@ export default function CourseManagementPage() {
           {/* Statistics Summary */}
           <div className="grid grid-cols-8 gap-4">
             {/* Total Courses */}
-            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Courses</p>
@@ -2035,7 +2035,7 @@ export default function CourseManagementPage() {
             </div>
 
             {/* Active Courses */}
-            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Active</p>
@@ -2048,7 +2048,7 @@ export default function CourseManagementPage() {
             </div>
 
             {/* Inactive Courses */}
-            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Inactive</p>
@@ -2061,7 +2061,7 @@ export default function CourseManagementPage() {
             </div>
 
             {/* Draft Courses */}
-            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Draft</p>
@@ -2074,7 +2074,7 @@ export default function CourseManagementPage() {
             </div>
 
             {/* Total Subjects */}
-            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Subjects</p>
@@ -2087,7 +2087,7 @@ export default function CourseManagementPage() {
             </div>
 
             {/* Total Modules */}
-            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Modules</p>
@@ -2100,7 +2100,7 @@ export default function CourseManagementPage() {
             </div>
 
             {/* Total Students */}
-            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Students</p>
@@ -2113,7 +2113,7 @@ export default function CourseManagementPage() {
             </div>
 
             {/* Total Instructors */}
-            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Instructors</p>
@@ -2126,7 +2126,7 @@ export default function CourseManagementPage() {
             </div>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-100">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-black">Courses</h2>
@@ -2369,7 +2369,7 @@ export default function CourseManagementPage() {
                   return (
                     <div 
                       key={course.id} 
-                      className="group relative bg-white rounded-2xl border border-gray-200 hover:border-gray-300 hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col h-full"
+                      className="group relative bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col h-full"
                     >
                       <div className="p-6 flex flex-col flex-1">
                         {/* Header */}
@@ -2473,7 +2473,7 @@ export default function CourseManagementPage() {
       {currentView === 'subjects' && selectedCourse && (
         <div className="space-y-6">
           {/* Welcome Banner */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 overflow-visible relative min-h-[120px]">
+          <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100 overflow-visible relative min-h-[120px]">
             <div className="flex items-center justify-between">
               <div className="z-10 pr-4">
                 <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
@@ -2496,7 +2496,7 @@ export default function CourseManagementPage() {
           </div>
 
           {/* Subject Cards Container - Full Width */}
-          <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                 {/* Statistics and Add Button - At the top */}
                 <div className="p-6 border-b border-gray-200 bg-gray-50">
                   <div className="flex items-center justify-between mb-4">
@@ -2702,7 +2702,7 @@ export default function CourseManagementPage() {
       {currentView === 'modules' && selectedSubject && (
         <div className="space-y-6">
           {/* Welcome Banner */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 overflow-visible relative min-h-[120px]">
+          <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100 overflow-visible relative min-h-[120px]">
             <div className="flex items-center justify-between">
               <div className="z-10 pr-4">
                 <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
@@ -2728,7 +2728,7 @@ export default function CourseManagementPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Module Cards Container */}
             <div className="lg:col-span-2">
-              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                 {/* Statistics and Add Button - At the top */}
                 <div className="p-6 border-b border-gray-200 bg-gray-50">
                   <div className="flex items-center justify-between mb-4">
@@ -2956,7 +2956,7 @@ export default function CourseManagementPage() {
 
             {/* Sidebar Container */}
             <div className="lg:col-span-1">
-              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden h-full">
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden h-full">
                 <div className="p-6">
                   {/* Resources Section */}
                   <div>
@@ -3095,7 +3095,7 @@ export default function CourseManagementPage() {
       {/* Add Course Modal */}
       {showAddCourseModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-black">Add New Course</h2>
@@ -3218,7 +3218,7 @@ export default function CourseManagementPage() {
       {/* Add Subject Modal */}
       {showAddSubjectModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-black">Add New Subject</h2>
@@ -3331,7 +3331,7 @@ export default function CourseManagementPage() {
       {/* Edit Subject Modal */}
       {showEditSubjectModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-black">Edit Subject</h2>
@@ -3444,7 +3444,7 @@ export default function CourseManagementPage() {
       {/* Add Module Modal */}
       {showAddModuleModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-black">Add New Module</h2>
@@ -3694,7 +3694,7 @@ export default function CourseManagementPage() {
       {/* Edit Module Modal */}
       {showEditModuleModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-black">Edit Module</h2>
@@ -3944,7 +3944,7 @@ export default function CourseManagementPage() {
       {/* Edit Course Modal */}
       {showEditCourseModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-black">Edit Course</h2>
@@ -4067,7 +4067,7 @@ export default function CourseManagementPage() {
       {/* Delete Confirmation Modal */}
       {showDeleteModal && deletingItem && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full">
+          <div className="bg-white rounded-xl max-w-md w-full">
             <div className="p-6">
               <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-gray-200 rounded-full">
                 <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -4129,7 +4129,7 @@ export default function CourseManagementPage() {
       {/* Enroll trainees Modal */}
       {showEnrolltraineesModal && selectedCourseForEnrollment && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-black">

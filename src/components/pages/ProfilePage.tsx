@@ -1180,7 +1180,7 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
           {activeTab === 'home' && (
             <div className="w-full lg:w-80 flex-shrink-0 space-y-4">
               {/* Personal Details Card */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 md:p-6">
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 md:p-6">
                 <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-3 md:mb-4">Personal Details</h3>
                 <div className="space-y-2.5 md:space-y-3">
                   <div className="flex items-start space-x-3">
@@ -1230,7 +1230,7 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
               </div>
 
               {/* Friends Card */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 md:p-6">
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 md:p-6">
                 <div className="flex items-center justify-between mb-3 md:mb-4">
                   <h3 className="text-base md:text-lg font-semibold text-gray-900">Friends</h3>
                   <span className="text-xs md:text-sm text-gray-500">{friends.length}</span>
@@ -1344,7 +1344,7 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
               </div>
 
               {/* Badges Card */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900">Badges</h3>
                   <span className="text-sm text-gray-500">0</span>
@@ -1364,7 +1364,7 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
           <div className="flex-1 min-w-0">
         {/* Create Post Card - Only show on Home tab and own profile */}
         {activeTab === 'home' && isOwnProfile && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6 mb-4 md:mb-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6 mb-4 md:mb-6">
           <div className="flex items-start space-x-3 md:space-x-4">
             {/* User Avatar */}
             <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 overflow-hidden">
@@ -1493,7 +1493,7 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
             <Loading size="md" />
           </div>
         ) : posts.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 md:p-12 text-center">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 md:p-12 text-center">
             <svg className="w-12 h-12 md:w-16 md:h-16 mx-auto text-gray-300 mb-3 md:mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
             </svg>
@@ -1503,7 +1503,7 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
         ) : (
           <div className="space-y-4 md:space-y-6">
             {posts.map((post) => (
-              <div key={post.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <div key={post.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                 {/* Post Header */}
                 <div className="p-4 md:p-6 pb-3 md:pb-4">
                   <div className="flex items-start justify-between">
@@ -1758,7 +1758,7 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
       {/* Add Friend Modal */}
       {showAddFriendModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl">
+          <div className="bg-white rounded-xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold text-gray-900">Add Friends</h2>

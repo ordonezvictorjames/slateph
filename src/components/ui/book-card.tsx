@@ -15,7 +15,7 @@ export function BookCard({
   spine = false,
   onClick 
 }: BookCardProps) {
-  const baseStyles = 'bg-white rounded-2xl shadow-soft border border-fern-100 p-6 transition-all duration-300'
+  const baseStyles = 'bg-white rounded-lg shadow-soft border border-fern-100 p-6 transition-all duration-300'
   const hoverStyles = hover ? 'hover:shadow-soft-lg hover:border-fern-200 hover:-translate-y-1 cursor-pointer' : ''
   const spineStyles = spine ? 'book-spine' : ''
   

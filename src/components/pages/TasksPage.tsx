@@ -668,7 +668,7 @@ export default function TasksPage() {
       </div>
 
       {/* Content */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         {selectedTab === 'all' && (
           <div className="overflow-x-auto">
             {(unenrolledtrainees.length === 0 && 
@@ -1269,7 +1269,7 @@ export default function TasksPage() {
       {/* Enroll trainee Modal */}
       {showEnrollModal && selectedtrainee && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
             <h3 className="text-xl font-bold text-gray-900 mb-4">Enroll trainee</h3>
             <p className="text-gray-600 mb-4">
               Enroll <span className="font-semibold">{selectedtrainee.first_name} {selectedtrainee.last_name}</span> to a course:
@@ -1313,7 +1313,7 @@ export default function TasksPage() {
       {/* Assign trainee Modal */}
       {showAssignModal && selectedtrainee && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
             <h3 className="text-xl font-bold text-gray-900 mb-4">Assign trainee</h3>
             <p className="text-gray-600 mb-4">
               Assign <span className="font-semibold">{selectedtrainee.first_name} {selectedtrainee.last_name}</span> to a course:
@@ -1357,7 +1357,7 @@ export default function TasksPage() {
       {/* Change Guest Role Modal */}
       {showRoleChangeModal && selectedGuest && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
             <h3 className="text-xl font-bold text-gray-900 mb-4">Assign Role to Guest User</h3>
             <p className="text-gray-600 mb-4">
               Assign a role to <span className="font-semibold">{selectedGuest.first_name} {selectedGuest.last_name}</span>:

@@ -147,7 +147,7 @@ export default function MytraineesPage() {
   if (loading) {
     return (
       <div className="p-8">
-        <div className="bg-white border border-gray-200 rounded-2xl p-8 flex items-center justify-center h-64">
+        <div className="bg-white border border-gray-200 rounded-xl p-8 flex items-center justify-center h-64">
           <Loading size="lg" />
         </div>
       </div>
@@ -156,7 +156,7 @@ export default function MytraineesPage() {
 
   return (
     <div className="p-8">
-      <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         {/* Header */}
         <div className="px-8 py-6 border-b border-gray-200">
           <div className="flex items-center justify-between">

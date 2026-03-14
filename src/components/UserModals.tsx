@@ -102,7 +102,7 @@ export function UserModal({
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full shadow-2xl overflow-hidden max-h-[90vh] flex flex-col" style={{ maxWidth: '95vw' }}>
+      <div className="bg-white rounded-xl w-full shadow-2xl overflow-hidden max-h-[90vh] flex flex-col" style={{ maxWidth: '95vw' }}>
         {/* Header */}
         <div className="bg-white border-b border-gray-200 px-8 py-4">
           <div className="flex items-center justify-between">
@@ -137,7 +137,7 @@ export function UserModal({
                 </button>
 
                 <div className="flex flex-col items-center">
-                  <div className="w-24 h-24 bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border-2 border-green-400 shadow-lg flex items-center justify-center text-7xl transition-all hover:scale-105">
+                  <div className="w-24 h-24 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border-2 border-green-400 shadow-lg flex items-center justify-center text-7xl transition-all hover:scale-105">
                     {currentAvatar.emoji}
                   </div>
                   <p className="text-sm font-medium text-gray-800 mt-2">{currentAvatar.name}</p>
@@ -161,7 +161,7 @@ export function UserModal({
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
 
               {/* Personal Information Section */}
-              <div className="bg-gray-50 rounded-xl p-6">
+              <div className="bg-gray-50 rounded-lg p-6">
                 <div className="flex items-center mb-4">
                   <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center mr-2">
                     <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -201,7 +201,7 @@ export function UserModal({
               </div>
 
               {/* Account Details Section */}
-              <div className="bg-gray-50 rounded-xl p-6">
+              <div className="bg-gray-50 rounded-lg p-6">
                 <div className="flex items-center mb-4">
                   <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-2">
                     <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -270,7 +270,7 @@ export function UserModal({
               </div>
 
               {/* Security Section - Always in third column */}
-              <div className="bg-gray-50 rounded-xl p-6">
+              <div className="bg-gray-50 rounded-lg p-6">
                 <div className="flex items-center mb-4">
                   <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center mr-2">
                     <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -236,7 +236,7 @@ export default function LoginForm() {
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-      <div className="relative w-full max-w-4xl min-h-[600px] lg:h-[600px] bg-white rounded-2xl shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-4xl min-h-[600px] lg:h-[600px] bg-white rounded-xl shadow-2xl overflow-hidden">
         
         {/* Fixed Background Image - Left Side (shown during Sign Up) - Hidden on mobile/tablet */}
         <div 
@@ -530,7 +530,7 @@ export default function LoginForm() {
               </div>
 
               {/* Privacy and Terms Checkbox */}
-              <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-xl border-2 border-gray-200">
+              <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg border-2 border-gray-200">
                 <input
                   type="checkbox"
                   id="acceptTerms"
@@ -612,7 +612,7 @@ export default function LoginForm() {
             <div className="p-8 overflow-y-auto flex-1">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Privacy Statement Card */}
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100 shadow-sm">
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100 shadow-sm">
                   <div className="flex items-center mb-4">
                     <div className="w-10 h-10 bg-primary-500 rounded-full flex items-center justify-center mr-3">
                       <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -646,7 +646,7 @@ export default function LoginForm() {
                 </div>
 
                 {/* Terms and Conditions Card */}
-                <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-100 shadow-sm">
+                <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-100 shadow-sm">
                   <div className="flex items-center mb-4">
                     <div className="w-10 h-10 bg-primary-500 rounded-full flex items-center justify-center mr-3">
                       <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -697,7 +697,7 @@ export default function LoginForm() {
       {/* Forgot Password Modal */}
       {showForgotPasswordModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden">
+          <div className="bg-white rounded-xl max-w-md w-full shadow-2xl overflow-hidden">
             {/* Header */}
             <div className="bg-black text-white px-6 py-4 flex items-center justify-between">
               <h3 className="text-xl font-semibold">Forgot Password</h3>

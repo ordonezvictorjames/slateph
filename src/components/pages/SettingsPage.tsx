@@ -9,7 +9,7 @@ export default function SettingsPage() {
           <p className="text-gray-600">Manage your account settings and preferences</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
           <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50">
             <div>
               <h2 className="text-xl font-semibold text-gray-900 mb-1">Account Settings</h2>

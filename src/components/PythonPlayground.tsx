@@ -283,7 +283,7 @@ print("Even squares:", even_squares)`
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-0 sm:p-2 md:p-4">
-      <div className="bg-white rounded-none sm:rounded-2xl w-full h-full sm:h-[95vh] sm:max-w-7xl md:h-[90vh] flex flex-col shadow-2xl">
+      <div className="bg-white rounded-none sm:rounded-xl w-full h-full sm:h-[95vh] sm:max-w-7xl md:h-[90vh] flex flex-col shadow-2xl">
         {/* Header */}
         <div className="p-2 sm:p-3 md:p-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-green-500 to-blue-600">
           <div className="flex items-center gap-2">

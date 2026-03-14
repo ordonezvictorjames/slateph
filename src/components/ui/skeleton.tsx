@@ -44,7 +44,7 @@ export function Skeleton({
 
 export function SkeletonCard() {
   return (
-    <div className="bg-white rounded-2xl p-6 border border-dust-100">
+    <div className="bg-white rounded-lg p-6 border border-dust-100">
       <div className="flex items-center gap-3 mb-4">
         <Skeleton variant="circular" width="40px" height="40px" />
         <div className="flex-1">
