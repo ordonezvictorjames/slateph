@@ -278,7 +278,21 @@ export default function MyCoursesPage() {
   }
 
   const getEnrollmentTypeDisplay = (type: string) => {
-    return [{ text: 'trainee', color: 'bg-primary-500/20 text-primary-500' }]
+    if (type === 'both') {
+      return [
+        { text: 'Trainees', color: 'bg-blue-100 text-blue-800' },
+        { text: 'TESDA Scholars', color: 'bg-purple-100 text-purple-800' }
+      ]
+    } else if (type === 'tesda_scholar') {
+      return [{ text: 'TESDA Scholars', color: 'bg-purple-100 text-purple-800' }]
+    }
+    return [{ text: 'Trainees', color: 'bg-blue-100 text-blue-800' }]
+  }
+
+  const getCourseColor = (courseId: string) => {
+    const palette = ['#22C55E', '#3B82F6', '#8B5CF6', '#F59E0B', '#EF4444', '#06B6D4', '#EC4899', '#14B8A6']
+    const index = courseId.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) % palette.length
+    return { color_hex: palette[index] }
   }
 
   const getContentTypeIcon = (contentType: string) => {
@@ -469,69 +483,92 @@ export default function MyCoursesPage() {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {courses.map((course) => (
-                  <BookCard 
-                    key={course.id} 
-                    hover 
-                    spine={!(user?.profile?.role === 'student' || user?.profile?.role === 'scholar')}
-                  >
-                    <BookCardHeader 
-                      icon={
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                        </svg>
-                      }
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+                {courses.map((course) => {
+                  const courseColor = getCourseColor(course.id)
+                  const courseGroup = course.course_group || 'General'
+                  const createdDate = new Date(course.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                  const enrollmentTypeBadges = getEnrollmentTypeDisplay(course.enrollment_type)
+                  const role = user?.profile?.role
+                  return (
+                    <div
+                      key={course.id}
+                      className="group relative bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col"
+                      style={{ width: '300px' }}
                     >
-                      {course.title}
-                    </BookCardHeader>
-                    
-                    <BookCardContent>
-                      <p className="text-sm text-earth-600 mb-3 line-clamp-3 leading-relaxed">
-                        {course.description}
-                      </p>
-                      
-                      <div className="flex items-center space-x-2 mb-3 text-xs text-earth-500">
-                        <span>{course.course_group}</span>
-                        <span>•</span>
-                        <Badge variant="wood" size="sm">
-                          {course.course_type === 'academic' ? 'Academic' : course.course_type === 'tesda' ? 'TESDA' : 'UpSkill'}
-                        </Badge>
-                      </div>
-                      
-                      <div className="flex items-center flex-wrap gap-2">
-                        <Badge 
-                          variant={course.status === 'active' ? 'success' : course.status === 'inactive' ? 'error' : 'warning'}
-                          size="sm"
-                        >
-                          {course.status.charAt(0).toUpperCase() + course.status.slice(1)}
-                        </Badge>
-                        {getEnrollmentTypeDisplay(course.enrollment_type).map((display, idx) => (
-                          <Badge key={idx} variant="leaf" size="sm">
-                            {display.text}
-                          </Badge>
-                        ))}
-                      </div>
-                    </BookCardContent>
-                    
-                    <BookCardFooter>
-                      <NatureButton 
-                        size="sm" 
-                        variant="leaf"
-                        className="w-full"
-                        onClick={() => handleCourseSelect(course)}
-                        icon={
+                      {/* Enrolled Badge */}
+                      <div className="absolute top-3 left-3 z-10">
+                        <div className="bg-green-500/90 backdrop-blur-sm text-white px-3 py-1.5 rounded-full flex items-center space-x-2">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
-                        }
-                        iconPosition="right"
-                      >
-                        View Subjects
-                      </NatureButton>
-                    </BookCardFooter>
-                  </BookCard>
-                ))}
+                          <span className="text-xs font-semibold">Enrolled</span>
+                        </div>
+                      </div>
+
+                      {/* Decorative Top Strip */}
+                      <div className="relative overflow-hidden" style={{ height: '100px' }}>
+                        <div className="w-full h-full" style={{ 
+                          background: courseColor?.color_hex ? `linear-gradient(135deg, ${courseColor.color_hex}20 0%, ${courseColor.color_hex}10 100%)` : 'linear-gradient(135deg, #BBF7D020 0%, #BBF7D010 100%)'
+                        }} />
+                        {!(role === 'student' || role === 'scholar') && (
+                          <div className="absolute left-0 top-0 w-1 h-full" style={{ backgroundColor: courseColor?.color_hex || '#22C55E' }} />
+                        )}
+                      </div>
+
+                      {/* Course Header */}
+                      <div className="relative overflow-hidden bg-white border-b border-gray-200 p-6">
+                        <h3 className="text-lg font-semibold text-black mb-2 line-clamp-2">{course.title}</h3>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600 font-medium">{courseGroup}</span>
+                          <span className="text-xs text-gray-500">{createdDate}</span>
+                        </div>
+                      </div>
+
+                      {/* Card Content */}
+                      <div className="p-5 flex flex-col flex-1">
+                        {!(role === 'student' || role === 'scholar') && (
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${
+                            course.status === 'active' ? 'bg-green-100 text-green-800' :
+                            course.status === 'inactive' ? 'bg-red-100 text-red-800' :
+                            'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+                              course.status === 'active' ? 'bg-green-600' :
+                              course.status === 'inactive' ? 'bg-red-600' : 'bg-yellow-600'
+                            }`} />
+                            {course.status.charAt(0).toUpperCase() + course.status.slice(1)}
+                          </span>
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {course.course_type === 'academic' ? 'Academic' : course.course_type === 'tesda' ? 'TESDA' : 'UpSkill'}
+                          </span>
+                          {enrollmentTypeBadges.map((badge, idx) => (
+                            <span key={idx} className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${badge.color}`}>
+                              {badge.text}
+                            </span>
+                          ))}
+                        </div>
+                        )}
+
+                        <div className="mt-auto">
+                          <button
+                            onClick={() => handleCourseSelect(course)}
+                            className="w-full px-4 py-3 text-white rounded-xl font-semibold text-sm transition-colors duration-200 flex items-center justify-center space-x-2"
+                            style={{ backgroundColor: '#1f7a8c' }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#196475'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#1f7a8c'}
+                          >
+                            <span>View Subjects</span>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>
@@ -542,9 +579,9 @@ export default function MyCoursesPage() {
       {currentView === 'subjects' && selectedCourse && (
         <div className="space-y-6">
           {/* Grid Layout: Subject Cards + Sidebar (only show sidebar for admin/developer/instructor) */}
-          <div className={`grid grid-cols-1 ${user?.profile?.role && !['trainee', 'tesda_scholar'].includes(user.profile.role) ? 'lg:grid-cols-3' : ''} gap-6`}>
+          <div className={`grid grid-cols-1 ${user?.profile?.role && !['student', 'scholar', 'instructor'].includes(user.profile.role) ? 'lg:grid-cols-4' : ''} gap-6`}>
             {/* Subject Cards Container */}
-            <div className={user?.profile?.role && !['trainee', 'tesda_scholar'].includes(user.profile.role) ? 'lg:col-span-2' : ''}>
+            <div className={user?.profile?.role && !['student', 'scholar', 'instructor'].includes(user.profile.role) ? 'lg:col-span-3' : ''}>
               <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                 <div className="px-6 py-4 border-b border-gray-100">
                   <div className="flex items-center justify-between">
@@ -578,59 +615,46 @@ export default function MyCoursesPage() {
                       <p className="text-gray-500">This course doesn't have any subjects yet</p>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
                 {subjects.map((subject) => (
                   <div
                     key={subject.id}
-                    className="bg-white rounded-xl border-2 border-leaf-100 hover:border-leaf-300 hover:shadow-soft transition-all duration-200 overflow-hidden"
+                    className="bg-white rounded-xl border-2 border-leaf-100 hover:border-leaf-300 hover:shadow-soft transition-all duration-200 overflow-hidden flex flex-col"
+                    style={{ height: '250px' }}
                   >
-                    <div className="p-4">
-                      <div className="flex items-start gap-4 mb-4">
-                        {/* Subject Number */}
-                        <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 bg-leaf-100 rounded-lg border-2 border-leaf-200">
-                          <span className="text-xl font-bold text-leaf-700">{subject.order_index}</span>
+                    <div className="p-4 flex flex-col flex-1">
+                      {/* Top row: number + title */}
+                      <div className="flex items-start gap-3 mb-2">
+                        <div className="flex-shrink-0 flex items-center justify-center w-10 h-10 bg-leaf-100 rounded-lg border-2 border-leaf-200">
+                          <span className="text-lg font-bold text-leaf-700">{subject.order_index}</span>
                         </div>
-                        
-                        {/* Subject Info */}
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-base sm:text-lg font-semibold text-earth-900 mb-1">
-                            {subject.title}
-                          </h3>
-                          <p className="text-sm text-earth-600 line-clamp-2 mb-2">
-                            {subject.description}
-                          </p>
-                          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                            <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${
-                              subject.status === 'active' ? 'bg-green-100 text-green-700' :
-                              subject.status === 'inactive' ? 'bg-red-100 text-red-700' :
-                              'bg-yellow-100 text-yellow-700'
-                            }`}>
-                              {subject.status.charAt(0).toUpperCase() + subject.status.slice(1)}
-                            </span>
-                            {getEnrollmentTypeDisplay(subject.enrollment_type || 'trainee').map((badge, idx) => (
-                              <span key={idx} className={`inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full ${badge.color}`}>
-                                {badge.text}
-                              </span>
-                            ))}
-                            <div className="hidden sm:flex items-center gap-1.5 text-sm text-gray-500">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                              </svg>
-                              <span className={subject.instructor_name === 'Unassigned' ? 'text-gray-400' : 'text-gray-700 font-medium'}>
-                                {subject.instructor_name}
-                              </span>
-                            </div>
-                          </div>
+                        <h3 className="text-base font-semibold text-earth-900 line-clamp-2 leading-snug">
+                          {subject.title}
+                        </h3>
+                      </div>
+
+                      {/* Description + Instructor - sits just above the button */}
+                      <div className="mt-auto mb-3 space-y-1">
+                        <p className="text-sm text-earth-600 line-clamp-2">
+                          {subject.description}
+                        </p>
+                        <div className="flex items-center gap-1.5 text-sm text-gray-500">
+                          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                          <span className={subject.instructor_name === 'Unassigned' ? 'text-gray-400' : 'text-gray-700 font-medium'}>
+                            {subject.instructor_name}
+                          </span>
                         </div>
                       </div>
-                      
-                      {/* Action Button - Full width on mobile, auto width on desktop */}
-                      <div className="w-full sm:w-auto sm:ml-auto">
+
+                      {/* Action Button */}
+                      <div>
                         <NatureButton 
                           size="sm" 
                           variant="leaf"
                           onClick={() => handleSubjectSelect(subject)}
-                          className="w-full sm:w-auto"
+                          className="w-full"
                           icon={
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -650,8 +674,8 @@ export default function MyCoursesPage() {
               </div>
             </div>
 
-            {/* Sidebar Container - Only show for admin/developer/instructor */}
-            {user?.profile?.role && !['trainee', 'tesda_scholar'].includes(user.profile.role) && (
+            {/* Sidebar Container - Only show for admin/developer */}
+            {user?.profile?.role && !['student', 'scholar', 'instructor'].includes(user.profile.role) && (
             <div className="lg:col-span-1">
               <div className="bg-white border border-gray-200 rounded-xl overflow-hidden h-full">
                 <div className="p-6">
@@ -751,28 +775,136 @@ export default function MyCoursesPage() {
                       <p className="text-gray-500">This subject doesn't have any modules yet</p>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="flex flex-wrap gap-4">
                 {modules.map((module, index) => (
+                  ['student', 'scholar', 'instructor'].includes(user?.profile?.role || '') ? (
+                  /* Simplified card for student/scholar/instructor */
+                  <div
+                    key={module.id}
+                    className="bg-white rounded-2xl shadow-md hover:shadow-lg transition-all duration-200 overflow-hidden flex flex-col"
+                    style={{ width: '300px', height: '250px' }}
+                  >
+                    {/* Top strip — 100px, white bg + colored icon */}
+                    <div
+                      className="relative flex-shrink-0 flex items-center justify-center bg-white border-b border-gray-100"
+                      style={{ height: '100px' }}
+                    >
+                      {/* Left accent bar — color per content type */}
+                      <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-r ${
+                        module.content_type === 'video' ? 'bg-red-400' :
+                        module.content_type === 'pdf_document' ? 'bg-orange-400' :
+                        module.content_type === 'slide_presentation' ? 'bg-yellow-400' :
+                        module.content_type === 'online_document' ? 'bg-blue-400' :
+                        module.content_type === 'canva_presentation' ? 'bg-purple-400' :
+                        module.content_type === 'online_conference' ? 'bg-green-400' :
+                        'bg-gray-300'
+                      }`} />
+                      {/* Module number */}
+                      <div className="absolute top-3 left-4 bg-gray-100 rounded-md px-2 py-0.5">
+                        <span className="text-xs font-bold text-gray-500">#{index + 1}</span>
+                      </div>
+                      {/* Content type icon + label */}
+                      <div className="flex flex-col items-center gap-1">
+                        <div className={`flex items-center justify-center w-12 h-12 rounded-xl ${
+                          module.content_type === 'video' ? 'bg-red-50' :
+                          module.content_type === 'pdf_document' ? 'bg-orange-50' :
+                          module.content_type === 'slide_presentation' ? 'bg-yellow-50' :
+                          module.content_type === 'online_document' ? 'bg-blue-50' :
+                          module.content_type === 'canva_presentation' ? 'bg-purple-50' :
+                          module.content_type === 'online_conference' ? 'bg-green-50' :
+                          'bg-gray-50'
+                        }`}>
+                          {module.content_type === 'video' && (
+                            <svg className="w-7 h-7 text-red-500" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                          )}
+                          {module.content_type === 'pdf_document' && (
+                            <svg className="w-7 h-7 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                          )}
+                          {module.content_type === 'slide_presentation' && (
+                            <svg className="w-7 h-7 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/></svg>
+                          )}
+                          {module.content_type === 'online_document' && (
+                            <svg className="w-7 h-7 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                          )}
+                          {module.content_type === 'canva_presentation' && (
+                            <svg className="w-7 h-7 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/></svg>
+                          )}
+                          {module.content_type === 'online_conference' && (
+                            <svg className="w-7 h-7 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                          )}
+                          {(!module.content_type || module.content_type === 'text') && (
+                            <svg className="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7"/></svg>
+                          )}
+                        </div>
+                        <span className="text-xs font-medium text-gray-500">
+                          {module.content_type === 'video' ? 'Video' :
+                           module.content_type === 'pdf_document' ? 'PDF' :
+                           module.content_type === 'slide_presentation' ? 'Slides' :
+                           module.content_type === 'online_document' ? 'Document' :
+                           module.content_type === 'canva_presentation' ? 'Canva' :
+                           module.content_type === 'online_conference' ? 'Conference' :
+                           'Text'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Card body */}
+                    <div className="p-4 flex flex-col flex-1">
+                      {/* Title */}
+                      <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 leading-snug">
+                        {module.title}
+                      </h3>
+
+                      {/* Description + duration — just above button */}
+                      <div className="mt-auto mb-3 space-y-1">
+                        <p className="text-xs text-gray-500 line-clamp-2">
+                          {module.description || 'No description available.'}
+                        </p>
+                        {module.duration_minutes && (
+                          <div className="flex items-center gap-1 text-xs text-gray-400">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span>{module.duration_minutes} min</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Start button */}
+                      <NatureButton
+                        size="sm"
+                        variant="leaf"
+                        onClick={() => handleStartLesson(module)}
+                        className="w-full"
+                        icon={
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z" />
+                          </svg>
+                        }
+                        iconPosition="left"
+                      >
+                        Start
+                      </NatureButton>
+                    </div>
+                  </div>
+                  ) : (
+                  /* Full card for admin/developer */
                   <div
                     key={module.id}
                     className="group bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col"
+                    style={{ width: '300px' }}
                   >
                     {/* Module Header with Gradient Background */}
                     <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 p-5 border-b border-gray-200">
-                      {/* Module Number and Status Row */}
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center gap-3">
-                          {/* Module Number Badge */}
                           <div className="flex items-center justify-center w-10 h-10 bg-white border-2 border-gray-300 rounded-lg shadow-sm">
                             <span className="text-lg font-bold text-gray-700">{index + 1}</span>
                           </div>
-                          {/* Content Type Icon */}
                           <div className="flex items-center justify-center w-10 h-10 bg-white border border-gray-200 rounded-lg">
                             {getContentTypeIcon(module.content_type)}
                           </div>
                         </div>
-                        
-                        {/* Status Badge */}
                         {module.status && (
                           <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-md ${
                             module.status === 'active' ? 'bg-green-100 text-green-700 border border-green-200' :
@@ -783,8 +915,6 @@ export default function MyCoursesPage() {
                           </span>
                         )}
                       </div>
-                      
-                      {/* Module Title */}
                       <h3 className="text-lg font-bold text-gray-900 line-clamp-2 leading-tight">
                         {module.title}
                       </h3>
@@ -830,11 +960,8 @@ export default function MyCoursesPage() {
                       </div>
                     )}
                     
-                    {/* Module Content */}
                     <div className="p-5 flex flex-col flex-1">
-                      {/* Module Info */}
                       <div className="mt-auto space-y-3">
-                        {/* Duration Badge */}
                         {module.duration_minutes && (
                           <div className="flex items-center gap-2 text-sm text-gray-600">
                             <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -843,8 +970,6 @@ export default function MyCoursesPage() {
                             <span className="font-medium">{module.duration_minutes} minutes</span>
                           </div>
                         )}
-
-                        {/* Action Button */}
                         <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
                           <NatureButton
                             size="sm"
@@ -864,6 +989,7 @@ export default function MyCoursesPage() {
                       </div>
                     </div>
                   </div>
+                  )
                 ))}
               </div>
             )}
@@ -875,8 +1001,8 @@ export default function MyCoursesPage() {
             <div className="lg:col-span-1">
               <div className="bg-white border border-gray-200 rounded-xl overflow-hidden h-full">
                 <div className="p-6">
-                  {/* Stats - Only show for admin, developer, instructor */}
-                  {user?.profile?.role && !['trainee', 'tesda_scholar'].includes(user.profile.role) && (
+                  {/* Stats - Only show for admin, developer */}
+                  {user?.profile?.role && !['student', 'scholar', 'instructor'].includes(user.profile.role) && (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center gap-2">
@@ -927,7 +1053,7 @@ export default function MyCoursesPage() {
                   )}
 
                   {/* Resources Section */}
-                  <div className={user?.profile?.role && !['trainee', 'tesda_scholar'].includes(user.profile.role) ? "mt-6 pt-6 border-t border-gray-200" : ""}>
+                  <div className={user?.profile?.role && !['student', 'scholar', 'instructor'].includes(user.profile.role) ? "mt-6 pt-6 border-t border-gray-200" : ""}>
                     <h4 className="text-sm font-semibold text-gray-900 mb-3">Resources</h4>
                     <div className="space-y-2">
                       {resources.length === 0 ? (

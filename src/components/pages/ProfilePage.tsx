@@ -1425,7 +1425,7 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
 
               {/* Post Actions */}
               <div className="mt-3 md:mt-4 flex flex-col md:flex-row items-stretch md:items-center md:justify-between gap-3">
-                <div className="flex items-center gap-2 overflow-x-auto">
+                <div className="flex items-center gap-2 flex-wrap">
                   {/* Image Upload */}
                   <label className="px-3 md:px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg cursor-pointer transition-colors flex items-center space-x-1 md:space-x-2 whitespace-nowrap">
                     <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1452,9 +1452,10 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
                       <span className="text-xs md:text-sm font-medium">Feeling</span>
                     </button>
 
-                    {/* Emotion Dropdown */}
+                    {/* Emotion Dropdown - opens upward */}
                     {showEmotionPicker && (
-                      <div className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 p-2 z-10 w-48">
+                      <div className="absolute bottom-full left-0 mb-2 bg-white rounded-xl shadow-xl border border-gray-200 p-2 z-50 w-52">
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide px-2 pb-1 mb-1 border-b border-gray-100">How are you feeling?</p>
                         {emotions.map((emotion) => (
                           <button
                             key={emotion.value}
@@ -1462,10 +1463,10 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
                               setSelectedEmotion(emotion.value)
                               setShowEmotionPicker(false)
                             }}
-                            className="w-full px-3 py-2 text-left hover:bg-gray-100 rounded-lg flex items-center space-x-2"
+                            className="w-full px-3 py-2 text-left hover:bg-gray-50 rounded-lg flex items-center space-x-3 transition-colors"
                           >
-                            <span className="text-xl">{emotion.emoji}</span>
-                            <span className="text-sm">{emotion.label}</span>
+                            <span className="text-2xl leading-none">{emotion.emoji}</span>
+                            <span className="text-sm font-medium text-gray-700">{emotion.label}</span>
                           </button>
                         ))}
                       </div>

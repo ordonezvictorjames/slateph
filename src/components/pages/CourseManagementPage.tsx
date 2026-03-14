@@ -2362,47 +2362,36 @@ export default function CourseManagementPage() {
             </>
             ) : (
               /* Card View */
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
                 {courses.map((course) => {
                   const courseColor = getCourseColor(course.id)
+                  const courseGroup = course.course_group || course.description || 'General'
+                  const createdDate = new Date(course.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                   
                   return (
                     <div 
                       key={course.id} 
-                      className="group relative bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col h-full"
+                      className="group relative bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col"
+                      style={{ width: '300px' }}
                     >
-                      <div className="p-6 flex flex-col flex-1">
-                        {/* Header */}
-                        <div className="flex items-start justify-between mb-4">
+                      {/* Decorative Top Strip */}
+                      <div className="relative overflow-hidden" style={{ height: '100px' }}>
+                        <div className="w-full h-full" style={{ 
+                          background: courseColor?.color_hex ? `linear-gradient(135deg, ${courseColor.color_hex}20 0%, ${courseColor.color_hex}10 100%)` : 'linear-gradient(135deg, #1f7a8c20 0%, #1f7a8c10 100%)'
+                        }} />
+                        <div className="absolute left-0 top-0 w-1 h-full" style={{ backgroundColor: courseColor?.color_hex || '#1f7a8c' }} />
+                      </div>
+
+                      {/* Course Header */}
+                      <div className="relative bg-white border-b border-gray-200 p-6">
+                        <div className="flex items-start justify-between">
                           <div className="flex-1 min-w-0">
-                            {/* Course Info */}
-                            <h3 className="font-bold text-lg text-gray-900 mb-2 line-clamp-2 group-hover:text-black transition-colors">
+                            <h3 className="text-lg font-semibold text-black mb-2 line-clamp-2">
                               {course.title}
                             </h3>
-                            <p className="text-sm text-gray-600 mb-2 line-clamp-3 leading-relaxed">
-                              {course.description}
-                            </p>
-                            {/* All Badges in One Row */}
-                            <div className="flex items-center flex-wrap gap-2 mb-2">
-                              <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${getStatusColor(course.status)}`}>
-                                <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
-                                  course.status === 'active' ? 'bg-green-600' :
-                                  course.status === 'inactive' ? 'bg-red-600' :
-                                  'bg-yellow-600'
-                                }`} />
-                                {course.status.charAt(0).toUpperCase() + course.status.slice(1)}
-                              </span>
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                {course.course_type === 'academic' ? 'Academic' : course.course_type === 'tesda' ? 'TESDA' : 'UpSkill'}
-                              </span>
-                              <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${getEnrollmentTypeDisplay(course.enrollment_type)[0].color}`}>
-                                {getEnrollmentTypeDisplay(course.enrollment_type)[0].text}
-                              </span>
-                              {getEnrollmentTypeDisplay(course.enrollment_type).length > 1 && (
-                                <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${getEnrollmentTypeDisplay(course.enrollment_type)[1].color}`}>
-                                  {getEnrollmentTypeDisplay(course.enrollment_type)[1].text}
-                                </span>
-                              )}
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-gray-600 font-medium">{courseGroup}</span>
+                              <span className="text-xs text-gray-500">{createdDate}</span>
                             </div>
                           </div>
                           
@@ -2437,12 +2426,35 @@ export default function CourseManagementPage() {
                             </button>
                           </div>
                         </div>
-                        
+                      </div>
+
+                      {/* Card Content */}
+                      <div className="p-5 flex flex-col flex-1">
+                        {/* Badges */}
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${getStatusColor(course.status)}`}>
+                            <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+                              course.status === 'active' ? 'bg-green-600' :
+                              course.status === 'inactive' ? 'bg-red-600' :
+                              'bg-yellow-600'
+                            }`} />
+                            {course.status.charAt(0).toUpperCase() + course.status.slice(1)}
+                          </span>
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {course.course_type === 'academic' ? 'Academic' : course.course_type === 'tesda' ? 'TESDA' : 'UpSkill'}
+                          </span>
+                          {getEnrollmentTypeDisplay(course.enrollment_type).map((d, idx) => (
+                            <span key={idx} className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${d.color}`}>
+                              {d.text}
+                            </span>
+                          ))}
+                        </div>
+
                         {/* Action Button - Always at bottom */}
                         <div className="mt-auto">
                           <button 
                             onClick={() => handleCourseSelect(course)}
-                            className="w-full px-4 py-3 text-white rounded-xl font-semibold text-sm transition-all duration-200 hover:shadow-lg transform hover:-translate-y-0.5"
+                            className="w-full px-4 py-3 text-white rounded-xl font-semibold text-sm transition-all duration-200 hover:shadow-lg"
                             style={{ backgroundColor: getButtonBg() }}
                             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
                             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
@@ -2456,9 +2468,6 @@ export default function CourseManagementPage() {
                           </button>
                         </div>
                       </div>
-                      
-                      {/* Hover Overlay Effect */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                     </div>
                   )
                 })}
@@ -2586,107 +2595,95 @@ export default function CourseManagementPage() {
                       </button>
                     </div>
                   ) : (
-                    <div className="space-y-3">
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
                       {subjects.map((subject, index) => (
                         <div
                           key={subject.id}
-                          className="bg-white border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-md transition-all duration-200"
+                          className="bg-white rounded-xl border-2 border-gray-100 hover:border-gray-300 hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col"
+                          style={{ height: '250px' }}
                         >
-                          <div className="p-4">
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                              {/* Order Number */}
-                              <div className="flex-shrink-0 w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                                <span className="text-xl font-bold text-gray-700">{subject.order_index}</span>
-                              </div>
-                              
-                              {/* Subject Info */}
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-start justify-between gap-3 mb-2">
-                                  <h3 className="text-base sm:text-lg font-bold text-gray-900 truncate">
-                                    {subject.title}
-                                  </h3>
-                                  <span className={`flex-shrink-0 inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${
-                                    subject.status === 'active' ? 'bg-green-100 text-green-700' :
-                                    subject.status === 'inactive' ? 'bg-red-100 text-red-700' :
-                                    'bg-yellow-100 text-yellow-700'
-                                  }`}>
-                                    {subject.status.charAt(0).toUpperCase() + subject.status.slice(1)}
-                                  </span>
-                                </div>
-                                
-                                {selectedCourse && (
-                                  <p className="text-sm text-gray-600 mb-3 line-clamp-1">
-                                    {selectedCourse.title}
-                                  </p>
-                                )}
-                                
-                                <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-2 sm:gap-4 text-sm">
-                                  {/* Instructor */}
-                                  <div className="flex items-center gap-2">
-                                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                    </svg>
-                                    <span className="text-gray-500">Instructor:</span>
-                                    <span className={`font-semibold ${
-                                      subject.trainee_name === 'Unassigned' ? 'text-gray-400 italic' : 'text-gray-900'
-                                    }`}>
-                                      {subject.trainee_name}
-                                    </span>
-                                  </div>
-                                  
-                                  {/* Online Class Link */}
-                                  {subject.online_class_link && (
-                                    <div className="flex items-center gap-2">
-                                      <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                      </svg>
-                                      <a 
-                                        href={subject.online_class_link}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-blue-600 hover:text-blue-700 font-medium hover:underline"
-                                        onClick={(e) => e.stopPropagation()}
-                                      >
-                                        Join Online Class
-                                      </a>
-                                    </div>
-                                  )}
+                          <div className="p-4 flex flex-col flex-1">
+                            {/* Status badge + top row */}
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 bg-gray-100 rounded-lg border border-gray-200">
+                                  <span className="text-sm font-bold text-gray-700">{subject.order_index}</span>
                                 </div>
                               </div>
-                              
-                              {/* Action Buttons */}
-                              <div className="w-full sm:w-auto sm:flex-shrink-0 flex items-center gap-2">
-                                <button 
-                                  onClick={() => handleSubjectSelect(subject)}
-                                  className="flex-1 sm:flex-none px-4 py-2 text-white rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2"
-                                  style={{ backgroundColor: getButtonBg() }}
-                                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
-                                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                                  </svg>
-                                  <span>Modules</span>
-                                </button>
-                                <button
-                                  onClick={() => handleEditSubject(subject)}
-                                  className="p-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
-                                  title="Edit subject"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                  </svg>
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteSubject(subject)}
-                                  className="p-2 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg transition-colors"
-                                  title="Delete subject"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                  </svg>
-                                </button>
+                              <span className={`inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full ${
+                                subject.status === 'active' ? 'bg-green-100 text-green-700' :
+                                subject.status === 'inactive' ? 'bg-red-100 text-red-700' :
+                                'bg-yellow-100 text-yellow-700'
+                              }`}>
+                                {subject.status.charAt(0).toUpperCase() + subject.status.slice(1)}
+                              </span>
+                            </div>
+
+                            {/* Title */}
+                            <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 leading-snug mb-1">
+                              {subject.title}
+                            </h3>
+
+                            {/* Instructor + online class link — just above buttons */}
+                            <div className="mt-auto mb-3 space-y-1">
+                              <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                                <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                                <span className={subject.trainee_name === 'Unassigned' ? 'text-gray-400 italic' : 'text-gray-700 font-medium'}>
+                                  {subject.trainee_name}
+                                </span>
                               </div>
+                              {subject.online_class_link && (
+                                <div className="flex items-center gap-1.5 text-xs">
+                                  <svg className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                  </svg>
+                                  <a
+                                    href={subject.online_class_link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 hover:underline font-medium"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    Join Online Class
+                                  </a>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Action buttons */}
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleSubjectSelect(subject)}
+                                className="flex-1 px-3 py-1.5 text-white rounded-lg font-medium text-xs transition-colors flex items-center justify-center gap-1.5"
+                                style={{ backgroundColor: getButtonBg() }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
+                              >
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                </svg>
+                                Modules
+                              </button>
+                              <button
+                                onClick={() => handleEditSubject(subject)}
+                                className="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+                                title="Edit subject"
+                              >
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                              </button>
+                              <button
+                                onClick={() => handleDeleteSubject(subject)}
+                                className="p-1.5 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg transition-colors"
+                                title="Delete subject"
+                              >
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -2818,11 +2815,12 @@ export default function CourseManagementPage() {
                 </button>
               </div>
             ) : (
-              <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="flex flex-wrap gap-4">
                 {modules.map((module, index) => (
                   <div
                     key={module.id}
                     className="group bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col"
+                    style={{ width: '300px' }}
                   >
                     {/* Module Header with Gradient Background */}
                     <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 p-5 border-b border-gray-200">

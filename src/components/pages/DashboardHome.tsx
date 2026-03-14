@@ -1320,7 +1320,56 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
               <UpcomingScheduleList />
             </div>
 
-            {/* Recent Activity */}
+            {/* Today's Events - Student, Scholar, Instructor only (moved below calendar) */}
+            {(userRole === 'student' || userRole === 'scholar' || userRole === 'instructor') && (
+              <div className="rounded-xl p-4 shadow-sm border-2 border-gray-200" style={{ backgroundColor: '#FFFFFF' }}>
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center">
+                    <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-black">Today's Events</h3>
+                    <p className="text-xs text-black/70">{getTodaysEvents().length} scheduled</p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {getTodaysEvents().length > 0 ? (
+                    getTodaysEvents().map((schedule) => {
+                      const courseColor = getCourseColor(schedule.course_id)
+                      return (
+                        <div key={schedule.id} className="flex items-start space-x-2 p-2 bg-white rounded-lg border border-gray-200 hover:shadow-sm transition-all">
+                          <div 
+                            className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                            style={{ backgroundColor: courseColor?.color_hex ? `${courseColor.color_hex}20` : '#BBF7D0' }}
+                          >
+                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: courseColor?.color_hex || '#22C55E' }} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-semibold text-black line-clamp-1">{schedule.title}</div>
+                            <div className="text-xs text-gray-600 mt-0.5">{schedule.course_title}</div>
+                            <div className="text-xs text-gray-500 mt-1">{formatScheduleTime(schedule.start_date, schedule.end_date)}</div>
+                          </div>
+                        </div>
+                      )
+                    })
+                  ) : (
+                    <div className="text-center py-6">
+                      <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center mx-auto mb-3">
+                        <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <p className="text-sm font-medium text-black">No events today</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Recent Activity - Admin and Developer only */}
+            {(userRole === 'admin' || userRole === 'developer') && (
             <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100 flex flex-col" style={{ height: '600px' }}>
 
               <div className="flex items-center justify-between mb-6">
@@ -1339,6 +1388,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 <RecentActivityList />
               </div>
             </div>
+            )}
           </div>
 
           {/* Left Section - Main Content - Shows second on mobile, first on desktop */}
@@ -1580,7 +1630,8 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 </div>
               )}
 
-              {/* Today's Events */}
+              {/* Today's Events - Admin and Developer only (others see it in the right column) */}
+              {(userRole === 'admin' || userRole === 'developer') && (
               <div className="rounded-xl p-4 shadow-sm border-2 border-gray-200" style={{ backgroundColor: '#FFFFFF' }}>
                 <div className="flex items-center space-x-3 mb-4">
                   <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center">
@@ -1632,6 +1683,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                   )}
                 </div>
               </div>
+              )}
             </div>
 
         {/* Main Section - Courses */}
@@ -1734,6 +1786,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                           {/* Card Content */}
                           <div className="p-5 flex flex-col flex-1">
                             {/* Badges Row: Status, Course Type, Enrollment Type */}
+                            {!(userRole === 'student' || userRole === 'scholar') && (
                             <div className="flex flex-wrap gap-2 mb-4">
                               <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${
                                 course.status === 'active' ? 'bg-green-100 text-green-800' :
@@ -1756,6 +1809,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                                 </span>
                               ))}
                             </div>
+                            )}
                             
                             {/* Action Button */}
                             <div className="mt-auto">
@@ -2095,52 +2149,71 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             </div>
             )}
 
-            {/* My Learning - For students */}
-            {userRole === 'student' && (
+            {/* My Learning - For students and scholars */}
+            {(userRole === 'student' || userRole === 'scholar') && (
             <div>
               <div className="flex items-center justify-between mb-4 md:mb-6">
                 <h2 className="text-lg md:text-xl font-bold text-black">My Learning Progress</h2>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Enrolled Courses */}
-                <div className="bg-white rounded-lg p-6 border border-gray-200">
-                  <div className="flex items-center space-x-3 mb-3">
-                    <div className="p-3 bg-gray-200 rounded-lg">
-                      <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                      </svg>
+                <div className="bg-white rounded-xl shadow-sm border-2 border-gray-200 min-h-[120px] flex flex-col">
+                  <div className="p-4 flex flex-col flex-1">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Enrolled</span>
+                      <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#1f7a8c20' }}>
+                        <svg className="w-5 h-5" style={{ color: '#1f7a8c' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                      </div>
                     </div>
-                    <div className="text-3xl font-bold text-black">{stats.totalCourses}</div>
+                    <div className="mt-auto">
+                      <div className="text-4xl font-bold text-gray-900">{stats.totalCourses}</div>
+                      <div className="text-sm text-gray-500 mt-1">Courses</div>
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-600 font-medium">Enrolled Courses</div>
                 </div>
 
                 {/* Completed Lessons */}
-                <div className="bg-white rounded-lg p-6 border border-gray-200">
-                  <div className="flex items-center space-x-3 mb-3">
-                    <div className="p-3 bg-gray-200 rounded-lg">
-                      <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
+                <div className="bg-white rounded-xl shadow-sm border-2 border-gray-200 min-h-[120px] flex flex-col">
+                  <div className="p-4 flex flex-col flex-1">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Completed</span>
+                      <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-emerald-50">
+                        <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
                     </div>
-                    <div className="text-3xl font-bold text-black">{stats.completedLessons}</div>
+                    <div className="mt-auto">
+                      <div className="text-4xl font-bold text-gray-900">{stats.completedLessons}</div>
+                      <div className="text-sm text-gray-500 mt-1">of {stats.totalLessons} lessons</div>
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-600 font-medium">Lessons Completed</div>
-                  <div className="mt-2 text-xs text-gray-500">of {stats.totalLessons} total</div>
                 </div>
 
                 {/* Overall Progress */}
-                <div className="bg-white rounded-lg p-6 border border-gray-200">
-                  <div className="flex items-center space-x-3 mb-3">
-                    <div className="p-3 bg-gray-200 rounded-lg">
-                      <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                      </svg>
+                <div className="bg-white rounded-xl shadow-sm border-2 border-gray-200 min-h-[120px] flex flex-col">
+                  <div className="p-4 flex flex-col flex-1">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Progress</span>
+                      <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-violet-50">
+                        <svg className="w-5 h-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                        </svg>
+                      </div>
                     </div>
-                    <div className="text-3xl font-bold text-black">{getProgressPercentage(stats.completedLessons, stats.totalLessons)}%</div>
+                    <div className="mt-auto">
+                      <div className="text-4xl font-bold text-gray-900">{getProgressPercentage(stats.completedLessons, stats.totalLessons)}%</div>
+                      <div className="mt-2 w-full bg-gray-100 rounded-full h-1.5">
+                        <div
+                          className="h-1.5 rounded-full bg-violet-500 transition-all duration-500"
+                          style={{ width: `${getProgressPercentage(stats.completedLessons, stats.totalLessons)}%` }}
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-600 font-medium">Overall Progress</div>
                 </div>
               </div>
             </div>
@@ -2152,45 +2225,60 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
               <div className="flex items-center justify-between mb-4 md:mb-6">
                 <h2 className="text-lg md:text-xl font-bold text-black">My Teaching Overview</h2>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* My Courses */}
-                <div className="bg-white rounded-lg p-6 border border-gray-200">
-                  <div className="flex items-center space-x-3 mb-3">
-                    <div className="p-3 bg-gray-200 rounded-lg">
-                      <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                      </svg>
+                <div className="bg-white rounded-xl shadow-sm border-2 border-gray-200 min-h-[120px] flex flex-col">
+                  <div className="p-4 flex flex-col flex-1">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Courses</span>
+                      <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#1f7a8c20' }}>
+                        <svg className="w-5 h-5" style={{ color: '#1f7a8c' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                      </div>
                     </div>
-                    <div className="text-3xl font-bold text-black">{stats.totalCourses}</div>
+                    <div className="mt-auto">
+                      <div className="text-4xl font-bold text-gray-900">{stats.totalCourses}</div>
+                      <div className="text-sm text-gray-500 mt-1">My Courses</div>
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-600 font-medium">My Courses</div>
                 </div>
 
                 {/* Total Students */}
-                <div className="bg-white rounded-lg p-6 border border-gray-200">
-                  <div className="flex items-center space-x-3 mb-3">
-                    <div className="p-3 bg-gray-200 rounded-lg">
-                      <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                      </svg>
+                <div className="bg-white rounded-xl shadow-sm border-2 border-gray-200 min-h-[120px] flex flex-col">
+                  <div className="p-4 flex flex-col flex-1">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Students</span>
+                      <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-emerald-50">
+                        <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                        </svg>
+                      </div>
                     </div>
-                    <div className="text-3xl font-bold text-black">{userStats.totalStudents}</div>
+                    <div className="mt-auto">
+                      <div className="text-4xl font-bold text-gray-900">{userStats.totalStudents}</div>
+                      <div className="text-sm text-gray-500 mt-1">Total Students</div>
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-600 font-medium">Total Students</div>
                 </div>
 
                 {/* Active Subjects */}
-                <div className="bg-white rounded-lg p-6 border border-gray-200">
-                  <div className="flex items-center space-x-3 mb-3">
-                    <div className="p-3 bg-gray-200 rounded-lg">
-                      <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
+                <div className="bg-white rounded-xl shadow-sm border-2 border-gray-200 min-h-[120px] flex flex-col">
+                  <div className="p-4 flex flex-col flex-1">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Subjects</span>
+                      <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-violet-50">
+                        <svg className="w-5 h-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
                     </div>
-                    <div className="text-3xl font-bold text-black">{stats.totalSubjects}</div>
+                    <div className="mt-auto">
+                      <div className="text-4xl font-bold text-gray-900">{stats.totalSubjects}</div>
+                      <div className="text-sm text-gray-500 mt-1">Active Subjects</div>
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-600 font-medium">Active Subjects</div>
                 </div>
               </div>
             </div>

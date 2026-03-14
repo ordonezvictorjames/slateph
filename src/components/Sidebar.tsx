@@ -52,12 +52,12 @@ export default function Sidebar({ currentPage, onPageChange, hideHamburger = fal
     }
     if (isActive) {
       return {
-        color: '#000000',
-        backgroundColor: '#e5e7eb'
+        color: '#1f7a8c',
+        backgroundColor: '#e6f7f9'
       }
     }
     return {
-      color: '#000000',
+      color: '#6b7280',
       backgroundColor: 'transparent'
     }
   }
@@ -217,7 +217,7 @@ export default function Sidebar({ currentPage, onPageChange, hideHamburger = fal
         { 
           id: 'profile' as PageType, 
           icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>, 
-          label: 'Social', 
+          label: 'Profile', 
           roles: ['admin', 'developer'] 
         },
       ]
@@ -267,7 +267,7 @@ export default function Sidebar({ currentPage, onPageChange, hideHamburger = fal
         { 
           id: 'profile' as PageType, 
           icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>, 
-          label: 'Social', 
+          label: 'Profile', 
           roles: ['student', 'scholar'] 
         },
         { 
@@ -335,7 +335,7 @@ export default function Sidebar({ currentPage, onPageChange, hideHamburger = fal
         { 
           id: 'profile' as PageType, 
           icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>, 
-          label: 'Social', 
+          label: 'Profile', 
           roles: ['instructor'] 
         },
         { 
