@@ -34,10 +34,10 @@ export function NatureButton({
   }
   
   const variantStyles = {
-    leaf: 'bg-gradient-fern text-white shadow-md hover:shadow-lg hover:scale-105 focus:ring-fern-500',
-    earth: 'bg-dust-100 text-pine-800 hover:bg-dust-200 focus:ring-dust-500',
-    wood: 'bg-sage-200 text-hunter-900 hover:bg-sage-300 focus:ring-sage-500',
-    outline: 'bg-transparent border-2 border-fern-500 text-fern-600 hover:bg-fern-50 focus:ring-fern-500',
+    leaf: 'bg-primary-500 text-white shadow-md hover:bg-primary-600 hover:shadow-lg hover:scale-105 focus:ring-primary-500',
+    earth: 'bg-primary-100 text-primary-800 hover:bg-primary-200 focus:ring-primary-500',
+    wood: 'bg-primary-200 text-primary-900 hover:bg-primary-300 focus:ring-primary-500',
+    outline: 'bg-transparent border-2 border-primary-500 text-primary-600 hover:bg-primary-50 focus:ring-primary-500',
   }
 
   return (

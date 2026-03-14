@@ -461,7 +461,7 @@ export default function AIAssistantPage() {
                   }
                 }}
                 disabled={!apiKey.trim()}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Save Settings
               </button>
@@ -557,7 +557,7 @@ export default function AIAssistantPage() {
                   setShowSettings(true)
                 }}
                 disabled={!apiKey.trim()}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Continue to Settings
               </button>
@@ -696,7 +696,7 @@ export default function AIAssistantPage() {
                     <div className={`flex-1 ${message.role === 'user' ? 'text-right' : ''}`}>
                       <div className={`inline-block px-4 py-3 rounded-2xl ${
                         message.role === 'user'
-                          ? 'bg-blue-600 text-white'
+                          ? 'bg-primary-500 text-white'
                           : 'bg-white border border-gray-200 text-gray-900'
                       }`}>
                         <div className="whitespace-pre-wrap break-words text-sm leading-relaxed">
@@ -757,7 +757,7 @@ export default function AIAssistantPage() {
             <button
               onClick={sendMessage}
               disabled={!inputMessage.trim() || isLoading}
-              className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-6 py-3 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {isLoading ? (
                 <ButtonLoading />

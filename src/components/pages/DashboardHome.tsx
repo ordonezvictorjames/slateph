@@ -497,10 +497,10 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   // Helper function to get button background color
-  const getButtonBg = () => '#588157' // Primary color (green)
+  const getButtonBg = () => '#1f7a8c' // Primary teal color
   
   // Helper function to get button hover color (slightly darker)
-  const getButtonHoverBg = () => '#3A5A40' // Accent color (dark green)
+  const getButtonHoverBg = () => '#1a6b7a' // Darker teal color
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -1285,7 +1285,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                         ? 'text-gray-700 hover:bg-gray-100 rounded-lg'
                         : 'text-gray-300'
                     }`}
-                    style={dayData.isToday ? { backgroundColor: '#3A5A40' } : {}}
+                    style={dayData.isToday ? { backgroundColor: '#1a6b7a' } : {}}
                   >
                     {dayData.day}
                     {dayData.hasEvent && (
@@ -1748,7 +1748,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                             <div className="mt-auto">
                               {isLocked ? (
                                 <button 
-                                  className="w-full px-4 py-3 bg-gray-600 text-white rounded-xl font-semibold text-sm hover:bg-gray-700 transition-colors duration-200 flex items-center justify-center space-x-2"
+                                  className="w-full px-4 py-3 bg-primary-500 text-white rounded-xl font-semibold text-sm hover:bg-primary-600 transition-colors duration-200 flex items-center justify-center space-x-2"
                                 >
                                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />

@@ -643,7 +643,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
       <div className="mb-6">
         <button
           onClick={() => setShowAddModal(true)}
-          className="px-6 py-3 bg-[#475569] text-white rounded-xl hover:bg-[#1E293B] transition-all font-medium flex items-center gap-2 shadow-lg hover:shadow-xl"
+          className="px-6 py-3 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-all font-medium flex items-center gap-2 shadow-lg hover:shadow-xl"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -713,7 +713,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                 onClick={() => setViewMode('list')}
                 className={`flex-1 px-4 py-2 rounded-lg border transition-colors flex items-center justify-center gap-2 ${
                   viewMode === 'list'
-                    ? 'bg-[#475569] text-white border-[#475569]'
+                    ? 'bg-primary-500 text-white border-primary-500'
                     : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                 }`}
               >
@@ -726,7 +726,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                 onClick={() => setViewMode('card')}
                 className={`flex-1 px-4 py-2 rounded-lg border transition-colors flex items-center justify-center gap-2 ${
                   viewMode === 'card'
-                    ? 'bg-[#475569] text-white border-[#475569]'
+                    ? 'bg-primary-500 text-white border-primary-500'
                     : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                 }`}
               >
@@ -808,10 +808,10 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500 mb-1">Scholars</p>
-              <p className="text-2xl font-bold text-[#475569]">{users.filter(u => u.role === 'scholar').length}</p>
+              <p className="text-2xl font-bold text-primary-500">{users.filter(u => u.role === 'scholar').length}</p>
             </div>
-            <div className="w-12 h-12 bg-[#475569]/20 rounded-lg flex items-center justify-center">
-              <svg className="w-6 h-6 text-[#475569]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-12 h-12 bg-primary-500/20 rounded-lg flex items-center justify-center">
+              <svg className="w-6 h-6 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
               </svg>
             </div>
@@ -1189,7 +1189,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                       {getRoleLabel(u.role as string)}
                     </span>
                     {u.role === 'student' && u.strand && (
-                      <span className="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-[#475569]/10 text-[#475569]">
+                      <span className="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-primary-500/10 text-primary-500">
                         {u.strand}
                       </span>
                     )}
@@ -1289,7 +1289,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                         section: u.section,
                         grade: u.grade
                       })}
-                      className="flex-1 px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+                      className="flex-1 px-3 py-2 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600 transition-colors"
                     >
                       Edit
                     </button>
@@ -1588,7 +1588,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-6 py-3 text-sm font-medium bg-[#475569] text-white rounded-xl hover:bg-[#1E293B] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 shadow-lg hover:shadow-xl"
+                  className="px-6 py-3 text-sm font-medium bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 shadow-lg hover:shadow-xl"
                 >
                   {submitting && <ButtonLoading />}
                   <span>{submitting ? 'Creating User...' : 'Create User'}</span>
@@ -1821,7 +1821,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-6 py-3 text-sm font-medium bg-[#475569] text-white rounded-xl hover:bg-[#1E293B] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 shadow-lg hover:shadow-xl"
+                  className="px-6 py-3 text-sm font-medium bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 shadow-lg hover:shadow-xl"
                 >
                   {submitting && <ButtonLoading />}
                   <span>{submitting ? 'Updating User...' : 'Update User'}</span>
@@ -1891,7 +1891,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
               {/* Close Button */}
               <button
                 onClick={() => setShowPermissionDeniedModal(false)}
-                className="w-full px-6 py-3 bg-[#475569] text-white rounded-xl hover:bg-[#1E293B] transition-all font-medium"
+                className="w-full px-6 py-3 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-all font-medium"
               >
                 I Understand
               </button>

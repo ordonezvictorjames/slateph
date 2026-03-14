@@ -42,7 +42,7 @@ export default function ChangelogModal({ isOpen, onClose }: ChangelogModalProps)
             {/* Latest Update */}
             <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-200">
               <div className="flex items-center space-x-2 mb-3">
-                <span className="px-3 py-1 bg-blue-500 text-white text-xs font-bold rounded-full">NEW</span>
+                <span className="px-3 py-1 bg-primary-500 text-white text-xs font-bold rounded-full">NEW</span>
                 <span className="text-sm text-gray-600">February 2026</span>
               </div>
               <h3 className="text-lg font-bold text-gray-900 mb-2">🎨 Social Feed & Profile Enhancements</h3>
@@ -175,7 +175,7 @@ export default function ChangelogModal({ isOpen, onClose }: ChangelogModalProps)
               <p className="text-sm text-gray-600 mb-3">Have feedback or suggestions?</p>
               <button
                 onClick={onClose}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                className="px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors font-medium"
               >
                 Submit Feature Request
               </button>

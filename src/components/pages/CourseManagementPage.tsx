@@ -360,10 +360,10 @@ export default function CourseManagementPage() {
   }
 
   // Helper function to get button background color
-  const getButtonBg = () => '#588157' // Primary color (green)
+  const getButtonBg = () => '#1f7a8c' // Primary teal color
   
   // Helper function to get button hover color (slightly darker)
-  const getButtonHoverBg = () => '#3A5A40' // Accent color (dark green)
+  const getButtonHoverBg = () => '#1a6b7a' // Darker teal color
 
   // Fetch data functions
   const fetchCourses = async () => {
@@ -2137,7 +2137,7 @@ export default function CourseManagementPage() {
                           onClick={() => setViewMode('list')}
                           className={`px-3 py-2 rounded-lg border transition-colors flex items-center gap-2 ${
                             viewMode === 'list'
-                              ? 'bg-[#475569] text-white border-[#475569]'
+                              ? 'bg-primary-500 text-white border-primary-500'
                               : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                           }`}
                         >
@@ -2149,7 +2149,7 @@ export default function CourseManagementPage() {
                           onClick={() => setViewMode('card')}
                           className={`px-3 py-2 rounded-lg border transition-colors flex items-center gap-2 ${
                             viewMode === 'card'
-                              ? 'bg-[#475569] text-white border-[#475569]'
+                              ? 'bg-primary-500 text-white border-primary-500'
                               : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                           }`}
                         >
@@ -2198,17 +2198,19 @@ export default function CourseManagementPage() {
               </div>
             ) : viewMode === 'list' ? (
               /* List View */
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Course</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Enrollment</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
+              <>
+                {/* Desktop Table */}
+                <div className="hidden lg:block overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Course</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Enrollment</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                      </tr>
+                    </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {courses.map((course) => (
                       <tr key={course.id} className="hover:bg-gray-50 transition-colors">
@@ -2285,6 +2287,79 @@ export default function CourseManagementPage() {
                   </tbody>
                 </table>
               </div>
+
+              {/* Mobile Card View */}
+              <div className="lg:hidden space-y-4 p-4">
+                {courses.map((course) => (
+                  <div key={course.id} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <div className="flex items-center mb-2">
+                          <div className="w-3 h-3 rounded-full bg-gray-400 mr-3 flex-shrink-0" />
+                          <h3 className="font-medium text-gray-900 text-sm">{course.title}</h3>
+                        </div>
+                        <p className="text-xs text-gray-500 line-clamp-2 mb-2">{course.description}</p>
+                        
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                            {course.course_type === 'academic' ? 'Academic' : course.course_type === 'tesda' ? 'TESDA' : 'UpSkill'}
+                          </span>
+                          
+                          {getEnrollmentTypeDisplay(course.enrollment_type).map((badge, idx) => (
+                            <span key={idx} className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${badge.color}`}>
+                              {badge.text}
+                            </span>
+                          ))}
+                          
+                          <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(course.status)}`}>
+                            {course.status.charAt(0).toUpperCase() + course.status.slice(1)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => handleCourseSelect(course)}
+                        className="flex-1 min-w-0 px-3 py-2 text-white rounded-lg text-xs font-medium transition-colors"
+                        style={{ backgroundColor: getButtonBg() }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
+                      >
+                        Subjects
+                      </button>
+                      <button
+                        onClick={() => handleEnrolltrainees(course)}
+                        className="px-3 py-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg text-xs font-medium transition-colors"
+                        title="Enroll students"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleEditCourse(course)}
+                        className="px-3 py-2 text-green-600 bg-green-50 hover:bg-green-100 rounded-lg text-xs font-medium transition-colors"
+                        title="Edit course"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteCourse(course)}
+                        className="px-3 py-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg text-xs font-medium transition-colors"
+                        title="Delete course"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
             ) : (
               /* Card View */
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -2950,7 +3025,7 @@ export default function CourseManagementPage() {
                           placeholder="Resource title"
                           value={newResourceTitle}
                           onChange={(e) => setNewResourceTitle(e.target.value)}
-                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#475569] focus:border-[#475569]"
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[primary-500] focus:border-[primary-500]"
                           required
                         />
                       </div>
@@ -2960,7 +3035,7 @@ export default function CourseManagementPage() {
                           placeholder="Resource URL"
                           value={newResourceUrl}
                           onChange={(e) => setNewResourceUrl(e.target.value)}
-                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#475569] focus:border-[#475569]"
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[primary-500] focus:border-[primary-500]"
                           required
                         />
                       </div>
@@ -2970,7 +3045,7 @@ export default function CourseManagementPage() {
                           placeholder="Description (optional)"
                           value={newResourceDescription}
                           onChange={(e) => setNewResourceDescription(e.target.value)}
-                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#475569] focus:border-[#475569]"
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[primary-500] focus:border-[primary-500]"
                         />
                       </div>
                       <div className="flex gap-2">
@@ -3043,7 +3118,7 @@ export default function CourseManagementPage() {
                   required
                   value={newCourse.title}
                   onChange={(e) => setNewCourse(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569]"
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
                   placeholder="Enter course title"
                 />
               </div>
@@ -3054,7 +3129,7 @@ export default function CourseManagementPage() {
                   required
                   value={newCourse.course_group}
                   onChange={(e) => setNewCourse(prev => ({ ...prev, course_group: e.target.value }))}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569]"
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
                 >
                   <option value="">Select a course group</option>
                   <option value="Programming">Programming</option>
@@ -3077,7 +3152,7 @@ export default function CourseManagementPage() {
                   required
                   value={newCourse.course_type}
                   onChange={(e) => setNewCourse(prev => ({ ...prev, course_type: e.target.value as 'academic' | 'tesda' | 'upskill' }))}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569]">
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]">
                   <option value="academic">Academic Course</option>
                   <option value="tesda">TESDA Course</option>
                   <option value="upskill">UpSkill Course</option>
@@ -3091,7 +3166,7 @@ export default function CourseManagementPage() {
                     required
                     value={newCourse.status}
                     onChange={(e) => setNewCourse(prev => ({ ...prev, status: e.target.value as 'active' | 'inactive' | 'draft' }))}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569]"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
                   >
                     <option value="draft">Draft</option>
                     <option value="active">Active</option>
@@ -3105,7 +3180,7 @@ export default function CourseManagementPage() {
                     required
                     value={newCourse.enrollment_type}
                     onChange={(e) => setNewCourse(prev => ({ ...prev, enrollment_type: e.target.value as 'trainee' | 'tesda_scholar' | 'both' }))}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569]"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
                   >
                     <option value="trainee">Trainee</option>
                     <option value="tesda_scholar">TESDA Scholar</option>
@@ -3166,7 +3241,7 @@ export default function CourseManagementPage() {
                   required
                   value={newSubject.title}
                   onChange={(e) => setNewSubject(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569]"
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
                   placeholder="Enter subject title"
                 />
               </div>
@@ -3177,7 +3252,7 @@ export default function CourseManagementPage() {
                   type="url"
                   value={newSubject.online_class_link || ''}
                   onChange={(e) => setNewSubject(prev => ({ ...prev, online_class_link: e.target.value }))}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569]"
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
                   placeholder="https://meet.google.com/... or https://zoom.us/..."
                 />
                 <p className="mt-1 text-xs text-gray-500">Add Google Meet, Zoom, or other online class link</p>
@@ -3192,7 +3267,7 @@ export default function CourseManagementPage() {
                     min="1"
                     value={newSubject.order_index}
                     onChange={(e) => setNewSubject(prev => ({ ...prev, order_index: parseInt(e.target.value) || 1 }))}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569]"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
                     placeholder="1"
                   />
                 </div>
@@ -3202,7 +3277,7 @@ export default function CourseManagementPage() {
                     required
                     value={newSubject.status}
                     onChange={(e) => setNewSubject(prev => ({ ...prev, status: e.target.value as 'active' | 'inactive' | 'draft' }))}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569]"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
                   >
                     <option value="draft">Draft</option>
                     <option value="active">Active</option>
@@ -3215,7 +3290,7 @@ export default function CourseManagementPage() {
                   <select
                     value={newSubject.instructor_id}
                     onChange={(e) => setNewSubject(prev => ({ ...prev, instructor_id: e.target.value }))}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569]"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
                   >
                     <option value="">Select Instructor</option>
                     {instructors.map((instructor) => (
@@ -3279,7 +3354,7 @@ export default function CourseManagementPage() {
                   required
                   value={newSubject.title}
                   onChange={(e) => setNewSubject(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569]"
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
                   placeholder="Enter subject title"
                 />
               </div>
@@ -3290,7 +3365,7 @@ export default function CourseManagementPage() {
                   type="url"
                   value={newSubject.online_class_link || ''}
                   onChange={(e) => setNewSubject(prev => ({ ...prev, online_class_link: e.target.value }))}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569]"
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
                   placeholder="https://meet.google.com/... or https://zoom.us/..."
                 />
                 <p className="mt-1 text-xs text-gray-500">Add Google Meet, Zoom, or other online class link</p>
@@ -3305,7 +3380,7 @@ export default function CourseManagementPage() {
                     min="1"
                     value={newSubject.order_index}
                     onChange={(e) => setNewSubject(prev => ({ ...prev, order_index: parseInt(e.target.value) || 1 }))}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569]"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
                     placeholder="1"
                   />
                 </div>
@@ -3315,7 +3390,7 @@ export default function CourseManagementPage() {
                     required
                     value={newSubject.status}
                     onChange={(e) => setNewSubject(prev => ({ ...prev, status: e.target.value as 'active' | 'inactive' | 'draft' }))}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569]"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
                   >
                     <option value="draft">Draft</option>
                     <option value="active">Active</option>
@@ -3328,7 +3403,7 @@ export default function CourseManagementPage() {
                   <select
                     value={newSubject.instructor_id}
                     onChange={(e) => setNewSubject(prev => ({ ...prev, instructor_id: e.target.value }))}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569]"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
                   >
                     <option value="">Select Instructor</option>
                     {instructors.map((instructor) => (
@@ -3392,7 +3467,7 @@ export default function CourseManagementPage() {
                   required
                   value={newModule.title}
                   onChange={(e) => setNewModule(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569]"
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
                   placeholder="Enter module title"
                 />
               </div>
@@ -3403,7 +3478,7 @@ export default function CourseManagementPage() {
                   required
                   value={newModule.content_type}
                   onChange={(e) => setNewModule(prev => ({ ...prev, content_type: e.target.value as any }))}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569]"
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
                 >
                   <option value="video">Video</option>
                   <option value="canva_presentation">Canva Presentation</option>
@@ -3427,7 +3502,7 @@ export default function CourseManagementPage() {
                     required={newModule.content_type === 'canva_presentation'}
                     value={newModule.canva_url || ''}
                     onChange={(e) => setNewModule(prev => ({ ...prev, canva_url: e.target.value }))}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569]"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
                     placeholder="https://www.canva.com/design/..."
                   />
                   <div className="text-xs text-gray-500 mt-1">
@@ -3450,7 +3525,7 @@ export default function CourseManagementPage() {
                     required={newModule.content_type === 'video'}
                     value={newModule.video_url || ''}
                     onChange={(e) => setNewModule(prev => ({ ...prev, video_url: e.target.value }))}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569]"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
                     placeholder="https://www.youtube.com/watch?v=..."
                   />
                   <div className="text-xs text-gray-500 mt-1">
@@ -3473,7 +3548,7 @@ export default function CourseManagementPage() {
                     required={newModule.content_type === 'online_document'}
                     value={newModule.document_url || ''}
                     onChange={(e) => setNewModule(prev => ({ ...prev, document_url: e.target.value }))}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569]"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
                     placeholder="https://docs.google.com/document/..."
                   />
                   <div className="text-xs text-gray-500 mt-1">
@@ -3510,10 +3585,10 @@ export default function CourseManagementPage() {
                       }
                     }}
                     disabled={uploadingFile}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569] file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-[#475569] file:text-white hover:file:bg-[#1E293B] disabled:opacity-50"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500] file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-[primary-500] file:text-white hover:file:bg-[primary-600] disabled:opacity-50"
                   />
                   {uploadingFile && (
-                    <div className="text-xs text-[#475569] mt-1 flex items-center">
+                    <div className="text-xs text-[primary-500] mt-1 flex items-center">
                       <svg className="animate-spin h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -3557,10 +3632,10 @@ export default function CourseManagementPage() {
                       }
                     }}
                     disabled={uploadingFile}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569] file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-[#475569] file:text-white hover:file:bg-[#1E293B] disabled:opacity-50"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500] file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-[primary-500] file:text-white hover:file:bg-[primary-600] disabled:opacity-50"
                   />
                   {uploadingFile && (
-                    <div className="text-xs text-[#475569] mt-1 flex items-center">
+                    <div className="text-xs text-[primary-500] mt-1 flex items-center">
                       <svg className="animate-spin h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -3582,7 +3657,7 @@ export default function CourseManagementPage() {
                   required
                   value={newModule.status}
                   onChange={(e) => setNewModule(prev => ({ ...prev, status: e.target.value as 'active' | 'inactive' | 'draft' }))}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569]"
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
                 >
                   <option value="draft">Draft</option>
                   <option value="active">Active</option>
@@ -3642,7 +3717,7 @@ export default function CourseManagementPage() {
                   required
                   value={newModule.title}
                   onChange={(e) => setNewModule(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569]"
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
                   placeholder="Enter module title"
                 />
               </div>
@@ -3653,7 +3728,7 @@ export default function CourseManagementPage() {
                   required
                   value={newModule.content_type}
                   onChange={(e) => setNewModule(prev => ({ ...prev, content_type: e.target.value as any }))}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569]"
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
                 >
                   <option value="video">Video</option>
                   <option value="canva_presentation">Canva Presentation</option>
@@ -3677,7 +3752,7 @@ export default function CourseManagementPage() {
                     required={newModule.content_type === 'canva_presentation'}
                     value={newModule.canva_url || ''}
                     onChange={(e) => setNewModule(prev => ({ ...prev, canva_url: e.target.value }))}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569]"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
                     placeholder="https://www.canva.com/design/..."
                   />
                   <div className="text-xs text-gray-500 mt-1">
@@ -3700,7 +3775,7 @@ export default function CourseManagementPage() {
                     required={newModule.content_type === 'video'}
                     value={newModule.video_url || ''}
                     onChange={(e) => setNewModule(prev => ({ ...prev, video_url: e.target.value }))}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569]"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
                     placeholder="https://www.youtube.com/watch?v=..."
                   />
                   <div className="text-xs text-gray-500 mt-1">
@@ -3723,7 +3798,7 @@ export default function CourseManagementPage() {
                     required={newModule.content_type === 'online_document'}
                     value={newModule.document_url || ''}
                     onChange={(e) => setNewModule(prev => ({ ...prev, document_url: e.target.value }))}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569]"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
                     placeholder="https://docs.google.com/document/..."
                   />
                   <div className="text-xs text-gray-500 mt-1">
@@ -3760,10 +3835,10 @@ export default function CourseManagementPage() {
                       }
                     }}
                     disabled={uploadingFile}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569] file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-[#475569] file:text-white hover:file:bg-[#1E293B] disabled:opacity-50"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500] file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-[primary-500] file:text-white hover:file:bg-[primary-600] disabled:opacity-50"
                   />
                   {uploadingFile && (
-                    <div className="text-xs text-[#475569] mt-1 flex items-center">
+                    <div className="text-xs text-[primary-500] mt-1 flex items-center">
                       <svg className="animate-spin h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -3807,10 +3882,10 @@ export default function CourseManagementPage() {
                       }
                     }}
                     disabled={uploadingFile}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569] file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-[#475569] file:text-white hover:file:bg-[#1E293B] disabled:opacity-50"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500] file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-[primary-500] file:text-white hover:file:bg-[primary-600] disabled:opacity-50"
                   />
                   {uploadingFile && (
-                    <div className="text-xs text-[#475569] mt-1 flex items-center">
+                    <div className="text-xs text-[primary-500] mt-1 flex items-center">
                       <svg className="animate-spin h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -3832,7 +3907,7 @@ export default function CourseManagementPage() {
                   required
                   value={newModule.status}
                   onChange={(e) => setNewModule(prev => ({ ...prev, status: e.target.value as 'active' | 'inactive' | 'draft' }))}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569]"
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
                 >
                   <option value="draft">Draft</option>
                   <option value="active">Active</option>
@@ -3892,7 +3967,7 @@ export default function CourseManagementPage() {
                   required
                   value={newCourse.title}
                   onChange={(e) => setNewCourse(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569]"
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
                   placeholder="Enter course title"
                 />
               </div>
@@ -3903,7 +3978,7 @@ export default function CourseManagementPage() {
                   required
                   value={newCourse.course_group}
                   onChange={(e) => setNewCourse(prev => ({ ...prev, course_group: e.target.value }))}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569]"
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
                 >
                   <option value="">Select a course group</option>
                   <option value="Programming">Programming</option>
@@ -3926,7 +4001,7 @@ export default function CourseManagementPage() {
                   required
                   value={newCourse.course_type}
                   onChange={(e) => setNewCourse(prev => ({ ...prev, course_type: e.target.value as 'academic' | 'tesda' | 'upskill' }))}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569]">
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]">
                   <option value="academic">Academic Course</option>
                   <option value="tesda">TESDA Course</option>
                   <option value="upskill">UpSkill Course</option>
@@ -3940,7 +4015,7 @@ export default function CourseManagementPage() {
                     required
                     value={newCourse.status}
                     onChange={(e) => setNewCourse(prev => ({ ...prev, status: e.target.value as 'active' | 'inactive' | 'draft' }))}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569]"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
                   >
                     <option value="draft">Draft</option>
                     <option value="active">Active</option>
@@ -3954,7 +4029,7 @@ export default function CourseManagementPage() {
                     required
                     value={newCourse.enrollment_type}
                     onChange={(e) => setNewCourse(prev => ({ ...prev, enrollment_type: e.target.value as 'trainee' | 'tesda_scholar' | 'both' }))}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#475569] focus:border-[#475569]"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
                   >
                     <option value="trainee">Trainee</option>
                     <option value="tesda_scholar">TESDA Scholar</option>
@@ -4030,7 +4105,7 @@ export default function CourseManagementPage() {
                 <button
                   onClick={confirmDelete}
                   disabled={submitting}
-                  className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-[#1E293B] transition-colors disabled:opacity-50 flex items-center space-x-2"
+                  className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors disabled:opacity-50 flex items-center space-x-2"
                 >
                   {submitting && <ButtonLoading />}
                   <span>{submitting ? 'Deleting...' : 'Delete'}</span>

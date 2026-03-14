@@ -287,7 +287,7 @@ export default function NotificationBell() {
                             {notification.title}
                           </p>
                           {!notification.is_read && (
-                            <span className="ml-2 w-2 h-2 bg-blue-600 rounded-full flex-shrink-0"></span>
+                            <span className="ml-2 w-2 h-2 bg-primary-500 rounded-full flex-shrink-0"></span>
                           )}
                         </div>
                         <p className="text-sm text-gray-600 mt-1 line-clamp-2">
@@ -384,7 +384,7 @@ export default function NotificationBell() {
                                 {getTimeAgo(notification.created_at)}
                               </span>
                               {!notification.is_read && (
-                                <span className="w-3 h-3 bg-blue-600 rounded-full flex-shrink-0"></span>
+                                <span className="w-3 h-3 bg-primary-500 rounded-full flex-shrink-0"></span>
                               )}
                             </div>
                           </div>
@@ -416,7 +416,7 @@ export default function NotificationBell() {
               </p>
               <button
                 onClick={() => setShowAllModal(false)}
-                className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
+                className="px-6 py-2 bg-black text-white rounded-lg hover:bg-primary-700 transition-colors font-medium"
               >
                 Close
               </button>

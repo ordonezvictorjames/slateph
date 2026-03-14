@@ -107,7 +107,7 @@ export default function MyCoursesPage() {
         const { data: enrollments, error: enrollmentError } = await supabase
           .from('course_enrollments')
           .select('course_id')
-          .eq('student_id', user?.id)
+          .eq('trainee_id', user?.id)
           .eq('status', 'active')
 
         if (enrollmentError) {
@@ -278,7 +278,7 @@ export default function MyCoursesPage() {
   }
 
   const getEnrollmentTypeDisplay = (type: string) => {
-    return [{ text: 'trainee', color: 'bg-[#475569]/20 text-[#475569]' }]
+    return [{ text: 'trainee', color: 'bg-primary-500/20 text-primary-500' }]
   }
 
   const getContentTypeIcon = (contentType: string) => {
@@ -728,7 +728,7 @@ export default function MyCoursesPage() {
                         </svg>
                       </button>
                       <h2 className="text-lg font-semibold text-black">Modules in {selectedSubject.title}</h2>
-                      <span className="px-2 py-1 bg-[#475569]/20 text-[#475569] text-xs font-medium rounded-full">
+                      <span className="px-2 py-1 bg-primary-500/20 text-primary-500 text-xs font-medium rounded-full">
                         {modules.length} module{modules.length !== 1 ? 's' : ''}
                       </span>
                     </div>
@@ -935,13 +935,13 @@ export default function MyCoursesPage() {
                             href={resource.resource_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-2 p-3 bg-[#475569]/10 hover:bg-[#475569]/20 rounded-lg transition-colors group"
+                            className="flex items-center gap-2 p-3 bg-primary-500/10 hover:bg-primary-500/20 rounded-lg transition-colors group"
                           >
-                            <svg className="w-4 h-4 text-[#475569] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-4 h-4 text-primary-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                             </svg>
-                            <span className="text-sm text-[#1E293B] font-medium flex-1 truncate">{resource.title}</span>
-                            <svg className="w-3.5 h-3.5 text-[#475569] opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <span className="text-sm text-[primary-600] font-medium flex-1 truncate">{resource.title}</span>
+                            <svg className="w-3.5 h-3.5 text-[primary-500] opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                             </svg>
                           </a>

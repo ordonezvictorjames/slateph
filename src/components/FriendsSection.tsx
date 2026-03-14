@@ -243,7 +243,7 @@ export default function FriendsSection({ userId, isOwnProfile, onNavigateToProfi
             <button
               onClick={() => sendFriendRequest(userId)}
               disabled={actionLoading === userId}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full bg-primary-500 hover:bg-primary-600 text-white px-6 py-3 rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {actionLoading === userId ? <ButtonLoading /> : null}
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -301,7 +301,7 @@ export default function FriendsSection({ userId, isOwnProfile, onNavigateToProfi
                   <button
                     onClick={() => acceptFriendRequest(request.id)}
                     disabled={actionLoading === request.id}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                    className="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
                   >
                     {actionLoading === request.id ? <ButtonLoading /> : 'Accept'}
                   </button>
@@ -334,7 +334,7 @@ export default function FriendsSection({ userId, isOwnProfile, onNavigateToProfi
                 setShowAddFriendModal(true)
                 loadAllUsers()
               }}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+              className="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -429,7 +429,7 @@ export default function FriendsSection({ userId, isOwnProfile, onNavigateToProfi
                     <button
                       onClick={() => sendFriendRequest(u.id)}
                       disabled={actionLoading === u.id}
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+                      className="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
                     >
                       {actionLoading === u.id ? <ButtonLoading /> : 'Add'}
                     </button>

@@ -342,7 +342,7 @@ print("Even squares:", even_squares)`
               <button
                 onClick={runCode}
                 disabled={isRunning || !skulptReady}
-                className="px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 md:py-2 bg-green-600 text-white rounded-md sm:rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 sm:gap-2 text-[10px] sm:text-xs md:text-sm"
+                className="px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 md:py-2 bg-primary-500 text-white rounded-md sm:rounded-lg hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 sm:gap-2 text-[10px] sm:text-xs md:text-sm"
               >
                 {isRunning ? (
                   <>
@@ -385,7 +385,7 @@ print("Even squares:", even_squares)`
                     highlightRef.current.scrollLeft = e.currentTarget.scrollLeft
                   }
                 }}
-                className="absolute inset-0 p-2 sm:p-3 md:p-4 font-mono text-[10px] sm:text-xs md:text-sm resize-none focus:outline-none bg-transparent caret-white z-10 selection:bg-blue-500/30"
+                className="absolute inset-0 p-2 sm:p-3 md:p-4 font-mono text-[10px] sm:text-xs md:text-sm resize-none focus:outline-none bg-transparent caret-white z-10 selection:bg-primary-500/30"
                 style={{
                   caretColor: 'white',
                   lineHeight: '1.5',

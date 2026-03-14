@@ -355,7 +355,7 @@ export default function LoginForm() {
 
               <Button 
                 type="submit" 
-                className="w-full h-12 bg-black hover:bg-gray-800 text-white font-semibold rounded-full transition-colors focus:outline-none focus-visible:outline-none focus-visible:ring-0" 
+                className="w-full h-12 bg-black hover:bg-primary-700 text-white font-semibold rounded-full transition-colors focus:outline-none focus-visible:outline-none focus-visible:ring-0" 
                 disabled={loading}
               >
                 {loading ? (
@@ -553,7 +553,7 @@ export default function LoginForm() {
 
               <Button 
                 type="submit" 
-                className="w-full h-12 bg-black hover:bg-gray-800 text-white font-semibold rounded-full transition-colors focus:outline-none focus-visible:outline-none focus-visible:ring-0 disabled:opacity-50 disabled:cursor-not-allowed" 
+                className="w-full h-12 bg-black hover:bg-primary-700 text-white font-semibold rounded-full transition-colors focus:outline-none focus-visible:outline-none focus-visible:ring-0 disabled:opacity-50 disabled:cursor-not-allowed" 
                 disabled={loading || !acceptedTerms}
               >
                 {loading ? (
@@ -614,7 +614,7 @@ export default function LoginForm() {
                 {/* Privacy Statement Card */}
                 <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100 shadow-sm">
                   <div className="flex items-center mb-4">
-                    <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center mr-3">
+                    <div className="w-10 h-10 bg-primary-500 rounded-full flex items-center justify-center mr-3">
                       <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                       </svg>
@@ -648,7 +648,7 @@ export default function LoginForm() {
                 {/* Terms and Conditions Card */}
                 <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-100 shadow-sm">
                   <div className="flex items-center mb-4">
-                    <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center mr-3">
+                    <div className="w-10 h-10 bg-primary-500 rounded-full flex items-center justify-center mr-3">
                       <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
@@ -685,7 +685,7 @@ export default function LoginForm() {
             <div className="bg-gray-50 px-8 py-4 border-t border-gray-200 flex justify-end flex-shrink-0">
               <button
                 onClick={() => setShowPrivacyModal(false)}
-                className="px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-all font-medium"
+                className="px-6 py-3 bg-black text-white rounded-xl hover:bg-primary-700 transition-all font-medium"
               >
                 I Understand
               </button>
@@ -748,7 +748,7 @@ export default function LoginForm() {
                 <button
                   type="submit"
                   disabled={forgotPasswordLoading}
-                  className="flex-1 px-4 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                  className="flex-1 px-4 py-3 bg-black text-white rounded-xl hover:bg-primary-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                 >
                   {forgotPasswordLoading ? (
                     <>

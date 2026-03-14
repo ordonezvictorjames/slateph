@@ -615,7 +615,7 @@ export default function CourseChat({ isOpen, onClose, onNavigateToProfile }: Cou
                               <div
                                 className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg ${
                                   isOwnMessage
-                                    ? 'bg-blue-500 text-white'
+                                    ? 'bg-primary-500 text-white'
                                     : 'bg-gray-100 text-gray-900'
                                 }`}
                               >
@@ -656,7 +656,7 @@ export default function CourseChat({ isOpen, onClose, onNavigateToProfile }: Cou
                     <button
                       type="submit"
                       disabled={!newMessage.trim() || sending}
-                      className="px-3 sm:px-4 md:px-6 py-1.5 sm:py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed h-[38px] sm:h-[42px] text-xs sm:text-sm md:text-base flex-shrink-0"
+                      className="px-3 sm:px-4 md:px-6 py-1.5 sm:py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed h-[38px] sm:h-[42px] text-xs sm:text-sm md:text-base flex-shrink-0"
                     >
                       {sending ? (
                         <ButtonLoading />

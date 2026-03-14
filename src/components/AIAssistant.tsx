@@ -396,7 +396,7 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
               <button
                 onClick={saveSettings}
                 disabled={!apiKey.trim()}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Save Settings
               </button>
@@ -498,7 +498,7 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
               <button
                 onClick={saveSettings}
                 disabled={!apiKey.trim()}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Save & Continue
               </button>
@@ -591,7 +591,7 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
                     <div className={`flex-1 ${message.role === 'user' ? 'text-right' : ''}`}>
                       <div className={`inline-block px-4 py-2 rounded-2xl ${
                         message.role === 'user'
-                          ? 'bg-blue-600 text-white'
+                          ? 'bg-primary-500 text-white'
                           : 'bg-white border border-gray-200 text-gray-900 shadow-sm'
                       }`}>
                         {message.image && (
@@ -715,7 +715,7 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
             <button
               onClick={sendMessage}
               disabled={(!inputMessage.trim() && !selectedImage && !selectedFile) || isLoading}
-              className="px-4 md:px-6 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-4 md:px-6 py-2 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {isLoading ? (
                 <ButtonLoading />

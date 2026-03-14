@@ -901,13 +901,13 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
                 <div className="flex gap-3">
                   <button
                     onClick={handleSavePosition}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                    className="px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors font-medium"
                   >
                     Save
                   </button>
                   <button
                     onClick={handleCancelReposition}
-                    className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
+                    className="px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors font-medium"
                   >
                     Cancel
                   </button>
@@ -1029,7 +1029,7 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
                 {/* Camera Icon Overlay - Only for own profile */}
                 {isOwnProfile && (
                   <label 
-                    className="absolute bottom-0 right-0 w-8 h-8 md:w-10 md:h-10 bg-blue-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-700 transition-colors shadow-lg z-20"
+                    className="absolute bottom-0 right-0 w-8 h-8 md:w-10 md:h-10 bg-primary-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-primary-600 transition-colors shadow-lg z-20"
                     title={uploadingAvatar ? 'Uploading...' : 'Change Avatar'}
                   >
                     {uploadingAvatar ? (
@@ -1083,7 +1083,7 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
                           <button
                             onClick={() => sendFriendRequest(displayUserId!)}
                             disabled={actionLoading === displayUserId}
-                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50"
+                            className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors text-sm font-medium disabled:opacity-50"
                           >
                             {actionLoading === displayUserId && <ButtonLoading />}
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1127,7 +1127,7 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
                     <div className="flex justify-center md:justify-end">
                       <button
                         onClick={() => onNavigateToProfile(undefined)}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                        className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors text-sm font-medium"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -1273,7 +1273,7 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
                             <button
                               onClick={() => acceptFriendRequest(request.id)}
                               disabled={actionLoading === request.id}
-                              className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs"
+                              className="bg-primary-500 hover:bg-primary-600 text-white px-2 py-1 rounded text-xs"
                             >
                               ✓
                             </button>
@@ -1477,7 +1477,7 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
                 <button
                   onClick={handleCreatePost}
                   disabled={submittingPost || (!newPostContent.trim() && !postImage)}
-                  className="w-full md:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-sm md:text-base min-h-[44px] md:min-h-0"
+                  className="w-full md:w-auto px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-sm md:text-base min-h-[44px] md:min-h-0"
                 >
                   {submittingPost ? 'Posting...' : 'Post'}
                 </button>
@@ -1800,7 +1800,7 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
                       <button
                         onClick={() => sendFriendRequest(u.id)}
                         disabled={actionLoading === u.id}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+                        className="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
                       >
                         {actionLoading === u.id && <ButtonLoading />}
                         Add

@@ -39,7 +39,7 @@ export default function SessionManagement({
       {/* View User Sessions - Admin/Developer ONLY */}
       <button
         onClick={openUserSessionsModal}
-        className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
+        className="flex items-center gap-2 px-3 py-1.5 text-sm bg-primary-500 text-white rounded hover:bg-primary-600 transition-colors"
         title="View user sessions (Admin/Developer only)"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

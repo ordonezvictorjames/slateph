@@ -266,7 +266,7 @@ export default function FeatureRequestsPage() {
             {canSubmit && (
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors font-medium flex items-center space-x-2"
+                className="px-6 py-3 bg-black text-white rounded-xl hover:bg-primary-700 transition-colors font-medium flex items-center space-x-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -353,7 +353,7 @@ export default function FeatureRequestsPage() {
             {canSubmit && (
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors font-medium"
+                className="px-6 py-3 bg-black text-white rounded-xl hover:bg-primary-700 transition-colors font-medium"
               >
                 Submit Your First Request
               </button>
@@ -661,7 +661,7 @@ export default function FeatureRequestsPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors font-medium"
+                  className="px-6 py-3 bg-black text-white rounded-xl hover:bg-primary-700 transition-colors font-medium"
                 >
                   Submit Request
                 </button>

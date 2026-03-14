@@ -222,7 +222,7 @@ export default function LibraryPage() {
                 onClick={() => setFilterType('link')}
                 className={`px-4 py-2.5 md:py-2 rounded-lg text-sm md:text-base font-medium transition-colors whitespace-nowrap min-h-[44px] md:min-h-0 ${
                   filterType === 'link'
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-primary-500 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -232,7 +232,7 @@ export default function LibraryPage() {
                 onClick={() => setFilterType('file')}
                 className={`px-4 py-2.5 md:py-2 rounded-lg text-sm md:text-base font-medium transition-colors whitespace-nowrap min-h-[44px] md:min-h-0 ${
                   filterType === 'file'
-                    ? 'bg-green-600 text-white'
+                    ? 'bg-primary-500 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -242,7 +242,7 @@ export default function LibraryPage() {
                 onClick={() => setFilterType('document')}
                 className={`px-4 py-2.5 md:py-2 rounded-lg text-sm md:text-base font-medium transition-colors whitespace-nowrap min-h-[44px] md:min-h-0 ${
                   filterType === 'document'
-                    ? 'bg-purple-600 text-white'
+                    ? 'bg-primary-500 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
