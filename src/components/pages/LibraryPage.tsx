@@ -32,7 +32,6 @@ interface Resource {
 }
 
 type FilterType = 'all' | 'link' | 'file' | 'document'
-type ViewMode = 'card' | 'table'
 
 export default function LibraryPage() {
   const { user } = useAuth()
@@ -42,7 +41,8 @@ export default function LibraryPage() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterType, setFilterType] = useState<FilterType>('all')
-  const [viewMode, setViewMode] = useState<ViewMode>('card')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage] = useState(10) // 10 items per page
 
   useEffect(() => {
     fetchResources()
@@ -51,6 +51,11 @@ export default function LibraryPage() {
   useEffect(() => {
     filterResources()
   }, [resources, searchQuery, filterType])
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery, filterType])
 
   const fetchResources = async () => {
     try {
@@ -159,6 +164,24 @@ export default function LibraryPage() {
     })
   }
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredResources.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const currentResources = filteredResources.slice(startIndex, endIndex)
+
+  const goToPage = (page: number) => {
+    setCurrentPage(page)
+  }
+
+  const goToPreviousPage = () => {
+    setCurrentPage(prev => Math.max(prev - 1, 1))
+  }
+
+  const goToNextPage = () => {
+    setCurrentPage(prev => Math.min(prev + 1, totalPages))
+  }
+
   if (loading) {
     return (
       <div className="p-4 md:p-8">
@@ -188,9 +211,9 @@ export default function LibraryPage() {
 
       {/* Search and Filters */}
       <div className="bg-white rounded-lg p-4 md:p-6 shadow-sm border border-gray-100 mb-4 md:mb-6">
-        <div className="flex flex-col gap-3 md:gap-4 mb-3 md:mb-4">
+        <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-3 md:mb-4">
           {/* Search */}
-          <div className="w-full">
+          <div className="flex-1">
             <div className="relative">
               <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -205,93 +228,66 @@ export default function LibraryPage() {
             </div>
           </div>
 
-          {/* Type Filter - Scrollable on mobile */}
-          <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
-            <div className="flex gap-2 min-w-max md:min-w-0">
-              <button
-                onClick={() => setFilterType('all')}
-                className={`px-4 py-2.5 md:py-2 rounded-lg text-sm md:text-base font-medium transition-colors whitespace-nowrap min-h-[44px] md:min-h-0 ${
-                  filterType === 'all'
-                    ? 'bg-fern-500 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                All
-              </button>
-              <button
-                onClick={() => setFilterType('link')}
-                className={`px-4 py-2.5 md:py-2 rounded-lg text-sm md:text-base font-medium transition-colors whitespace-nowrap min-h-[44px] md:min-h-0 ${
-                  filterType === 'link'
-                    ? 'bg-primary-500 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Links
-              </button>
-              <button
-                onClick={() => setFilterType('file')}
-                className={`px-4 py-2.5 md:py-2 rounded-lg text-sm md:text-base font-medium transition-colors whitespace-nowrap min-h-[44px] md:min-h-0 ${
-                  filterType === 'file'
-                    ? 'bg-primary-500 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Files
-              </button>
-              <button
-                onClick={() => setFilterType('document')}
-                className={`px-4 py-2.5 md:py-2 rounded-lg text-sm md:text-base font-medium transition-colors whitespace-nowrap min-h-[44px] md:min-h-0 ${
-                  filterType === 'document'
-                    ? 'bg-primary-500 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Documents
-              </button>
-            </div>
+          {/* Type Filter */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setFilterType('all')}
+              className={`px-4 py-2.5 md:py-2 rounded-lg text-sm md:text-base font-medium transition-colors whitespace-nowrap min-h-[44px] md:min-h-0 ${
+                filterType === 'all'
+                  ? 'bg-fern-500 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              All
+            </button>
+            <button
+              onClick={() => setFilterType('link')}
+              className={`px-4 py-2.5 md:py-2 rounded-lg text-sm md:text-base font-medium transition-colors whitespace-nowrap min-h-[44px] md:min-h-0 ${
+                filterType === 'link'
+                  ? 'bg-primary-500 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Links
+            </button>
+            <button
+              onClick={() => setFilterType('file')}
+              className={`px-4 py-2.5 md:py-2 rounded-lg text-sm md:text-base font-medium transition-colors whitespace-nowrap min-h-[44px] md:min-h-0 ${
+                filterType === 'file'
+                  ? 'bg-primary-500 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Files
+            </button>
+            <button
+              onClick={() => setFilterType('document')}
+              className={`px-4 py-2.5 md:py-2 rounded-lg text-sm md:text-base font-medium transition-colors whitespace-nowrap min-h-[44px] md:min-h-0 ${
+                filterType === 'document'
+                  ? 'bg-primary-500 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Documents
+            </button>
           </div>
         </div>
 
-        {/* View Toggle and Results count */}
+        {/* Pagination info */}
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="text-xs md:text-sm text-gray-600">
-            <span className="md:hidden">{filteredResources.length} / {resources.length}</span>
-            <span className="hidden md:inline">{filteredResources.length} of {resources.length} resources</span>
-          </div>
-          
-          {/* View Mode Toggle - Hidden on mobile */}
-          <div className="hidden md:flex gap-2">
-            <button
-              onClick={() => setViewMode('card')}
-              className={`p-2 rounded-lg transition-colors ${
-                viewMode === 'card'
-                  ? 'bg-fern-500'
-                  : 'bg-gray-100 hover:bg-gray-200'
-              }`}
-              title="Card View"
-            >
-              <svg className={`w-5 h-5 ${viewMode === 'card' ? 'text-white' : 'text-gray-700'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-              </svg>
-            </button>
-            <button
-              onClick={() => setViewMode('table')}
-              className={`p-2 rounded-lg transition-colors ${
-                viewMode === 'table'
-                  ? 'bg-fern-500'
-                  : 'bg-gray-100 hover:bg-gray-200'
-              }`}
-              title="Table View"
-            >
-              <svg className={`w-5 h-5 ${viewMode === 'table' ? 'text-white' : 'text-gray-700'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
-            </button>
+            {filteredResources.length === 0 ? (
+              <span>No resources found</span>
+            ) : (
+              <span>
+                Showing {startIndex + 1} to {Math.min(endIndex, filteredResources.length)} of {filteredResources.length} resources
+              </span>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Resources Display */}
+      {/* Resources Display - Table View Only */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         {filteredResources.length === 0 ? (
           <div className="text-center py-8 md:py-12 px-4">
@@ -307,53 +303,72 @@ export default function LibraryPage() {
           </div>
         ) : (
           <>
-            {/* Card View - Always shown on mobile, conditionally on desktop */}
-            <div className={`divide-y divide-gray-100 ${viewMode === 'table' ? 'hidden md:hidden' : 'block'}`}>
-              {filteredResources.map((resource) => (
-                <div key={resource.id} className="p-4 md:p-6 hover:bg-gray-50 transition-colors">
-                  <div className="flex items-start gap-3 md:gap-4">
-                    {/* Icon */}
-                    <div className={`flex-shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-lg ${getResourceTypeColor(resource.resource_type)} flex items-center justify-center`}>
-                      {getResourceIcon(resource.resource_type)}
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2 md:gap-4 mb-2">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-1">
-                            {resource.title}
-                          </h3>
-                          <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 text-xs md:text-sm text-gray-600 mb-2">
-                            <span className="truncate">{resource.subject.course.title}</span>
-                            <span className="hidden md:inline">•</span>
-                            <span className="truncate">{resource.subject.title}</span>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[800px]">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-4 md:px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      Resource
+                    </th>
+                    <th className="px-4 md:px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      Course / Subject
+                    </th>
+                    <th className="px-4 md:px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      Type
+                    </th>
+                    <th className="px-4 md:px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      Uploaded By
+                    </th>
+                    <th className="px-4 md:px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      Date
+                    </th>
+                    <th className="px-4 md:px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      Size
+                    </th>
+                    <th className="px-4 md:px-6 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      Action
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {currentResources.map((resource) => (
+                    <tr key={resource.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 md:px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`flex-shrink-0 w-10 h-10 rounded-lg ${getResourceTypeColor(resource.resource_type)} flex items-center justify-center`}>
+                            {getResourceIcon(resource.resource_type)}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="font-medium text-sm text-gray-900 truncate">
+                              {resource.title}
+                            </div>
+                            {resource.description && (
+                              <div className="text-xs text-gray-500 truncate max-w-xs">
+                                {resource.description}
+                              </div>
+                            )}
                           </div>
                         </div>
-                        <Badge variant="leaf" size="sm" className="flex-shrink-0">
+                      </td>
+                      <td className="px-4 md:px-6 py-4">
+                        <div className="text-sm text-gray-900">{resource.subject.course.title}</div>
+                        <div className="text-xs text-gray-500">{resource.subject.title}</div>
+                      </td>
+                      <td className="px-4 md:px-6 py-4">
+                        <Badge variant="leaf" size="sm">
                           {resource.resource_type}
                         </Badge>
-                      </div>
-
-                      {resource.description && (
-                        <p className="text-xs md:text-sm text-gray-600 mb-3 line-clamp-2">
-                          {resource.description}
-                        </p>
-                      )}
-
-                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500">
-                          <span className="truncate max-w-[150px] md:max-w-none">By {resource.creator.first_name} {resource.creator.last_name}</span>
-                          <span className="hidden md:inline">•</span>
-                          <span className="whitespace-nowrap">{formatDate(resource.created_at)}</span>
-                          {resource.file_size && (
-                            <>
-                              <span className="hidden md:inline">•</span>
-                              <span className="whitespace-nowrap">{formatFileSize(resource.file_size)}</span>
-                            </>
-                          )}
-                        </div>
-
+                      </td>
+                      <td className="px-4 md:px-6 py-4 text-sm text-gray-900">
+                        {resource.creator.first_name} {resource.creator.last_name}
+                      </td>
+                      <td className="px-4 md:px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
+                        {formatDate(resource.created_at)}
+                      </td>
+                      <td className="px-4 md:px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
+                        {formatFileSize(resource.file_size) || '-'}
+                      </td>
+                      <td className="px-4 md:px-6 py-4 text-right">
                         <NatureButton
                           size="sm"
                           variant="leaf"
@@ -364,105 +379,73 @@ export default function LibraryPage() {
                             </svg>
                           }
                           iconPosition="right"
-                          className="w-full md:w-auto min-h-[44px] md:min-h-0"
                         >
                           Open
                         </NatureButton>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
 
-            {/* Table View - Only shown on desktop when selected */}
-            <div className={`hidden md:block ${viewMode === 'card' ? 'md:hidden' : ''}`}>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[800px]">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="px-4 md:px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                        Resource
-                      </th>
-                      <th className="px-4 md:px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                        Course / Subject
-                      </th>
-                      <th className="px-4 md:px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                        Type
-                      </th>
-                      <th className="px-4 md:px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                        Uploaded By
-                      </th>
-                      <th className="px-4 md:px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                        Date
-                      </th>
-                      <th className="px-4 md:px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                        Size
-                      </th>
-                      <th className="px-4 md:px-6 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                        Action
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {filteredResources.map((resource) => (
-                      <tr key={resource.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-4 md:px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className={`flex-shrink-0 w-10 h-10 rounded-lg ${getResourceTypeColor(resource.resource_type)} flex items-center justify-center`}>
-                              {getResourceIcon(resource.resource_type)}
-                            </div>
-                            <div className="min-w-0">
-                              <div className="font-medium text-sm text-gray-900 truncate">
-                                {resource.title}
-                              </div>
-                              {resource.description && (
-                                <div className="text-xs text-gray-500 truncate max-w-xs">
-                                  {resource.description}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-4 md:px-6 py-4">
-                          <div className="text-sm text-gray-900">{resource.subject.course.title}</div>
-                          <div className="text-xs text-gray-500">{resource.subject.title}</div>
-                        </td>
-                        <td className="px-4 md:px-6 py-4">
-                          <Badge variant="leaf" size="sm">
-                            {resource.resource_type}
-                          </Badge>
-                        </td>
-                        <td className="px-4 md:px-6 py-4 text-sm text-gray-900">
-                          {resource.creator.first_name} {resource.creator.last_name}
-                        </td>
-                        <td className="px-4 md:px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                          {formatDate(resource.created_at)}
-                        </td>
-                        <td className="px-4 md:px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                          {formatFileSize(resource.file_size) || '-'}
-                        </td>
-                        <td className="px-4 md:px-6 py-4 text-right">
-                          <NatureButton
-                            size="sm"
-                            variant="leaf"
-                            onClick={() => window.open(resource.resource_url, '_blank')}
-                            icon={
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                              </svg>
-                            }
-                            iconPosition="right"
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="px-4 md:px-6 py-4 border-t border-gray-200 bg-gray-50">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-gray-700">
+                    Page {currentPage} of {totalPages}
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={goToPreviousPage}
+                      disabled={currentPage === 1}
+                      className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Previous
+                    </button>
+                    
+                    {/* Page numbers */}
+                    <div className="flex items-center space-x-1">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNum
+                        if (totalPages <= 5) {
+                          pageNum = i + 1
+                        } else if (currentPage <= 3) {
+                          pageNum = i + 1
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i
+                        } else {
+                          pageNum = currentPage - 2 + i
+                        }
+                        
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => goToPage(pageNum)}
+                            className={`px-3 py-2 text-sm font-medium rounded-md ${
+                              currentPage === pageNum
+                                ? 'bg-fern-500 text-white'
+                                : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
+                            }`}
                           >
-                            Open
-                          </NatureButton>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                            {pageNum}
+                          </button>
+                        )
+                      })}
+                    </div>
+
+                    <button
+                      onClick={goToNextPage}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
           </>
         )}
       </div>
