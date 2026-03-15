@@ -44,7 +44,6 @@ export default function SchedulePage() {
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [scheduleToDelete, setScheduleToDelete] = useState<CourseSchedule | null>(null)
   const [scheduleToEdit, setScheduleToEdit] = useState<CourseSchedule | null>(null)
-  const [expandedScheduleId, setExpandedScheduleId] = useState<string | null>(null)
   const [selectedDateSchedules, setSelectedDateSchedules] = useState<CourseSchedule[]>([])
   const [showDateModal, setShowDateModal] = useState(false)
   const [selectedDateString, setSelectedDateString] = useState('')
@@ -164,6 +163,8 @@ export default function SchedulePage() {
         enrollment_type: 'trainee',
       })
       setShowAddModal(false)
+      // Navigate calendar to the new schedule's start date so it's immediately visible
+      setSelectedDate(new Date(startDateTime))
       await fetchData()
 
     } catch (error) {
@@ -355,8 +356,10 @@ export default function SchedulePage() {
     return `${displayHours}:${displayMinutes} ${ampm}`
   }
 
-  const formatTimeRange = (startDate: string, endDate: string) => {
-    return `${formatTime(startDate)} - ${formatTime(endDate)}`
+  const getEnrollmentLabel = (type: string) => {
+    if (type === 'trainee') return 'Student'
+    if (type === 'tesda_scholar') return 'Scholar'
+    return 'Both'
   }
 
   const getCourseColor = (courseId: string) => {
@@ -385,7 +388,7 @@ export default function SchedulePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
-      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         {/* Modern Header */}
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -400,9 +403,9 @@ export default function SchedulePage() {
               <button
                 onClick={() => setShowAddModal(true)}
                 className="px-5 py-2.5 text-white rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2 font-medium"
-                style={{ backgroundColor: '#588157' }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#3A5A40'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#588157'}
+                style={{ backgroundColor: '#1f7a8c' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#155f6e'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#1f7a8c'}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -414,276 +417,425 @@ export default function SchedulePage() {
         </div>
 
         {/* Main Content - Modern Two Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Calendar (2/3 width) */}
-          <div className="lg:col-span-2 bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
-            {/* Calendar Header */}
-            <div className="flex items-center justify-between p-6 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
-              <button
-                onClick={() => navigateMonth('prev')}
-                className="p-2.5 text-gray-400 hover:text-gray-700 hover:bg-white rounded-xl transition-all duration-200 shadow-sm hover:shadow"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-              
-              <h2 className="text-xl font-bold text-gray-900">
-                {selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-              </h2>
-              
-              <button
-                onClick={() => navigateMonth('next')}
-                className="p-2.5 text-gray-400 hover:text-gray-700 hover:bg-white rounded-xl transition-all duration-200 shadow-sm hover:shadow"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-            </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Left Column - Calendar (50%) */}
+          <div className="flex flex-col gap-6">
+            {/* Dashboard-style Calendar */}
+            <div className="rounded-xl p-4 shadow-sm border-2 border-gray-200 bg-white">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-gray-800">Calendar</h3>
+              </div>
 
-            {/* Calendar Grid */}
-            <div className="p-6">
-              {/* Day Headers */}
-              <div className="grid grid-cols-7 gap-2 mb-3">
-                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-                  <div key={day} className="p-2 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
+              {/* Month Navigation */}
+              <div className="flex items-center justify-between mb-4">
+                <button
+                  onClick={() => navigateMonth('prev')}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <h4 className="font-semibold text-gray-800">
+                  {selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                </h4>
+                <button
+                  onClick={() => navigateMonth('next')}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Calendar Grid */}
+              <div className="grid grid-cols-7 gap-1 mb-4">
+                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
+                  <div key={`day-${index}`} className="text-center text-xs font-medium text-gray-500 py-2">
                     {day}
                   </div>
                 ))}
-              </div>
-
-              {/* Calendar Days */}
-              <div className="grid grid-cols-7 gap-2">
                 {getMonthDates().map((date, index) => {
                   const daySchedules = getSchedulesForDate(date)
                   const isCurrentMonth = date.getMonth() === selectedDate.getMonth()
                   const isToday = date.toDateString() === new Date().toDateString()
-                  
+                  const hasEvent = daySchedules.length > 0
+
                   return (
-                    <div 
-                      key={index} 
-                      className={`bg-gray-50 rounded-lg min-h-[110px] p-3 transition-all duration-200 hover:shadow-md cursor-pointer ${
-                        !isCurrentMonth ? 'opacity-40' : 'hover:bg-white'
-                      }`}
+                    <div
+                      key={index}
                       onClick={() => {
-                        if (daySchedules.length > 0) {
+                        if (hasEvent) {
                           setSelectedDateSchedules(daySchedules)
                           setSelectedDateString(date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }))
                           setShowDateModal(true)
                         }
                       }}
+                      className={`text-center text-sm py-2 relative cursor-pointer transition-colors ${
+                        isToday
+                          ? 'text-white rounded-lg font-bold'
+                          : isCurrentMonth
+                          ? 'text-gray-700 hover:bg-gray-100 rounded-lg'
+                          : 'text-gray-300'
+                      }`}
+                      style={isToday ? { backgroundColor: '#1f7a8c' } : {}}
                     >
-                      {/* Date */}
-                      <div className={`text-sm font-bold mb-2 ${
-                        isToday 
-                          ? 'bg-gradient-to-r from-gray-900 to-gray-700 text-white rounded-full w-7 h-7 flex items-center justify-center shadow-md' 
-                          : 'text-gray-700'
-                      }`}>
-                        {date.getDate()}
-                      </div>
-
-                      {/* Schedules as Circles */}
-                      <div className="flex flex-wrap gap-1.5">
-                        {daySchedules.map((schedule) => {
-                          const color = getCourseColor(schedule.course_id)
-                          return (
-                            <div
-                              key={schedule.id}
-                              className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm hover:scale-110 transition-transform duration-200"
-                              style={{ backgroundColor: color }}
-                              title={`${schedule.title} - ${schedule.course_title}`}
-                            >
-                              {schedule.batch_number}
-                            </div>
-                          )
-                        })}
-                      </div>
+                      {date.getDate()}
+                      {hasEvent && (
+                        <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2">
+                          <div className={`w-1 h-1 rounded-full ${isToday ? 'bg-white' : 'bg-green-500'}`} />
+                        </div>
+                      )}
                     </div>
                   )
                 })}
               </div>
             </div>
-          </div>
 
-          {/* Right Column - Scheduled Courses (1/3 width) */}
-          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
-            <div className="p-6 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
-              <h3 className="text-lg font-bold text-gray-900">Scheduled Courses</h3>
-              <p className="text-sm text-gray-500 mt-1">
-                {schedules.length} course{schedules.length !== 1 ? 's' : ''} scheduled
-              </p>
-            </div>
-            
-            <div className="p-6">
-              <div className="space-y-3 max-h-[700px] overflow-y-auto custom-scrollbar">
-                {schedules.length === 0 ? (
-                  <div className="text-center py-16">
-                    <div className="w-20 h-20 mx-auto mb-4 flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-50 rounded-xl">
-                      <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            {/* Today's Events */}
+            {(() => {
+              const todayStr = new Date().toISOString().split('T')[0]
+              const todaysEvents = schedules.filter(s => {
+                const sd = new Date(s.start_date).toISOString().split('T')[0]
+                const ed = new Date(s.end_date).toISOString().split('T')[0]
+                return todayStr >= sd && todayStr <= ed
+              }).slice(0, 3)
+              return (
+                <div className="rounded-xl p-4 shadow-sm border-2 border-gray-200 bg-white">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center">
+                      <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900 mb-2">No schedules yet</h3>
-                    <p className="text-gray-500 mb-6 text-sm">Create your first course schedule to get started</p>
-                    <button 
-                      onClick={() => setShowAddModal(true)}
-                      className="px-5 py-2.5 text-white rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl font-medium"
-                      style={{ backgroundColor: '#588157' }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#3A5A40'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#588157'}
-                    >
-                      Create Schedule
-                    </button>
+                    <div>
+                      <h3 className="font-bold text-black">Today's Events</h3>
+                      <p className="text-xs text-black/70">{todaysEvents.length} scheduled</p>
+                    </div>
                   </div>
-                ) : (
-                  schedules.map((schedule) => {
-                    const color = getCourseColor(schedule.course_id)
-                    const isExpanded = expandedScheduleId === schedule.id
-                    
-                    return (
-                      <div key={schedule.id} className="group rounded-xl transition-all duration-200 border border-gray-200 hover:border-gray-300 hover:shadow-lg bg-white overflow-hidden">
-                        {/* Compact View */}
-                        <div className="p-4">
-                          <div className="flex items-center gap-3">
-                            <div 
-                              className="w-1 h-14 rounded-full shadow-sm flex-shrink-0"
-                              style={{ backgroundColor: color }}
-                            ></div>
-                            
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-bold text-gray-900 truncate">{schedule.title}</h4>
-                              <p className="text-sm text-gray-600 truncate">{schedule.course_title}</p>
-                              <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                {formatTimeRange(schedule.start_date, schedule.end_date)}
-                              </p>
-                            </div>
-                            
-                            {/* Action Buttons */}
-                            <div className="flex items-center gap-1 flex-shrink-0">
-                              <button
-                                onClick={() => setExpandedScheduleId(isExpanded ? null : schedule.id)}
-                                className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-200"
-                                title={isExpanded ? "Collapse" : "Expand"}
-                              >
-                                <svg 
-                                  className={`w-5 h-5 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} 
-                                  fill="none" 
-                                  stroke="currentColor" 
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
-                              </button>
-                              
-                              <button
-                                onClick={() => handleEditSchedule(schedule)}
-                                className="p-2 text-gray-400 hover:text-[#588157] hover:bg-[#588157]/10 rounded-lg transition-all duration-200"
-                                title="Edit schedule"
-                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
-                              </button>
-                              
-                              <button
-                                onClick={() => handleDeleteSchedule(schedule)}
-                                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
-                                title="Delete schedule"
-                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                              </button>
-                            </div>
+                  <div className="space-y-2">
+                    {todaysEvents.length > 0 ? todaysEvents.map(s => {
+                      const color = getCourseColor(s.course_id)
+                      const start = new Date(s.start_date)
+                      const end = new Date(s.end_date)
+                      const timeStr = `${start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} - ${end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`
+                      return (
+                        <div key={s.id} className="flex items-start space-x-2 p-2 bg-white rounded-lg border border-gray-200 hover:shadow-sm transition-all">
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${color}20` }}>
+                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-semibold text-black line-clamp-1">{s.title}</div>
+                            <div className="text-xs text-gray-600 mt-0.5">{s.course_title}</div>
+                            <div className="text-xs text-gray-500 mt-1">{timeStr}</div>
                           </div>
                         </div>
-                        
-                        {/* Expanded Details */}
-                        {isExpanded && (
-                          <div className="px-4 pb-4 pt-2 border-t border-gray-100 bg-gradient-to-b from-gray-50 to-white">
-                            <div className="space-y-3 ml-4">
-                              <div className="flex items-center justify-between text-sm">
-                                <span className="text-gray-500 font-medium">Batch</span>
-                                <span className="px-3 py-1 bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 rounded-full text-xs font-bold">
-                                  Batch {schedule.batch_number}
-                                </span>
-                              </div>
-                              
-                              <div className="flex items-center justify-between text-sm">
-                                <span className="text-gray-500 font-medium">Status</span>
-                                <span className={`px-3 py-1 text-xs rounded-full font-bold ${
-                                  schedule.status === 'active' ? 'bg-gradient-to-r from-green-50 to-green-100 text-green-700' :
-                                  schedule.status === 'completed' ? 'bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700' :
-                                  schedule.status === 'cancelled' ? 'bg-gradient-to-r from-red-50 to-red-100 text-red-700' :
-                                  'bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700'
-                                }`}>
-                                  {schedule.status}
-                                </span>
-                              </div>
-                              
-                              <div className="flex items-center justify-between text-sm">
-                                <span className="text-gray-500 font-medium">Duration</span>
-                                <span className="font-bold text-gray-900 text-xs">
-                                  {formatDateRange(schedule.start_date, schedule.end_date)}
-                                </span>
-                              </div>
+                      )
+                    }) : (
+                      <div className="text-center py-6">
+                        <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center mx-auto mb-3">
+                          <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                        <p className="text-sm font-medium text-black">No events today</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })()}
 
-                              <div className="flex items-center justify-between text-sm">
-                                <span className="text-gray-500 font-medium">Time</span>
-                                <span className="font-bold text-gray-900 text-xs flex items-center gap-1">
-                                  <svg className="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                  </svg>
-                                  {formatTimeRange(schedule.start_date, schedule.end_date)}
-                                </span>
-                              </div>
-
-                              {/* Filters Applied */}
-                              {(schedule.sections || schedule.grade_levels || schedule.strands || schedule.batch_numbers) && (
-                                <div className="mt-3 pt-3 border-t border-gray-200">
-                                  <p className="text-xs font-bold text-gray-700 mb-2">Target trainees</p>
-                                  <div className="flex flex-wrap gap-1.5">
-                                    {schedule.sections && schedule.sections.map(section => (
-                                      <span key={section} className="px-2.5 py-1 bg-blue-100 text-blue-800 text-xs rounded-lg font-semibold">
-                                        {section}
-                                      </span>
-                                    ))}
-                                    {schedule.grade_levels && schedule.grade_levels.map(grade => (
-                                      <span key={grade} className="px-2.5 py-1 bg-green-100 text-green-800 text-xs rounded-lg font-semibold">
-                                        Grade {grade}
-                                      </span>
-                                    ))}
-                                    {schedule.strands && schedule.strands.map(strand => (
-                                      <span key={strand} className="px-2.5 py-1 bg-purple-100 text-purple-800 text-xs rounded-lg font-semibold">
-                                        {strand}
-                                      </span>
-                                    ))}
-                                    {schedule.batch_numbers && schedule.batch_numbers.map(batch => (
-                                      <span key={batch} className="px-2.5 py-1 bg-orange-100 text-orange-800 text-xs rounded-lg font-semibold">
-                                        Batch {batch}
-                                      </span>
-                                    ))}
+            {/* Upcoming Schedule */}
+            {(() => {
+              const todayStr = new Date().toISOString().split('T')[0]
+              const upcoming = schedules
+                .filter(s => new Date(s.start_date).toISOString().split('T')[0] >= todayStr && (s.status === 'scheduled' || s.status === 'active'))
+                .sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime())
+                .slice(0, 5)
+              const getDaysUntil = (dateStr: string) => {
+                const diff = Math.ceil((new Date(dateStr).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+                if (diff === 0) return 'Today'
+                if (diff === 1) return 'Tomorrow'
+                if (diff < 7) return `${diff} days`
+                if (diff < 30) return `${Math.ceil(diff / 7)} weeks`
+                return `${Math.ceil(diff / 30)} months`
+              }
+              const fmtDate = (d: string) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+              const fmtTime = (d: string) => new Date(d).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+              return (
+                <div className="rounded-xl p-4 shadow-sm border-2 border-gray-200 bg-white">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center">
+                      <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-black">Upcoming Schedule</h3>
+                      <p className="text-xs text-black/70">Next events</p>
+                    </div>
+                  </div>
+                  {upcoming.length > 0 ? (
+                    <div className="space-y-2.5">
+                      {upcoming.map(s => {
+                        const color = getCourseColor(s.course_id)
+                        return (
+                          <div key={s.id} className="flex items-start space-x-3 p-3 bg-white rounded-lg border border-gray-200 hover:shadow-sm transition-all">
+                            <div className="w-8 h-8 rounded-lg mt-0.5 flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${color}20` }}>
+                              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <h4 className="text-sm font-semibold text-black truncate">{s.title}</h4>
+                                  <p className="text-xs text-gray-600 mt-0.5">{s.course_title} • Batch {s.batch_number}</p>
+                                  <div className="flex items-center space-x-2 mt-1">
+                                    <span className="text-xs text-gray-500">{fmtDate(s.start_date)} - {fmtDate(s.end_date)}</span>
+                                    <span className="text-xs text-gray-400">•</span>
+                                    <span className="text-xs text-gray-500">{fmtTime(s.start_date)}</span>
                                   </div>
                                 </div>
-                              )}
-                              
-                              {schedule.description && (
-                                <div className="mt-3 pt-3 border-t border-gray-200">
-                                  <p className="text-sm text-gray-600">{schedule.description}</p>
-                                </div>
-                              )}
+                                <span className="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ml-2 flex-shrink-0" style={{ backgroundColor: `${color}20`, color }}>
+                                  {getDaysUntil(s.start_date)}
+                                </span>
+                              </div>
                             </div>
                           </div>
-                        )}
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center mx-auto mb-3">
+                        <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
                       </div>
-                    )
-                  })
-                )}
+                      <p className="text-sm font-medium text-black">No upcoming schedules</p>
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
+          </div>
+
+          {/* Right Column - Day Schedule View */}
+          <div className="rounded-xl overflow-hidden flex flex-col shadow-sm border-2 border-gray-200">
+            {/* Blue Header */}
+            <div className="flex items-center justify-between px-4 py-3" style={{ backgroundColor: '#1f7a8c' }}>
+              <span className="text-white font-semibold text-sm">Day</span>
+              <div className="flex items-center gap-2 bg-white/20 rounded-lg px-3 py-1.5">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span className="text-white text-sm font-medium">
+                  {selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </span>
               </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => { const d = new Date(selectedDate); d.setDate(d.getDate() - 1); setSelectedDate(d) }}
+                  className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => { const d = new Date(selectedDate); d.setDate(d.getDate() + 1); setSelectedDate(d) }}
+                  className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Time Grid */}
+            <div className="bg-white flex-1 pt-3">
+              {(() => {
+                const SLOT_HEIGHT = 64 // px per hour
+                const START_HOUR = 8
+                const END_HOUR = 23 // 10 PM last label
+                const hours = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i)
+
+                // Get schedules active on selectedDate
+                const yr = selectedDate.getFullYear()
+                const mo = String(selectedDate.getMonth() + 1).padStart(2, '0')
+                const dy = String(selectedDate.getDate()).padStart(2, '0')
+                const dateStr = `${yr}-${mo}-${dy}`
+                const daySchedules = schedules.filter(s => {
+                  const sd = new Date(s.start_date)
+                  const ed = new Date(s.end_date)
+                  const sdStr = sd.getFullYear() + '-' + String(sd.getMonth()+1).padStart(2,'0') + '-' + String(sd.getDate()).padStart(2,'0')
+                  const edStr = ed.getFullYear() + '-' + String(ed.getMonth()+1).padStart(2,'0') + '-' + String(ed.getDate()).padStart(2,'0')
+                  return dateStr >= sdStr && dateStr <= edStr
+                })
+
+
+                const totalHeight = (END_HOUR - START_HOUR) * SLOT_HEIGHT
+
+                return (
+                  <div className="relative" style={{ height: `${totalHeight}px` }}>
+                    {/* Hour rows */}
+                    {hours.map((hour) => {
+                      const ampm = hour >= 12 ? 'PM' : 'AM'
+                      const display = `${hour % 12 || 12}:00 ${ampm}`
+                      const top = (hour - START_HOUR) * SLOT_HEIGHT
+                      return (
+                        <div key={hour} className="absolute left-0 right-0 flex" style={{ top: `${top}px`, height: `${SLOT_HEIGHT}px` }}>
+                          {/* Time label */}
+                          <div className="w-20 flex-shrink-0 text-right pr-3 pt-1">
+                            <span className="text-xs text-gray-400 font-medium">{display}</span>
+                          </div>
+                          {/* Row divider */}
+                          <div className="flex-1 border-t border-gray-100" />
+                        </div>
+                      )
+                    })}
+
+                    {/* Event blocks — overlap-aware column layout */}
+                    {(() => {
+                      const LEFT_OFFSET = 84
+                      const RIGHT_MARGIN = 12
+                      const GAP = 4
+
+                      // 1. Compute time bounds for every schedule on this day
+                      const events = daySchedules.map(s => {
+                        const sd = new Date(s.start_date)
+                        const ed = new Date(s.end_date)
+                        let sMins = sd.getHours() * 60 + sd.getMinutes()
+                        let eMins = ed.getHours() * 60 + ed.getMinutes()
+                        // fallback for date-only records → 8 AM–9 AM
+                        if (sMins === 0 && eMins === 0) { sMins = START_HOUR * 60; eMins = sMins + 60 }
+                        // ensure at least 1 min duration so overlap detection works
+                        if (eMins <= sMins) eMins = sMins + 60
+                        return { s, sMins, eMins, col: 0, numCols: 1 }
+                      })
+
+                      // 2. Build overlap groups (connected components)
+                      // Two events overlap if their time ranges intersect (strict)
+                      const n = events.length
+                      const parent = Array.from({ length: n }, (_, i) => i)
+                      const find = (x: number): number => parent[x] === x ? x : (parent[x] = find(parent[x]))
+                      const union = (a: number, b: number) => { parent[find(a)] = find(b) }
+
+                      for (let i = 0; i < n; i++) {
+                        for (let j = i + 1; j < n; j++) {
+                          if (events[i].sMins < events[j].eMins && events[j].sMins < events[i].eMins) {
+                            union(i, j)
+                          }
+                        }
+                      }
+
+                      // 3. For each group, assign columns greedily (sorted by start time)
+                      const groups: Record<number, number[]> = {}
+                      for (let i = 0; i < n; i++) {
+                        const root = find(i)
+                        if (!groups[root]) groups[root] = []
+                        groups[root].push(i)
+                      }
+
+                      Object.values(groups).forEach(indices => {
+                        // sort by start time within group
+                        indices.sort((a, b) => events[a].sMins - events[b].sMins)
+                        // colEnd[c] = end minute of last event placed in column c
+                        const colEnd: number[] = []
+                        indices.forEach(idx => {
+                          let placed = false
+                          for (let c = 0; c < colEnd.length; c++) {
+                            if (colEnd[c] <= events[idx].sMins) {
+                              colEnd[c] = events[idx].eMins
+                              events[idx].col = c
+                              placed = true
+                              break
+                            }
+                          }
+                          if (!placed) {
+                            events[idx].col = colEnd.length
+                            colEnd.push(events[idx].eMins)
+                          }
+                        })
+                        // all events in this group share the same numCols = total columns used
+                        const groupNumCols = colEnd.length
+                        indices.forEach(idx => { events[idx].numCols = groupNumCols })
+                      })
+
+                      // 4. Render
+                      return events.map(({ s, sMins, eMins, col, numCols }) => {
+                        const topPx = ((sMins - START_HOUR * 60) / 60) * SLOT_HEIGHT
+                        const heightPx = Math.max(((eMins - sMins) / 60) * SLOT_HEIGHT, 32)
+                        const color = getCourseColor(s.course_id)
+                        const sd = new Date(s.start_date)
+                        const startLabel = `${sd.getHours() % 12 || 12}:${String(sd.getMinutes()).padStart(2,'0')} ${sd.getHours() >= 12 ? 'pm' : 'am'}`
+
+                        // pixel-based positioning inside the event area
+                        // left = LEFT_OFFSET + col * slotWidth + col * GAP
+                        // width = slotWidth = (available - (numCols-1)*GAP) / numCols
+                        const slotWidthExpr = `(100% - ${LEFT_OFFSET + RIGHT_MARGIN + (numCols - 1) * GAP}px) / ${numCols}`
+                        const leftExpr = `${LEFT_OFFSET}px + ${col} * (${slotWidthExpr} + ${GAP}px)`
+
+                        return (
+                          <div
+                            key={s.id}
+                            className="absolute rounded-md px-3 py-2 overflow-hidden group transition-all border-l-4"
+                            style={{
+                              top: `${topPx}px`,
+                              height: `${heightPx}px`,
+                              left: `calc(${leftExpr})`,
+                              width: `calc(${slotWidthExpr})`,
+                              backgroundColor: '#ffffff',
+                              borderLeftColor: color,
+                              borderTopColor: '#e5e7eb',
+                              borderRightColor: '#e5e7eb',
+                              borderBottomColor: '#e5e7eb',
+                              borderTopWidth: '1px',
+                              borderRightWidth: '1px',
+                              borderBottomWidth: '1px',
+                            }}
+                          >
+                            <div className="flex items-start justify-between gap-2 h-full">
+                              <div className="min-w-0 flex-1">
+                                <div className="text-xs font-medium" style={{ color }}>{startLabel}</div>
+                                <div className="text-sm font-bold truncate text-gray-800">{s.title}</div>
+                                {s.course_title && <div className="text-xs text-gray-500 truncate">{s.course_title}</div>}
+                              </div>
+                              <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                                <span className="text-xs font-semibold" style={{ color }}>Batch {s.batch_number}</span>
+                                <div className="hidden group-hover:flex items-center gap-1 mt-1">
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleEditSchedule(s) }}
+                                    className="p-1 rounded-md hover:bg-gray-100 transition-colors"
+                                    title="Edit"
+                                  >
+                                    <svg className="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                  </button>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleDeleteSchedule(s) }}
+                                    className="p-1 rounded-md hover:bg-red-50 transition-colors"
+                                    title="Delete"
+                                  >
+                                    <svg className="w-3.5 h-3.5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })
+                    })()}
+
+
+                  </div>
+                )
+              })()}
             </div>
           </div>
         </div>
@@ -808,8 +960,9 @@ export default function SchedulePage() {
                     onChange={(e) => setNewSchedule(prev => ({ ...prev, enrollment_type: e.target.value as any }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                   >
-                    <option value="trainee">trainees</option>
-                    <option value="tesda_scholar">TESDA Scholars</option>
+                    <option value="trainee">Student</option>
+                    <option value="tesda_scholar">Scholar</option>
+                    <option value="both">Both</option>
                   </select>
                 </div>
 
@@ -829,7 +982,7 @@ export default function SchedulePage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-6 py-2 bg-[#588157] text-white rounded-lg hover:bg-[#3a5a40] transition-colors disabled:opacity-50 flex items-center space-x-2"
+                  className="px-6 py-2 bg-[#1f7a8c] text-white rounded-lg hover:bg-[#155f6e] transition-colors disabled:opacity-50 flex items-center space-x-2"
                 >
                   {submitting && <ButtonLoading />}
                   <span>{submitting ? 'Creating...' : 'Create Schedule'}</span>
@@ -961,8 +1114,9 @@ export default function SchedulePage() {
                     onChange={(e) => setNewSchedule(prev => ({ ...prev, enrollment_type: e.target.value as any }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                   >
-                    <option value="trainee">trainees</option>
-                    <option value="tesda_scholar">TESDA Scholars</option>
+                    <option value="trainee">Student</option>
+                    <option value="tesda_scholar">Scholar</option>
+                    <option value="both">Both</option>
                   </select>
                 </div>
 
@@ -985,7 +1139,7 @@ export default function SchedulePage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-6 py-2 bg-[#588157] text-white rounded-lg hover:bg-[#3a5a40] transition-colors disabled:opacity-50 flex items-center space-x-2"
+                  className="px-6 py-2 bg-[#1f7a8c] text-white rounded-lg hover:bg-[#155f6e] transition-colors disabled:opacity-50 flex items-center space-x-2"
                 >
                   {submitting && <ButtonLoading />}
                   <span>{submitting ? 'Updating...' : 'Update Schedule'}</span>
@@ -1126,7 +1280,7 @@ export default function SchedulePage() {
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                           </svg>
-                          <span className="capitalize">{schedule.enrollment_type.replace('_', ' ')}</span>
+                          <span>{getEnrollmentLabel(schedule.enrollment_type)}</span>
                         </div>
                       </div>
 

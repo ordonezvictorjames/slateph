@@ -42,24 +42,12 @@ export default function Sidebar({ currentPage, onPageChange, hideHamburger = fal
     }))
   }
 
-  // Helper function to get button styles
+  // Helper function to get button styles (background only — icon/text colored separately)
   const getButtonStyle = (isActive: boolean, isDisabled: boolean = false) => {
-    if (isDisabled) {
-      return {
-        color: '#9ca3af',
-        backgroundColor: 'transparent'
-      }
-    }
     if (isActive) {
-      return {
-        color: '#1f7a8c',
-        backgroundColor: '#e6f7f9'
-      }
+      return { backgroundColor: '#1f7a8c' }
     }
-    return {
-      color: '#6b7280',
-      backgroundColor: 'transparent'
-    }
+    return { backgroundColor: 'transparent' }
   }
 
   // Load enabled sections from Supabase
@@ -501,9 +489,9 @@ export default function Sidebar({ currentPage, onPageChange, hideHamburger = fal
                           } rounded-lg transition-all duration-200 group`}
                           style={getButtonStyle(currentPage === item.id, item.disabled)}
                         >
-                          <span className="flex-shrink-0">{item.icon}</span>
+                          <span className="flex-shrink-0" style={{ color: currentPage === item.id ? '#ffffff' : '#1f7a8c' }}>{item.icon}</span>
                           {(isHovered || isMobileOpen) && (
-                            <span className="ml-3 text-xs whitespace-nowrap overflow-hidden flex items-center gap-2">
+                            <span className="ml-3 text-xs whitespace-nowrap overflow-hidden flex items-center gap-2" style={{ color: currentPage === item.id ? '#ffffff' : '#000000' }}>
                               {item.label}
                               {item.disabled && (
                                 <span className="text-xs text-red-600 font-semibold">soon</span>
