@@ -435,7 +435,6 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
           strand: newUser.strand,
           section: newUser.section,
           grade: newUser.grade,
-          ...(newUser.password && { password: newUser.password })
         })
         .eq('id', editingUser.id)
 
@@ -443,6 +442,19 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
         console.error('Error updating user:', error)
         showError('Error updating user', error.message)
         return
+      }
+
+      // Hash and update password separately if provided
+      if (newUser.password) {
+        const { data: pwData, error: pwError } = await supabase.rpc('update_user_password', {
+          p_user_id: editingUser.id,
+          p_new_password: newUser.password
+        })
+        if (pwError || (pwData && !pwData.success)) {
+          console.error('Error updating password:', pwError || pwData?.message)
+          showError('Error updating password', pwError?.message || pwData?.message)
+          return
+        }
       }
 
       // Log the user update activity
