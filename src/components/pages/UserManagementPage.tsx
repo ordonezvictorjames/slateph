@@ -11,6 +11,7 @@ import { getRoleColor, getRoleLabel } from '@/utils/roleUtils'
 import InactiveDeletionCountdown from '@/components/InactiveDeletionCountdown'
 import LastLoginCountdown from '@/components/LastLoginCountdown'
 import UserSessionsModal from '@/components/UserSessionsModal'
+import CustomSelect from '@/components/ui/CustomSelect'
 
 interface UserData {
   id: string
@@ -29,7 +30,6 @@ interface UserData {
   grade?: number | null
   batch_number?: number | null
   courses?: string[]
-  account_tier?: 'visitor' | 'beginner' | 'intermediate' | 'expert' | 'vip'
   account_expires_at?: string | null
   account_duration_days?: number | null
   inactive_since?: string | null
@@ -48,7 +48,7 @@ interface Profile {
   strand?: string | null
   section?: string | null
   grade?: number | null
-  account_tier?: 'visitor' | 'beginner' | 'intermediate' | 'expert' | 'vip'
+  batch_number?: number | null
   account_expires_at?: string | null
   account_duration_days?: number | null
   inactive_since?: string | null
@@ -57,6 +57,14 @@ interface Profile {
 
 
 
+
+const SHS_ACADEMIC_STRANDS = [
+  'Arts, Social Sciences, and Humanities',
+  'Business and Entrepreneurship',
+  'Science, Technology, Engineering, and Mathematics (STEM)',
+  'Sports, Health, and Wellness',
+  'Field Experience',
+]
 
 const scientistSections = [
   'Einstein',
@@ -129,7 +137,6 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
     section: null,
     grade: null,
     batch_number: null,
-    account_tier: 'visitor'
   })
 
   const handleInputChange = (field: keyof NewUser, value: string | number | null) => {
@@ -154,7 +161,6 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
       section: null,
       grade: null,
       batch_number: null,
-      account_tier: 'visitor'
     })
     setUploadedImage(null)
   }
@@ -243,14 +249,15 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
       const insertedUser = data?.user
 
       // Update avatar, strand, section, and grade if needed
-      if (insertedUser && (newUser.avatar_url || newUser.strand || newUser.section || newUser.grade)) {
+      if (insertedUser && (newUser.avatar_url || newUser.strand || newUser.section || newUser.grade || newUser.batch_number)) {
         await supabase
           .from('profiles')
           .update({ 
             avatar_url: newUser.avatar_url,
             strand: newUser.strand,
             section: newUser.section,
-            grade: newUser.grade
+            grade: newUser.grade,
+            batch_number: newUser.batch_number,
           })
           .eq('id', insertedUser.id)
       }
@@ -282,7 +289,6 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
         section: null,
         grade: null,
         batch_number: null,
-        account_tier: 'visitor'
       })
       setUploadedImage(null)
       setShowAddModal(false)
@@ -311,7 +317,6 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
       section: userData.section || null,
       grade: userData.grade || null,
       batch_number: userData.batch_number || null,
-      account_tier: userData.account_tier || 'visitor'
     })
     
     // Reset avatar states first
@@ -357,27 +362,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
 
       console.log('Updating user with avatar:', finalAvatarUrl) // Debug log
 
-      // Update account tier if changed
-      if (newUser.account_tier && editingUser.account_tier !== newUser.account_tier) {
-        const { data: tierData, error: tierError } = await supabase.rpc('update_account_tier', {
-          p_user_id: editingUser.id,
-          p_tier: newUser.account_tier
-        })
-
-        if (tierError) {
-          console.error('Error updating account tier:', tierError)
-          showError('Error updating account tier', tierError.message)
-          setSubmitting(false)
-          return
-        }
-
-        if (tierData && !tierData.success) {
-          showError('Error updating account tier', tierData.message)
-          setSubmitting(false)
-          return
-        }
-      }
-
+      // Update profile fields
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -390,6 +375,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
           strand: newUser.strand,
           section: newUser.section,
           grade: newUser.grade,
+          batch_number: newUser.batch_number,
         })
         .eq('id', editingUser.id)
 
@@ -481,7 +467,6 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
         section: null,
         grade: null,
         batch_number: null,
-        account_tier: 'visitor'
       })
       setEditingUser(null)
       setUploadedImage(null)
@@ -604,185 +589,154 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
         </div>
       </div>
 
-      {/* Add User Button */}
-      <div className="mb-6">
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="px-6 py-3 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-all font-medium flex items-center gap-2 shadow-lg hover:shadow-xl"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Add New User
-        </button>
-      </div>
+      {/* Filters + Stats combined panel */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 mb-6 overflow-hidden">
 
-      {/* Filters */}
-      <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100 mb-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Stats row */}
+        <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 divide-x divide-gray-100">
+          {/* Total */}
+          <div className="flex flex-col items-center justify-center px-3 py-4 gap-1">
+            <p className="text-xl font-bold text-primary-700 leading-none">{users.length}</p>
+            <p className="text-xs text-gray-400 leading-none">Total</p>
+          </div>
+          {/* Admin */}
+          <div className="flex flex-col items-center justify-center px-3 py-4 gap-1">
+            <p className="text-xl font-bold text-primary-700 leading-none">{users.filter(u => u.role === 'admin').length}</p>
+            <p className="text-xs text-gray-400 leading-none">Admin</p>
+          </div>
+          {/* Developer */}
+          <div className="flex flex-col items-center justify-center px-3 py-4 gap-1">
+            <p className="text-xl font-bold text-primary-700 leading-none">{users.filter(u => u.role === 'developer').length}</p>
+            <p className="text-xs text-gray-400 leading-none">Developer</p>
+          </div>
+          {/* Instructor */}
+          <div className="flex flex-col items-center justify-center px-3 py-4 gap-1">
+            <p className="text-xl font-bold text-primary-700 leading-none">{users.filter(u => u.role === 'instructor').length}</p>
+            <p className="text-xs text-gray-400 leading-none">Instructor</p>
+          </div>
+          {/* JHS */}
+          <div className="flex flex-col items-center justify-center px-3 py-4 gap-1">
+            <p className="text-xl font-bold text-primary-700 leading-none">{users.filter(u => u.role === 'jhs_student').length}</p>
+            <p className="text-xs text-gray-400 leading-none">JHS</p>
+          </div>
+          {/* SHS */}
+          <div className="flex flex-col items-center justify-center px-3 py-4 gap-1">
+            <p className="text-xl font-bold text-primary-700 leading-none">{users.filter(u => u.role === 'shs_student').length}</p>
+            <p className="text-xs text-gray-400 leading-none">SHS</p>
+          </div>
+          {/* College */}
+          <div className="flex flex-col items-center justify-center px-3 py-4 gap-1">
+            <p className="text-xl font-bold text-primary-700 leading-none">{users.filter(u => u.role === 'college_student').length}</p>
+            <p className="text-xs text-gray-400 leading-none">College</p>
+          </div>
+          {/* Scholar */}
+          <div className="flex flex-col items-center justify-center px-3 py-4 gap-1">
+            <p className="text-xl font-bold text-primary-700 leading-none">{users.filter(u => u.role === 'scholar').length}</p>
+            <p className="text-xs text-gray-400 leading-none">Scholar</p>
+          </div>
+          {/* Guest */}
+          <div className="flex flex-col items-center justify-center px-3 py-4 gap-1">
+            <p className="text-xl font-bold text-primary-700 leading-none">{users.filter(u => u.role === 'guest').length}</p>
+            <p className="text-xs text-gray-400 leading-none">Guest</p>
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div className="border-t border-gray-100" />
+
+        {/* Filter row */}
+        <div className="flex flex-wrap items-end gap-3 px-5 py-4">
           {/* Search */}
-          <div className="md:col-span-1">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+          <div className="flex-1 min-w-[180px]">
+            <label className="block text-xs font-medium text-gray-400 mb-1">Search</label>
             <div className="relative">
               <input
                 type="text"
-                placeholder="Search by name or email..."
+                placeholder="Name or email..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent bg-gray-50"
               />
-              <svg className="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
           </div>
 
-          {/* Role Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
-            <select
+          {/* Role */}
+          <div className="min-w-[140px]">
+            <label className="block text-xs font-medium text-gray-400 mb-1">Role</label>
+            <CustomSelect
               value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-            >
-              <option value="all">All Roles</option>
-              <option value="admin">Admin</option>
-              <option value="developer">Developer</option>
-              <option value="instructor">Instructor</option>
-              <option value="jhs_student">JHS Student</option>
-              <option value="shs_student">SHS Student</option>
-              <option value="college_student">College Student</option>
-              <option value="scholar">TESDA Scholar</option>
-              <option value="guest">Guest</option>
-            </select>
+              onChange={setRoleFilter}
+              options={[
+                { value: 'all', label: 'All Roles' },
+                { value: 'admin', label: 'Admin' },
+                { value: 'developer', label: 'Developer' },
+                { value: 'instructor', label: 'Instructor' },
+                { value: 'jhs_student', label: 'JHS Student' },
+                { value: 'shs_student', label: 'SHS Student' },
+                { value: 'college_student', label: 'College Student' },
+                { value: 'scholar', label: 'TESDA Scholar' },
+                { value: 'guest', label: 'Guest' },
+              ]}
+            />
           </div>
 
-          {/* Status Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-            <select
+          {/* Status */}
+          <div className="min-w-[130px]">
+            <label className="block text-xs font-medium text-gray-400 mb-1">Status</label>
+            <CustomSelect
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-            >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-              <option value="pending">Pending</option>
-            </select>
+              onChange={setStatusFilter}
+              options={[
+                { value: 'all', label: 'All Status' },
+                { value: 'active', label: 'Active' },
+                { value: 'inactive', label: 'Inactive' },
+                { value: 'pending', label: 'Pending' },
+              ]}
+            />
           </div>
 
-          {/* View Toggle */}
+          {/* View toggle */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">View</label>
-            <div className="flex gap-2">
+            <label className="block text-xs font-medium text-gray-400 mb-1">View</label>
+            <div className="flex gap-1 p-1 bg-gray-100 rounded-lg">
               <button
                 onClick={() => setViewMode('list')}
-                className={`flex-1 px-4 py-2 rounded-lg border transition-colors flex items-center justify-center gap-2 ${
-                  viewMode === 'list'
-                    ? 'bg-primary-500 text-white border-primary-500'
-                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                title="List view"
+                className={`px-2.5 py-1 rounded-md transition-all flex items-center justify-center ${
+                  viewMode === 'list' ? 'bg-white text-primary-500 shadow-sm' : 'text-gray-400 hover:text-gray-600'
                 }`}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
                 </svg>
-                <span className="text-sm font-medium">List</span>
               </button>
               <button
                 onClick={() => setViewMode('card')}
-                className={`flex-1 px-4 py-2 rounded-lg border transition-colors flex items-center justify-center gap-2 ${
-                  viewMode === 'card'
-                    ? 'bg-primary-500 text-white border-primary-500'
-                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                title="Card view"
+                className={`px-2.5 py-1 rounded-md transition-all flex items-center justify-center ${
+                  viewMode === 'card' ? 'bg-white text-primary-500 shadow-sm' : 'text-gray-400 hover:text-gray-600'
                 }`}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                 </svg>
-                <span className="text-sm font-medium">Card</span>
               </button>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Statistics Summary */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-        {/* Total Users */}
-        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 mb-1">Total Users</p>
-              <p className="text-2xl font-bold text-gray-900">{users.length}</p>
-            </div>
-            <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-              <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        {/* Admins */}
-        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 mb-1">Admins</p>
-              <p className="text-2xl font-bold text-purple-600">{users.filter(u => u.role === 'admin').length}</p>
-            </div>
-            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        {/* Instructors */}
-        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 mb-1">Instructors</p>
-              <p className="text-2xl font-bold text-green-600">{users.filter(u => u.role === 'instructor').length}</p>
-            </div>
-            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        {/* Students */}
-        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 mb-1">Students</p>
-              <p className="text-2xl font-bold text-orange-600">{users.filter(u => u.role === 'shs_student' || u.role === 'jhs_student' || u.role === 'college_student').length}</p>
-            </div>
-            <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-              <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        {/* Scholars */}
-        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 mb-1">Scholars</p>
-              <p className="text-2xl font-bold text-primary-500">{users.filter(u => u.role === 'scholar').length}</p>
-            </div>
-            <div className="w-12 h-12 bg-primary-500/20 rounded-lg flex items-center justify-center">
-              <svg className="w-6 h-6 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-              </svg>
-            </div>
-          </div>
+          {/* Add User */}
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="px-4 py-1.5 bg-primary-500 text-white text-sm font-medium rounded-lg hover:bg-primary-600 transition-all flex items-center gap-1.5 shrink-0"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Add User
+          </button>
         </div>
       </div>
 
@@ -797,24 +751,25 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tier</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tier Expiration</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grade</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Section</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cluster</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Strand</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Batch</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account Life</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
                   <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="px-6 py-12 text-center">
+                  <td colSpan={6} className="px-6 py-12 text-center">
                     <Loading size="md" />
                   </td>
                 </tr>
               ) : filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-6 py-12 text-center">
+                  <td colSpan={6} className="px-6 py-12 text-center">
                     <div className="text-gray-400 mb-2">
                       <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -858,7 +813,8 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                               created_at: u.created_at,
                               strand: u.strand,
                               section: u.section,
-                              grade: u.grade
+                              grade: u.grade,
+                              batch_number: u.batch_number
                             })}
                             className="text-sm font-medium text-indigo-600 hover:text-indigo-900 hover:underline cursor-pointer transition-colors"
                           >
@@ -903,111 +859,51 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                         )}
                       </div>
                     </td>
-                    {/* Status Icon */}
-                    <td className="px-4 py-2 whitespace-nowrap">
-                      <div 
-                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                          u.status === 'active' ? 'bg-green-100 text-green-800' :
-                          u.status === 'inactive' ? 'bg-red-100 text-red-800' :
-                          'bg-yellow-100 text-yellow-800'
-                        }`}
-                        title={u.status || 'active'}
-                      >
-                        {u.status === 'active' ? (
-                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                          </svg>
-                        ) : u.status === 'inactive' ? (
-                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                          </svg>
-                        ) : (
-                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
-                          </svg>
-                        )}
-                      </div>
+                    {/* Grade Column */}
+                    <td className="px-4 py-2 whitespace-nowrap text-xs text-gray-600">
+                      {(u.role === 'jhs_student' || u.role === 'shs_student') && u.grade
+                        ? <span>Grade {u.grade}</span>
+                        : <span className="text-gray-300">—</span>}
                     </td>
-                    {/* Tier Icon */}
-                    <td className="px-4 py-2 whitespace-nowrap">
-                      {u.account_tier && (
-                        <div 
-                          className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                            u.account_tier === 'visitor' ? 'bg-gray-100 text-gray-800' :
-                            u.account_tier === 'beginner' ? 'bg-blue-100 text-blue-800' :
-                            u.account_tier === 'intermediate' ? 'bg-purple-100 text-purple-800' :
-                            u.account_tier === 'expert' ? 'bg-orange-100 text-orange-800' :
-                            'bg-green-100 text-green-800'
-                          }`}
-                          title={u.account_tier.charAt(0).toUpperCase() + u.account_tier.slice(1)}
-                        >
-                          {u.account_tier === 'visitor' ? (
-                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                              <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
-                            </svg>
-                          ) : u.account_tier === 'vip' ? (
-                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                            </svg>
-                          ) : (
-                            <span className="text-sm font-bold">
-                              {u.account_tier.charAt(0).toUpperCase()}
-                            </span>
-                          )}
-                        </div>
-                      )}
+                    {/* Section Column */}
+                    <td className="px-4 py-2 whitespace-nowrap text-xs text-gray-600">
+                      {(u.role === 'jhs_student' || u.role === 'shs_student' || u.role === 'college_student') && u.section
+                        ? <span>Section {u.section}</span>
+                        : <span className="text-gray-300">—</span>}
                     </td>
-                    {/* Tier Expiration Column */}
-                    <td className="px-4 py-2 whitespace-nowrap">
-                      {u.account_expires_at && u.account_tier !== 'vip' ? (
-                        (() => {
-                          const expirationDate = new Date(u.account_expires_at)
-                          const now = new Date()
-                          const diff = expirationDate.getTime() - now.getTime()
-                          const daysLeft = Math.floor(diff / (1000 * 60 * 60 * 24))
-                          const hoursLeft = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-                          const minutesLeft = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-                          const isExpired = diff <= 0
-                          const isExpiringSoon = daysLeft === 0
-                          
-                          return (
-                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              isExpired ? 'bg-red-100 text-red-800' :
-                              isExpiringSoon ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-blue-100 text-blue-800'
-                            }`}>
-                              {isExpired ? 'Expired' : `${daysLeft}d ${hoursLeft}h ${minutesLeft}m`}
-                            </span>
-                          )
-                        })()
-                      ) : u.account_tier === 'vip' ? (
-                        <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                          Permanent
-                        </span>
-                      ) : null}
+                    {/* Cluster Column */}
+                    <td className="px-4 py-2 whitespace-nowrap text-xs text-gray-600">
+                      {u.role === 'shs_student' && u.strand
+                        ? <span>{SHS_ACADEMIC_STRANDS.includes(u.strand) ? 'Academic' : 'Technical'}</span>
+                        : <span className="text-gray-300">—</span>}
+                    </td>
+                    {/* Strand Column */}
+                    <td className="px-4 py-2 text-xs text-gray-600 max-w-[160px]">
+                      {u.role === 'shs_student' && u.strand
+                        ? <span className="block truncate" title={u.strand}>{u.strand}</span>
+                        : <span className="text-gray-300">—</span>}
+                    </td>
+                    {/* Batch Column */}
+                    <td className="px-4 py-2 whitespace-nowrap text-xs text-gray-600">
+                      {u.role === 'scholar' && u.batch_number
+                        ? <span>Batch {u.batch_number}</span>
+                        : <span className="text-gray-300">—</span>}
                     </td>
                     {/* Account Life Column */}
                     <td className="px-4 py-2 whitespace-nowrap">
-                      {u.account_tier !== 'vip' && u.last_login_at ? (
+                      {u.last_login_at ? (
                         <LastLoginCountdown 
                           lastLoginAt={u.last_login_at} 
                           isDeveloper={u.role === 'developer'}
                         />
-                      ) : u.account_tier === 'vip' ? (
-                        <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                          No limit
-                        </span>
                       ) : (
                         <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
                           Never logged in
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(u.created_at).toLocaleDateString()}
-                    </td>
                     <td className="px-4 py-2 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex items-center justify-end gap-2">
                       <button
                         onClick={() => {
                           setSelectedUserForSessions({
@@ -1022,14 +918,15 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                             created_at: u.created_at,
                             strand: u.strand,
                             section: u.section,
-                            grade: u.grade
+                            grade: u.grade,
+                            batch_number: u.batch_number
                           })
                           setShowSessionsModal(true)
                         }}
-                        className="text-blue-600 hover:text-blue-900 mr-2"
+                        className="p-1.5 rounded-lg text-primary-500 hover:text-primary-700 hover:bg-primary-50 transition-colors"
                         title="View Sessions"
                       >
-                        <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                         </svg>
                       </button>
@@ -1046,12 +943,13 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                           created_at: u.created_at,
                           strand: u.strand,
                           section: u.section,
-                          grade: u.grade
+                          grade: u.grade,
+                          batch_number: u.batch_number
                         })}
-                        className="text-indigo-600 hover:text-indigo-900 mr-2"
+                        className="p-1.5 rounded-lg text-primary-500 hover:text-primary-700 hover:bg-primary-50 transition-colors"
                         title="Edit User"
                       >
-                        <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
                       </button>
@@ -1068,15 +966,17 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                           created_at: u.created_at,
                           strand: u.strand,
                           section: u.section,
-                          grade: u.grade
+                          grade: u.grade,
+                          batch_number: u.batch_number
                         })}
-                        className="text-red-600 hover:text-red-900"
+                        className="p-1.5 rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors"
                         title="Delete User"
                       >
-                        <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
                       </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -1137,7 +1037,8 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                           created_at: u.created_at,
                           strand: u.strand,
                           section: u.section,
-                          grade: u.grade
+                          grade: u.grade,
+                          batch_number: u.batch_number
                         })}
                         className="font-semibold text-indigo-600 hover:text-indigo-900 hover:underline cursor-pointer transition-colors text-left"
                       >
@@ -1173,55 +1074,12 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                     }`}>
                       {u.status || 'active'}
                     </span>
-                    {/* Account Tier Badge */}
-                    {u.account_tier && (
-                      <span className={`px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        u.account_tier === 'visitor' ? 'bg-gray-100 text-gray-800' :
-                        u.account_tier === 'beginner' ? 'bg-blue-100 text-blue-800' :
-                        u.account_tier === 'intermediate' ? 'bg-purple-100 text-purple-800' :
-                        u.account_tier === 'expert' ? 'bg-orange-100 text-orange-800' :
-                        'bg-green-100 text-green-800'
-                      }`}>
-                        Tier: {u.account_tier.charAt(0).toUpperCase() + u.account_tier.slice(1)}
-                      </span>
-                    )}
-                    {/* Tier Expiration Countdown (from creation date) */}
-                    {u.account_expires_at && u.account_tier !== 'vip' ? (
-                      (() => {
-                        const expirationDate = new Date(u.account_expires_at)
-                        const now = new Date()
-                        const diff = expirationDate.getTime() - now.getTime()
-                        const daysLeft = Math.floor(diff / (1000 * 60 * 60 * 24))
-                        const hoursLeft = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-                        const minutesLeft = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-                        const isExpired = diff <= 0
-                        const isExpiringSoon = daysLeft === 0
-                        
-                        return (
-                          <span className={`px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            isExpired ? 'bg-red-100 text-red-800' :
-                            isExpiringSoon ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-blue-100 text-blue-800'
-                          }`}>
-                            Expires: {isExpired ? 'Now' : `${daysLeft}d ${hoursLeft}h ${minutesLeft}m`}
-                          </span>
-                        )
-                      })()
-                    ) : u.account_tier === 'vip' ? (
-                      <span className="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                        Permanent
-                      </span>
-                    ) : null}
                     {/* Account Life - Inactivity Countdown (3 days from last login) */}
-                    {u.account_tier !== 'vip' && u.last_login_at ? (
+                    {u.last_login_at ? (
                       <LastLoginCountdown 
                         lastLoginAt={u.last_login_at} 
                         isDeveloper={u.role === 'developer'}
                       />
-                    ) : u.account_tier === 'vip' ? (
-                      <span className="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                        Activity: No limit
-                      </span>
                     ) : (
                       <span className="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
                         Never logged in
@@ -1250,7 +1108,8 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                         created_at: u.created_at,
                         strand: u.strand,
                         section: u.section,
-                        grade: u.grade
+                        grade: u.grade,
+                        batch_number: u.batch_number
                       })}
                       className="flex-1 px-3 py-2 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600 transition-colors"
                     >
@@ -1269,7 +1128,8 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                         created_at: u.created_at,
                         strand: u.strand,
                         section: u.section,
-                        grade: u.grade
+                        grade: u.grade,
+                        batch_number: u.batch_number
                       })}
                       className="flex-1 px-3 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
                     >
@@ -1428,15 +1288,19 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Role
                       </label>
-                      <select
+                      <CustomSelect
                         value={newUser.role}
-                        onChange={(e) => handleInputChange('role', e.target.value)}
-                        className="w-full px-4 py-3 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all bg-white"
-                      >
-                        <option value="trainee">trainee</option>
-                        <option value="trainee">trainee</option>
-                        <option value="admin">Admin</option>
-                      </select>
+                        onChange={(v) => handleInputChange('role', v)}
+                        options={[
+                          { value: 'jhs_student', label: 'JHS Student' },
+                          { value: 'shs_student', label: 'SHS Student' },
+                          { value: 'college_student', label: 'College Student' },
+                          { value: 'scholar', label: 'TESDA Scholar' },
+                          { value: 'instructor', label: 'Instructor' },
+                          { value: 'admin', label: 'Admin' },
+                          { value: 'developer', label: 'Developer' },
+                        ]}
+                      />
                     </div>
                   </div>
 
@@ -1446,23 +1310,23 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         SHS Strand
                       </label>
-                      <select
+                      <CustomSelect
                         value={newUser.strand || ''}
-                        onChange={(e) => handleInputChange('strand', e.target.value || null)}
-                        className="w-full px-4 py-3 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all bg-white"
-                      >
-                        <option value="">Select Strand</option>
-                        <option value="STEM">STEM</option>
-                        <option value="ABM">ABM</option>
-                        <option value="HUMSS">HUMSS</option>
-                        <option value="GAS">GAS</option>
-                        <option value="TVL-ICT">TVL-ICT</option>
-                        <option value="TVL-HE">TVL-HE</option>
-                        <option value="TVL-IA">TVL-IA</option>
-                        <option value="TVL-Agri">TVL-Agri</option>
-                        <option value="Arts and Design">Arts and Design</option>
-                        <option value="Sports">Sports</option>
-                      </select>
+                        onChange={(v) => handleInputChange('strand', v || null)}
+                        options={[
+                          { value: 'STEM', label: 'STEM' },
+                          { value: 'ABM', label: 'ABM' },
+                          { value: 'HUMSS', label: 'HUMSS' },
+                          { value: 'GAS', label: 'GAS' },
+                          { value: 'TVL-ICT', label: 'TVL-ICT' },
+                          { value: 'TVL-HE', label: 'TVL-HE' },
+                          { value: 'TVL-IA', label: 'TVL-IA' },
+                          { value: 'TVL-Agri', label: 'TVL-Agri' },
+                          { value: 'Arts and Design', label: 'Arts and Design' },
+                          { value: 'Sports', label: 'Sports' },
+                        ]}
+                        placeholder="Select Strand"
+                      />
                     </div>
                   )}
 
@@ -1473,16 +1337,12 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Section
                         </label>
-                        <select
+                        <CustomSelect
                           value={newUser.section || ''}
-                          onChange={(e) => handleInputChange('section', e.target.value || null)}
-                          className="w-full px-4 py-3 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all bg-white"
-                        >
-                          <option value="">Select Section</option>
-                          {scientistSections.map((section) => (
-                            <option key={section} value={section}>{section}</option>
-                          ))}
-                        </select>
+                          onChange={(v) => handleInputChange('section', v || null)}
+                          options={scientistSections.map((s) => ({ value: s, label: s }))}
+                          placeholder="Select Section"
+                        />
                       </div>
 
                       <div>
@@ -1631,15 +1491,19 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Role
                       </label>
-                      <select
+                      <CustomSelect
                         value={newUser.role}
-                        onChange={(e) => handleInputChange('role', e.target.value)}
-                        className="w-full px-4 py-3 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all bg-white"
-                      >
-                        <option value="trainee">trainee</option>
-                        <option value="trainee">trainee</option>
-                        <option value="admin">Admin</option>
-                      </select>
+                        onChange={(v) => handleInputChange('role', v)}
+                        options={[
+                          { value: 'jhs_student', label: 'JHS Student' },
+                          { value: 'shs_student', label: 'SHS Student' },
+                          { value: 'college_student', label: 'College Student' },
+                          { value: 'scholar', label: 'TESDA Scholar' },
+                          { value: 'instructor', label: 'Instructor' },
+                          { value: 'admin', label: 'Admin' },
+                          { value: 'developer', label: 'Developer' },
+                        ]}
+                      />
                     </div>
                   </div>
 
@@ -1649,23 +1513,23 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         SHS Strand
                       </label>
-                      <select
+                      <CustomSelect
                         value={newUser.strand || ''}
-                        onChange={(e) => handleInputChange('strand', e.target.value || null)}
-                        className="w-full px-4 py-3 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all bg-white"
-                      >
-                        <option value="">Select Strand</option>
-                        <option value="STEM">STEM</option>
-                        <option value="ABM">ABM</option>
-                        <option value="HUMSS">HUMSS</option>
-                        <option value="GAS">GAS</option>
-                        <option value="TVL-ICT">TVL-ICT</option>
-                        <option value="TVL-HE">TVL-HE</option>
-                        <option value="TVL-IA">TVL-IA</option>
-                        <option value="TVL-Agri">TVL-Agri</option>
-                        <option value="Arts and Design">Arts and Design</option>
-                        <option value="Sports">Sports</option>
-                      </select>
+                        onChange={(v) => handleInputChange('strand', v || null)}
+                        options={[
+                          { value: 'STEM', label: 'STEM' },
+                          { value: 'ABM', label: 'ABM' },
+                          { value: 'HUMSS', label: 'HUMSS' },
+                          { value: 'GAS', label: 'GAS' },
+                          { value: 'TVL-ICT', label: 'TVL-ICT' },
+                          { value: 'TVL-HE', label: 'TVL-HE' },
+                          { value: 'TVL-IA', label: 'TVL-IA' },
+                          { value: 'TVL-Agri', label: 'TVL-Agri' },
+                          { value: 'Arts and Design', label: 'Arts and Design' },
+                          { value: 'Sports', label: 'Sports' },
+                        ]}
+                        placeholder="Select Strand"
+                      />
                     </div>
                   )}
 
@@ -1676,16 +1540,12 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Section
                         </label>
-                        <select
+                        <CustomSelect
                           value={newUser.section || ''}
-                          onChange={(e) => handleInputChange('section', e.target.value || null)}
-                          className="w-full px-4 py-3 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all bg-white"
-                        >
-                          <option value="">Select Section</option>
-                          {scientistSections.map((section) => (
-                            <option key={section} value={section}>{section}</option>
-                          ))}
-                        </select>
+                          onChange={(v) => handleInputChange('section', v || null)}
+                          options={scientistSections.map((s) => ({ value: s, label: s }))}
+                          placeholder="Select Section"
+                        />
                       </div>
 
                       <div>
