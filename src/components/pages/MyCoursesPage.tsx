@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
@@ -160,7 +160,7 @@ export default function MyCoursesPage() {
       
       // Filter by status based on user role
       // Students can only see active subjects
-      if (userRole === 'student') {
+      if (((userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student'))) {
         query = query.eq('status', 'active')
       }
       // Admin, developer, and instructor can see all subjects
@@ -474,10 +474,10 @@ export default function MyCoursesPage() {
                   </svg>
                 </div>
                 <h3 className="text-lg font-medium text-black mb-2">
-                  {user?.profile?.role === 'student' ? 'No assigned courses' : 'No enrolled courses'}
+                  {(user?.profile?.role === 'shs_student' || user?.profile?.role === 'jhs_student' || user?.profile?.role === 'college_student') ? 'No assigned courses' : 'No enrolled courses'}
                 </h3>
                 <p className="text-gray-500">
-                  {user?.profile?.role === 'student' 
+                  {(user?.profile?.role === 'shs_student' || user?.profile?.role === 'jhs_student' || user?.profile?.role === 'college_student') 
                     ? 'You have not been assigned to any courses yet. Contact your administrator.' 
                     : 'You are not enrolled in any courses yet. Contact your administrator to enroll.'}
                 </p>
@@ -511,7 +511,7 @@ export default function MyCoursesPage() {
                         <div className="w-full h-full" style={{ 
                           background: courseColor?.color_hex ? `linear-gradient(135deg, ${courseColor.color_hex}20 0%, ${courseColor.color_hex}10 100%)` : 'linear-gradient(135deg, #BBF7D020 0%, #BBF7D010 100%)'
                         }} />
-                        {!(role === 'student' || role === 'scholar') && (
+                        {!((role === 'shs_student' || role === 'jhs_student' || role === 'college_student') || role === 'scholar') && (
                           <div className="absolute left-0 top-0 w-1 h-full" style={{ backgroundColor: courseColor?.color_hex || '#22C55E' }} />
                         )}
                       </div>
@@ -527,7 +527,7 @@ export default function MyCoursesPage() {
 
                       {/* Card Content */}
                       <div className="p-5 flex flex-col flex-1">
-                        {!(role === 'student' || role === 'scholar') && (
+                        {!((role === 'shs_student' || role === 'jhs_student' || role === 'college_student') || role === 'scholar') && (
                         <div className="flex flex-wrap gap-2 mb-4">
                           <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${
                             course.status === 'active' ? 'bg-green-100 text-green-800' :
@@ -579,9 +579,9 @@ export default function MyCoursesPage() {
       {currentView === 'subjects' && selectedCourse && (
         <div className="space-y-6">
           {/* Grid Layout: Subject Cards + Sidebar (only show sidebar for admin/developer/instructor) */}
-          <div className={`grid grid-cols-1 ${user?.profile?.role && !['student', 'scholar', 'instructor'].includes(user.profile.role) ? 'lg:grid-cols-4' : ''} gap-6`}>
+          <div className={`grid grid-cols-1 ${user?.profile?.role && !['shs_student', 'jhs_student', 'college_student', 'scholar', 'instructor'].includes(user.profile.role) ? 'lg:grid-cols-4' : ''} gap-6`}>
             {/* Subject Cards Container */}
-            <div className={user?.profile?.role && !['student', 'scholar', 'instructor'].includes(user.profile.role) ? 'lg:col-span-3' : ''}>
+            <div className={user?.profile?.role && !['shs_student', 'jhs_student', 'college_student', 'scholar', 'instructor'].includes(user.profile.role) ? 'lg:col-span-3' : ''}>
               <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                 <div className="px-6 py-4 border-b border-gray-100">
                   <div className="flex items-center justify-between">
@@ -675,7 +675,7 @@ export default function MyCoursesPage() {
             </div>
 
             {/* Sidebar Container - Only show for admin/developer */}
-            {user?.profile?.role && !['student', 'scholar', 'instructor'].includes(user.profile.role) && (
+            {user?.profile?.role && !['shs_student', 'jhs_student', 'college_student', 'scholar', 'instructor'].includes(user.profile.role) && (
             <div className="lg:col-span-1">
               <div className="bg-white border border-gray-200 rounded-xl overflow-hidden h-full">
                 <div className="p-6">
@@ -777,7 +777,7 @@ export default function MyCoursesPage() {
                   ) : (
                     <div className="flex flex-wrap gap-4">
                 {modules.map((module, index) => (
-                  ['student', 'scholar', 'instructor'].includes(user?.profile?.role || '') ? (
+                  ['shs_student', 'jhs_student', 'college_student', 'scholar', 'instructor'].includes(user?.profile?.role || '') ? (
                   /* Simplified card for student/scholar/instructor */
                   <div
                     key={module.id}
@@ -1002,7 +1002,7 @@ export default function MyCoursesPage() {
               <div className="bg-white border border-gray-200 rounded-xl overflow-hidden h-full">
                 <div className="p-6">
                   {/* Stats - Only show for admin, developer */}
-                  {user?.profile?.role && !['student', 'scholar', 'instructor'].includes(user.profile.role) && (
+                  {user?.profile?.role && !['shs_student', 'jhs_student', 'college_student', 'scholar', 'instructor'].includes(user.profile.role) && (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center gap-2">
@@ -1053,7 +1053,7 @@ export default function MyCoursesPage() {
                   )}
 
                   {/* Resources Section */}
-                  <div className={user?.profile?.role && !['student', 'scholar', 'instructor'].includes(user.profile.role) ? "mt-6 pt-6 border-t border-gray-200" : ""}>
+                  <div className={user?.profile?.role && !['shs_student', 'jhs_student', 'college_student', 'scholar', 'instructor'].includes(user.profile.role) ? "mt-6 pt-6 border-t border-gray-200" : ""}>
                     <h4 className="text-sm font-semibold text-gray-900 mb-3">Resources</h4>
                     <div className="space-y-2">
                       {resources.length === 0 ? (

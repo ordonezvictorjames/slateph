@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -107,7 +107,7 @@ export default function TasksPage() {
       const { data: alltrainees } = await supabase
         .from('profiles')
         .select('id, first_name, last_name, email, created_at')
-        .eq('role', 'student')
+        .in('role', ['shs_student', 'jhs_student', 'college_student'])
         .order('created_at', { ascending: false })
 
       // Fetch enrolled trainees

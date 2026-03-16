@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -773,7 +773,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
         .limit(6)
 
       // Filter courses for students - only show courses they're enrolled in
-      if (userRole === 'student') {
+      if (userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student') {
         // First, get all course IDs where this trainee is enrolled
         const { data: traineeEnrollments, error: enrollmentsError } = await supabase
           .from('course_enrollments')
@@ -820,7 +820,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
             // Check if current user is enrolled in this course
             let isUserEnrolled = false
-            if (user?.id && user?.profile?.role === 'student') {
+            if (user?.id && (user?.profile?.role === 'shs_student' || user?.profile?.role === 'jhs_student' || user?.profile?.role === 'college_student')) {
               try {
                 const { data: userEnrollment, error: enrollmentError } = await supabase
                   .from('course_enrollments')
@@ -853,7 +853,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
         
         // Sort courses: enrolled courses first for students
         const sortedCourses = coursesWithEnrollments.sort((a, b) => {
-          if (user?.profile?.role === 'student') {
+          if ((user?.profile?.role === 'shs_student' || user?.profile?.role === 'jhs_student' || user?.profile?.role === 'college_student')) {
             // Enrolled courses come first
             if (a.is_user_enrolled && !b.is_user_enrolled) return -1
             if (!a.is_user_enrolled && b.is_user_enrolled) return 1
@@ -944,7 +944,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
         { count: totalGuests },
         { count: totalScholars }
       ] = await Promise.all([
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'student'),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).in('role', ['shs_student', 'jhs_student', 'college_student']),
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'instructor'),
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'developer'),
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'admin'),
@@ -967,7 +967,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
         const { data: alltrainees } = await supabase
           .from('profiles')
           .select('id')
-          .eq('role', 'student')
+          .in('role', ['shs_student', 'jhs_student', 'college_student'])
 
         const { data: enrolledtrainees } = await supabase
           .from('course_enrollments')
@@ -1218,7 +1218,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                     Welcome back, {displayUser.profile?.first_name || displayUser?.email?.split('@')[0] || 'User'}!
                   </h2>
                   <p className="text-gray-600 text-sm">
-                    {userRole === 'student' 
+                    {((userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student')) 
                       ? 'Ready to continue your learning journey?'
                       : 'Manage your platform efficiently.'}
                   </p>
@@ -1321,7 +1321,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             </div>
 
             {/* Today's Events - Student, Scholar, Instructor only (moved below calendar) */}
-            {(userRole === 'student' || userRole === 'scholar' || userRole === 'instructor') && (
+            {(((userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student')) || userRole === 'scholar' || userRole === 'instructor') && (
               <div className="rounded-xl p-4 shadow-sm border-2 border-gray-200" style={{ backgroundColor: '#FFFFFF' }}>
                 <div className="flex items-center space-x-3 mb-4">
                   <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center">
@@ -1402,7 +1402,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                     Welcome back, {displayUser.profile?.first_name || displayUser?.email?.split('@')[0] || 'User'}!
                   </h2>
                   <p className="text-gray-600">
-                    {userRole === 'student' 
+                    {((userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student')) 
                       ? 'Ready to continue your learning journey? Explore your courses and track your progress.'
                       : 'Manage your platform efficiently and keep track of all activities.'}
                   </p>
@@ -1690,7 +1690,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
         <div>
           <div className="flex items-center justify-between mb-4 md:mb-6">
             <h2 className="text-lg md:text-xl font-bold text-black">
-              {userRole === 'student' ? (
+              {((userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student')) ? (
                 <>
                   My Courses
                   {courses.filter(c => c.is_user_enrolled).length > 0 && (
@@ -1719,7 +1719,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                       })
                       const enrollmentTypeBadges = getEnrollmentTypeDisplay(course.enrollment_type)
                       
-                      const isStudentOrStudent = userRole === 'student'
+                      const isStudentOrStudent = ((userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student'))
                       const isLocked = isStudentOrStudent && !course.is_user_enrolled
                       
                       return (
@@ -1758,7 +1758,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                                 background: courseColor?.color_hex ? `linear-gradient(135deg, ${courseColor.color_hex}20 0%, ${courseColor.color_hex}10 100%)` : 'linear-gradient(135deg, #BBF7D020 0%, #BBF7D010 100%)'
                               }} />
                               {/* Vertical Line - Hidden for Student and Scholar users */}
-                              {!(userRole === 'student' || userRole === 'scholar') && (
+                              {!(((userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student')) || userRole === 'scholar') && (
                                 <div 
                                   className="absolute left-0 top-0 w-1 h-full"
                                   style={{ 
@@ -1786,7 +1786,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                           {/* Card Content */}
                           <div className="p-5 flex flex-col flex-1">
                             {/* Badges Row: Status, Course Type, Enrollment Type */}
-                            {!(userRole === 'student' || userRole === 'scholar') && (
+                            {!(((userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student')) || userRole === 'scholar') && (
                             <div className="flex flex-wrap gap-2 mb-4">
                               <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${
                                 course.status === 'active' ? 'bg-green-100 text-green-800' :
@@ -1835,7 +1835,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                   </svg>
                                 </button>
-                              ) : userRole === 'student' ? (
+                              ) : ((userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student')) ? (
                                 <button 
                                   onClick={() => onNavigate('my-courses')}
                                   className="w-full px-4 py-3 text-white rounded-xl font-semibold text-sm transition-colors duration-200 flex items-center justify-center space-x-2"
@@ -2150,7 +2150,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             )}
 
             {/* My Learning - For students and scholars */}
-            {(userRole === 'student' || userRole === 'scholar') && (
+            {(((userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student')) || userRole === 'scholar') && (
             <div>
               <div className="flex items-center justify-between mb-4 md:mb-6">
                 <h2 className="text-lg md:text-xl font-bold text-black">My Learning Progress</h2>

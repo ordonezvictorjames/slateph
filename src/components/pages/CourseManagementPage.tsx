@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -601,7 +601,7 @@ export default function CourseManagementPage() {
       const { data, error } = await supabase
         .from('profiles')
         .select('id, first_name, last_name, email, role')
-        .in('role', ['student', 'scholar'])
+        .in('role', ['shs_student', 'jhs_student', 'college_student', 'scholar'])
         .order('first_name', { ascending: true })
 
       if (error) {
@@ -713,7 +713,7 @@ export default function CourseManagementPage() {
         // Further filter by enrollment type
         if (enrollmentType === 'trainee') {
           // Only show students (not scholars)
-          available = available.filter(t => t.role === 'student')
+          available = available.filter(t => t.(role === 'shs_student' || role === 'jhs_student' || role === 'college_student'))
         } else if (enrollmentType === 'tesda_scholar') {
           // Only show scholars
           available = available.filter(t => t.role === 'tesda_scholar')
@@ -743,7 +743,7 @@ export default function CourseManagementPage() {
       const { count: studentsCount } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
-        .in('role', ['student', 'scholar'])
+        .in('role', ['shs_student', 'jhs_student', 'college_student', 'scholar'])
 
       // Fetch total instructors count
       const { count: instructorsCount } = await supabase

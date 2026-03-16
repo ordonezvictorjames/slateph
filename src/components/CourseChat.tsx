@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -603,7 +603,7 @@ export default function CourseChat({ isOpen, onClose, onNavigateToProfile }: Cou
                                 >
                                   {msg.user_first_name} {msg.user_last_name}
                                 </button>
-                                {(msg.user_role === 'admin' || msg.user_role === 'student' || msg.user_role === 'developer') && (
+                                {(msg.user_role === 'admin' || msg.user_role === 'shs_student' || msg.user_role === 'jhs_student' || msg.user_role === 'college_student' || msg.user_role === 'developer') && (
                                   <span className={`text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 rounded ${getRoleBadgeColor(msg.user_role)}`}>
                                     {msg.user_role}
                                   </span>
