@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -56,15 +56,22 @@ interface DashboardStats {
   totalAssignments: number
   completedTests: number
   totalTests: number
+  totalQuizzes: number
+  totalActivities: number
+  totalExams: number
 }
 
 interface UserStats {
   totalStudents: number
+  totalSHSStudents: number
+  totalJHSStudents: number
+  totalCollegeStudents: number
   totalInstructors: number
   totalDevelopers: number
   totalAdmins: number
   totalGuests: number
   totalScholars: number
+  totalTrainees: number
 }
 
 interface DashboardHomeProps {
@@ -119,16 +126,19 @@ function UpcomingScheduleList() {
   const fetchUpcomingSchedules = async () => {
     try {
       setLoading(true)
-      const today = new Date().toISOString().split('T')[0]
+      const today = new Date()
+      const tomorrow = new Date(today)
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      const tomorrowStr = tomorrow.toISOString().split('T')[0]
       
-      // Fetch upcoming schedules with course info
+      // Fetch upcoming schedules with course info (exclude today's events)
       const { data: schedulesData, error: schedulesError } = await supabase
-        .from('course_schedules_with_details')
-        .select('*')
-        .gte('start_date', today)
+        .from('course_schedules')
+        .select('*, course:courses(title, course_type)')
+        .gte('start_date', tomorrowStr)
         .in('status', ['scheduled', 'active'])
         .order('start_date', { ascending: true })
-        .limit(5)
+        .limit(2)
 
       if (schedulesError) {
         console.error('Error fetching schedules:', schedulesError)
@@ -242,13 +252,13 @@ function UpcomingScheduleList() {
                     {schedule.title}
                   </h4>
                   <p className="text-xs text-gray-600 mt-0.5">
-                    {schedule.course_title} • Batch {schedule.batch_number}
+                    {schedule.course?.title} � Batch {schedule.batch_number}
                   </p>
                   <div className="flex items-center space-x-2 mt-1">
                     <span className="text-xs text-gray-500">
                       {formatDate(schedule.start_date)} - {formatDate(schedule.end_date)}
                     </span>
-                    <span className="text-xs text-gray-400">•</span>
+                    <span className="text-xs text-gray-400">�</span>
                     <span className="text-xs text-gray-500">
                       {formatTime(schedule.start_date)}
                     </span>
@@ -434,7 +444,7 @@ function RecentActivityList() {
               <span className="text-xs text-gray-500">
                 {activity.user?.first_name} {activity.user?.last_name}
               </span>
-              <span className="text-xs text-gray-400">•</span>
+              <span className="text-xs text-gray-400">�</span>
               <span className="text-xs text-gray-500">
                 {formatTimeAgo(activity.created_at)}
               </span>
@@ -463,7 +473,10 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
     completedAssignments: 0,
     totalAssignments: 0,
     completedTests: 0,
-    totalTests: 0
+    totalTests: 0,
+    totalQuizzes: 0,
+    totalActivities: 0,
+    totalExams: 0
   })
   const [loading, setLoading] = useState(true)
   const hasFetchedRef = useRef(false)
@@ -472,11 +485,15 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false)
   const [userStats, setUserStats] = useState<UserStats>({
     totalStudents: 0,
+    totalSHSStudents: 0,
+    totalJHSStudents: 0,
+    totalCollegeStudents: 0,
     totalInstructors: 0,
     totalDevelopers: 0,
     totalAdmins: 0,
     totalGuests: 0,
-    totalScholars: 0
+    totalScholars: 0,
+    totalTrainees: 0
   })
   const [pendingTasks, setPendingTasks] = useState<{
     unenrolledtrainees: number
@@ -582,7 +599,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
     const startingDayOfWeek = firstDay.getDay()
     
     // Calculate days to show (only 2 weeks = 14 days)
-    const totalCells = 14 // 2 rows × 7 days
+    const totalCells = 14 // 2 rows � 7 days
     const days = []
     
     // Previous month days (to fill the first week)
@@ -835,7 +852,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                   isUserEnrolled = (userEnrollment && userEnrollment.length > 0) || false
                   
                   if (isUserEnrolled) {
-                    console.log(`✓ User is enrolled in course: ${course.title}`)
+                    console.log(`? User is enrolled in course: ${course.title}`)
                   }
                 }
               } catch (err) {
@@ -877,8 +894,8 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
       // Fetch course schedules for calendar
       const { data: schedulesData, error: schedulesError } = await supabase
-        .from('course_schedules_with_details')
-        .select('*')
+        .from('course_schedules')
+        .select('*, course:courses(title, course_type)')
         .in('status', ['scheduled', 'active'])
         .order('start_date', { ascending: true })
 
@@ -922,43 +939,70 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
         m.content_type === 'quiz'
       ).length || 0
 
+      const totalQuizzes = modulesData?.filter((m: ModuleData) => 
+        m.content_type === 'quiz'
+      ).length || 0
+
+      const totalActivities = modulesData?.filter((m: ModuleData) => 
+        m.content_type === 'activity'
+      ).length || 0
+
+      const totalExams = modulesData?.filter((m: ModuleData) => 
+        m.content_type === 'exam'
+      ).length || 0
+
       setStats({
         totalCourses: totalCourses || 0,
         totalSubjects: totalSubjects || 0,
         totalModules: totalModules || 0,
         totalUsers: totalUsers || 0,
-        completedLessons: Math.floor(totalLessons * 0.59), // 59% completion rate
+        completedLessons: Math.floor(totalLessons * 0.59),
         totalLessons,
         completedAssignments: Math.floor(totalAssignments * 0.59),
         totalAssignments,
         completedTests: Math.floor(totalTests * 0.59),
-        totalTests
+        totalTests,
+        totalQuizzes,
+        totalActivities,
+        totalExams
       })
 
       // Fetch user statistics by role
       const [
         { count: totalStudents },
+        { count: totalSHSStudents },
+        { count: totalJHSStudents },
+        { count: totalCollegeStudents },
         { count: totalInstructors },
         { count: totalDevelopers },
         { count: totalAdmins },
         { count: totalGuests },
-        { count: totalScholars }
+        { count: totalScholars },
+        { count: totalTrainees }
       ] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact', head: true }).in('role', ['shs_student', 'jhs_student', 'college_student']),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'shs_student'),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'jhs_student'),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'college_student'),
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'instructor'),
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'developer'),
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'admin'),
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'guest'),
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'scholar')
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'scholar'),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'trainee')
       ])
 
       setUserStats({
         totalStudents: totalStudents || 0,
+        totalSHSStudents: totalSHSStudents || 0,
+        totalJHSStudents: totalJHSStudents || 0,
+        totalCollegeStudents: totalCollegeStudents || 0,
         totalInstructors: totalInstructors || 0,
         totalDevelopers: totalDevelopers || 0,
         totalAdmins: totalAdmins || 0,
         totalGuests: totalGuests || 0,
-        totalScholars: totalScholars || 0
+        totalScholars: totalScholars || 0,
+        totalTrainees: totalTrainees || 0
       })
 
       // Fetch pending tasks for admin and developer
@@ -1078,14 +1122,14 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
   // Helper function to get enrollment type display
   const getEnrollmentTypeDisplay = (enrollmentType: string) => {
-    const badges = []
-    if (enrollmentType === 'trainee' || enrollmentType === 'both') {
-      badges.push({ text: 'Trainees', color: 'bg-blue-100 text-blue-800' })
+    switch (enrollmentType) {
+      case 'both': return [{ text: 'All Students', color: 'bg-indigo-100 text-indigo-800' }]
+      case 'tesda_scholar': return [{ text: 'TESDA Scholars', color: 'bg-purple-100 text-purple-800' }]
+      case 'shs_student': return [{ text: 'SHS Students', color: 'bg-green-100 text-green-800' }]
+      case 'jhs_student': return [{ text: 'JHS Students', color: 'bg-yellow-100 text-yellow-800' }]
+      case 'college_student': return [{ text: 'College Students', color: 'bg-orange-100 text-orange-800' }]
+      default: return [{ text: 'Trainees', color: 'bg-blue-100 text-blue-800' }]
     }
-    if (enrollmentType === 'tesda_scholar' || enrollmentType === 'both') {
-      badges.push({ text: 'TESDA Scholars', color: 'bg-purple-100 text-purple-800' })
-    }
-    return badges
   }
 
   const userRole = user?.profile?.role || 'trainee'
@@ -1096,9 +1140,9 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
         <div className="grid grid-cols-1 xl:grid-cols-7 gap-4 md:gap-6">
           
           {/* Profile Card - Shows first on mobile, last on desktop */}
-          <div className="xl:col-span-2 xl:order-2 space-y-4 md:space-y-6">
+          <div className="xl:col-span-2 xl:order-2 space-y-4 md:space-y-6 flex flex-col">
             {/* Combined Notification and Avatar Card */}
-            <div className="bg-white rounded-xl p-4 h-[70px] shadow-sm border border-gray-100">
+            <div className="bg-white rounded-xl p-4 h-[70px] shadow-lg border border-gray-100">
               <div className="flex items-center justify-between h-full">
                 {/* Left side: Notifications */}
                 <div className="flex items-center space-x-2">
@@ -1211,7 +1255,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             </div>
 
             {/* Welcome Card - Mobile only */}
-            <div className="xl:hidden bg-white rounded-lg p-6 shadow-sm border border-gray-100 overflow-visible relative min-h-[120px]">
+            <div className="xl:hidden bg-white rounded-lg p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 overflow-visible relative min-h-[120px]">
               <div className="flex items-center justify-between">
                 <div className="z-10 pr-4">
                   <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">
@@ -1235,66 +1279,97 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
               </div>
             </div>
 
-            {/* Calendar */}
-            <div className="rounded-xl p-4 shadow-sm border-2 border-gray-200" style={{ backgroundColor: '#FFFFFF' }}>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-gray-800">Calendar</h3>
+            {/* Digital Clock */}
+            <div className="rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 overflow-hidden relative" style={{ minHeight: '140px' }}>
+              {/* Background illustration */}
+              <div className="absolute inset-0">
+                {(() => {
+                  const h = currentTime.getHours()
+                  if (h >= 18 && h < 21) return (
+                    <svg viewBox="0 0 200 140" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+                      <defs><linearGradient id="bgEve" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#ff7043"/><stop offset="55%" stopColor="#ffb74d"/><stop offset="100%" stopColor="#ffe0b2"/></linearGradient></defs>
+                      <rect width="200" height="140" fill="url(#bgEve)"/>
+                      <circle cx="100" cy="118" r="28" fill="#ff6f00" opacity="0.85"/><circle cx="100" cy="118" r="20" fill="#ffca28"/>
+                      <rect x="0" y="115" width="200" height="25" fill="#1a5c6e" opacity="0.7"/>
+                      <rect x="78" y="115" width="44" height="25" fill="#ffca28" opacity="0.25"/>
+                      <ellipse cx="38" cy="35" rx="28" ry="10" fill="#ff8a65" opacity="0.55"/>
+                      <ellipse cx="56" cy="28" rx="18" ry="8" fill="#ffab91" opacity="0.45"/>
+                      <ellipse cx="155" cy="45" rx="24" ry="9" fill="#ff8a65" opacity="0.45"/>
+                      <circle cx="18" cy="14" r="1.2" fill="white" opacity="0.7"/>
+                      <circle cx="172" cy="18" r="1.2" fill="white" opacity="0.6"/>
+                    </svg>
+                  )
+                  if (h >= 21 || h < 5) return (
+                    <svg viewBox="0 0 200 140" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+                      <defs><linearGradient id="bgNight" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#0d1b2a"/><stop offset="100%" stopColor="#1f3a5f"/></linearGradient></defs>
+                      <rect width="200" height="140" fill="url(#bgNight)"/>
+                      <circle cx="160" cy="30" r="16" fill="#fff9c4"/><circle cx="167" cy="24" r="13" fill="#1f3a5f"/>
+                      {[[20,12],[45,8],[70,18],[95,6],[120,14],[30,28],[80,5],[150,10],[10,22],[185,16],[55,25]].map(([x,y],i) => (
+                        <circle key={i} cx={x} cy={y} r="1" fill="white" opacity={0.4 + (i % 4) * 0.15}/>
+                      ))}
+                      <rect x="0" y="112" width="200" height="28" fill="#0a2030" opacity="0.9"/>
+                      <rect x="8" y="90" width="10" height="22" fill="#0a2030"/><rect x="22" y="80" width="13" height="32" fill="#0a2030"/>
+                      <rect x="158" y="88" width="11" height="24" fill="#0a2030"/><rect x="173" y="76" width="14" height="36" fill="#0a2030"/>
+                      <rect x="25" y="84" width="2" height="2" fill="#ffeb3b" opacity="0.8"/>
+                      <rect x="175" y="80" width="2" height="2" fill="#ffeb3b" opacity="0.8"/>
+                    </svg>
+                  )
+                  if (h >= 5 && h < 12) return (
+                    <svg viewBox="0 0 200 140" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+                      <defs><linearGradient id="bgMorn" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#b3e5fc"/><stop offset="60%" stopColor="#ffe0b2"/><stop offset="100%" stopColor="#ffcc80"/></linearGradient></defs>
+                      <rect width="200" height="140" fill="url(#bgMorn)"/>
+                      <circle cx="100" cy="130" r="30" fill="#ffb300" opacity="0.9"/><circle cx="100" cy="130" r="22" fill="#ffe57f"/>
+                      <rect x="0" y="115" width="200" height="25" fill="#1f7a8c" opacity="0.45"/>
+                      <ellipse cx="45" cy="40" rx="30" ry="11" fill="white" opacity="0.7"/>
+                      <ellipse cx="148" cy="50" rx="26" ry="10" fill="white" opacity="0.6"/>
+                    </svg>
+                  )
+                  return (
+                    <svg viewBox="0 0 200 140" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+                      <defs><linearGradient id="bgDay" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#29b6f6"/><stop offset="100%" stopColor="#b3e5fc"/></linearGradient></defs>
+                      <rect width="200" height="140" fill="url(#bgDay)"/>
+                      <circle cx="165" cy="28" r="20" fill="#fff176"/><circle cx="165" cy="28" r="14" fill="#ffee58"/>
+                      <rect x="0" y="115" width="200" height="25" fill="#1f7a8c" opacity="0.35"/>
+                      <ellipse cx="42" cy="42" rx="32" ry="12" fill="white" opacity="0.8"/>
+                      <ellipse cx="62" cy="34" rx="22" ry="10" fill="white" opacity="0.7"/>
+                      <ellipse cx="132" cy="52" rx="28" ry="11" fill="white" opacity="0.7"/>
+                    </svg>
+                  )
+                })()}
               </div>
 
-              {/* Full Calendar View */}
-              {/* Month Navigation */}
-              <div className="flex items-center justify-between mb-4">
-                <button 
-                  onClick={() => navigateMonth('prev')}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-                <h4 className="font-semibold text-gray-800">{getMonthYear()}</h4>
-                <button 
-                  onClick={() => navigateMonth('next')}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              </div>
+              {/* Time content on top */}
+              <div className="relative z-10 p-4 flex flex-col items-center justify-center" style={{ minHeight: '140px' }}>
 
-              {/* Full Calendar Grid */}
-              <div className="grid grid-cols-7 gap-1 mb-4">
-                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
-                  <div key={`day-${index}`} className="text-center text-xs font-medium text-gray-500 py-2">
-                    {day}
+                {/* Time */}
+                <div className="flex items-end space-x-2 mb-1">
+                  <span className="font-bold tabular-nums leading-none" style={{ fontSize: '48px', color: '#ffffff', textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>
+                    {String(currentTime.getHours() % 12 || 12).padStart(2, '0')}
+                  </span>
+                  <div className="flex flex-col space-y-1.5 mb-3">
+                    <div className="w-2 h-2 rounded-full bg-white opacity-90" />
+                    <div className="w-2 h-2 rounded-full bg-white opacity-90" />
                   </div>
-                ))}
-                {getCalendarData().map((dayData, index) => (
-                  <div
-                    key={index}
-                    className={`text-center text-sm py-2 relative cursor-pointer transition-colors ${
-                      dayData.isToday
-                        ? 'text-white rounded-lg font-bold'
-                        : dayData.isCurrentMonth
-                        ? 'text-gray-700 hover:bg-gray-100 rounded-lg'
-                        : 'text-gray-300'
-                    }`}
-                    style={dayData.isToday ? { backgroundColor: '#1a6b7a' } : {}}
-                  >
-                    {dayData.day}
-                    {dayData.hasEvent && (
-                      <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2">
-                        <div className={`w-1 h-1 rounded-full ${dayData.isToday ? 'bg-white' : 'bg-green-500'}`}></div>
-                      </div>
-                    )}
+                  <span className="font-bold tabular-nums leading-none" style={{ fontSize: '48px', color: '#ffffff', textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>
+                    {String(currentTime.getMinutes()).padStart(2, '0')}
+                  </span>
+                  <div className="flex flex-col items-center mb-2 ml-1">
+                    <span className="text-sm font-bold" style={{ color: 'white', textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}>
+                      {currentTime.getHours() >= 12 ? 'PM' : 'AM'}
+                    </span>
+                    <span className="text-sm font-bold tabular-nums" style={{ color: 'white', textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}>
+                      {String(currentTime.getSeconds()).padStart(2, '0')}
+                    </span>
                   </div>
-                ))}
+                </div>
+                <p className="text-sm font-semibold mt-2" style={{ color: 'white', textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}>
+                  {currentTime.toLocaleDateString('en-US', { month: 'short', weekday: 'long', day: 'numeric' })}
+                </p>
               </div>
             </div>
 
             {/* Upcoming Schedule */}
-            <div className="rounded-xl p-4 shadow-sm border-2 border-gray-200" style={{ backgroundColor: '#FFFFFF' }}>
+            <div className="rounded-xl p-4 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300" style={{ backgroundColor: '#FFFFFF' }}>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center">
@@ -1322,21 +1397,31 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
             {/* Today's Events - Student, Scholar, Instructor only (moved below calendar) */}
             {(((userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student')) || userRole === 'scholar' || userRole === 'instructor') && (
-              <div className="rounded-xl p-4 shadow-sm border-2 border-gray-200" style={{ backgroundColor: '#FFFFFF' }}>
-                <div className="flex items-center space-x-3 mb-4">
-                  <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center">
-                    <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              <div className="rounded-xl p-4 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300" style={{ backgroundColor: '#FFFFFF' }}>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center">
+                      <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-black">Today's Events</h3>
+                      <p className="text-xs text-black/70">{getTodaysEvents().length} scheduled</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => onNavigate('schedule')}
+                    className="text-gray-400 hover:text-black transition-colors"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-black">Today's Events</h3>
-                    <p className="text-xs text-black/70">{getTodaysEvents().length} scheduled</p>
-                  </div>
+                  </button>
                 </div>
                 <div className="space-y-2">
                   {getTodaysEvents().length > 0 ? (
-                    getTodaysEvents().map((schedule) => {
+                    getTodaysEvents().slice(0, 2).map((schedule) => {
                       const courseColor = getCourseColor(schedule.course_id)
                       return (
                         <div key={schedule.id} className="flex items-start space-x-2 p-2 bg-white rounded-lg border border-gray-200 hover:shadow-sm transition-all">
@@ -1348,7 +1433,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="text-sm font-semibold text-black line-clamp-1">{schedule.title}</div>
-                            <div className="text-xs text-gray-600 mt-0.5">{schedule.course_title}</div>
+                            <div className="text-xs text-gray-600 mt-0.5">{schedule.course?.title}</div>
                             <div className="text-xs text-gray-500 mt-1">{formatScheduleTime(schedule.start_date, schedule.end_date)}</div>
                           </div>
                         </div>
@@ -1370,7 +1455,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
             {/* Recent Activity - Admin and Developer only */}
             {(userRole === 'admin' || userRole === 'developer') && (
-            <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100 flex flex-col" style={{ height: '600px' }}>
+            <div className="bg-white rounded-lg p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 flex flex-col" style={{ height: '815px' }}>
 
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-bold text-gray-800">Recent Activity</h3>
@@ -1395,7 +1480,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
           <div className="xl:col-span-5 xl:order-1 space-y-6 md:space-y-8">
             
             {/* Welcome Card - Desktop only */}
-            <div className="hidden xl:block bg-white rounded-lg p-6 shadow-sm border border-gray-100 overflow-visible relative min-h-[120px]">
+            <div className="hidden xl:block bg-white rounded-lg p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 overflow-visible relative min-h-[120px]">
               <div className="flex items-center justify-between">
                 <div className="z-10 pr-4">
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">
@@ -1423,7 +1508,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
               {/* Tasks Card - Only for Admin and Developer */}
               {(userRole === 'admin' || userRole === 'developer') && (
-                <div className="rounded-xl p-4 shadow-sm border-2 border-gray-200 md:col-span-2" style={{ backgroundColor: '#FFFFFF' }}>
+                <div className="rounded-xl p-4 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 md:col-span-2" style={{ backgroundColor: '#FFFFFF' }}>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-3">
                       <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center">
@@ -1446,24 +1531,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                     </button>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {pendingTasks.unenrolledtrainees === 0 && 
-                     pendingTasks.unassignedtrainees === 0 && 
-                     pendingTasks.pendingFeatureRequests === 0 && 
-                     pendingTasks.ongoingFeatureRequests === 0 &&
-                     pendingTasks.passwordResets === 0 &&
-                     pendingTasks.bugReports === 0 &&
-                     pendingTasks.guestUsers === 0 ? (
-                      <div className="text-center py-6 sm:col-span-2">
-                        <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center mx-auto mb-3">
-                          <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        </div>
-                        <p className="text-sm font-medium text-black">No pending tasks</p>
-                        <p className="text-xs text-gray-500 mt-1">All caught up!</p>
-                      </div>
-                    ) : (
-                      <>
+                    <>
                         {/* Row 1, Col 1: Pending Requests */}
                         {userRole === 'developer' && pendingTasks.pendingFeatureRequests > 0 && (
                           <div 
@@ -1624,29 +1692,99 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                             </div>
                           </div>
                         )}
+
+                        {/* Placeholder items when all tasks are zero */}
+                        {pendingTasks.unenrolledtrainees === 0 && (
+                          <div className="flex items-start space-x-2 p-3 bg-gray-50 rounded-lg border border-dashed border-gray-200 opacity-50">
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-gray-100">
+                              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                              </svg>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-semibold text-gray-400">Unenrolled Trainees</div>
+                              <div className="text-xs text-gray-400 mt-0.5">All trainees enrolled</div>
+                            </div>
+                            <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-gray-400 bg-gray-100 rounded-full">0</span>
+                          </div>
+                        )}
+
+                        {pendingTasks.unassignedtrainees === 0 && (
+                          <div className="flex items-start space-x-2 p-3 bg-gray-50 rounded-lg border border-dashed border-gray-200 opacity-50">
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-gray-100">
+                              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                              </svg>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-semibold text-gray-400">Unassigned Instructors</div>
+                              <div className="text-xs text-gray-400 mt-0.5">All instructors assigned</div>
+                            </div>
+                            <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-gray-400 bg-gray-100 rounded-full">0</span>
+                          </div>
+                        )}
+
+                        {(userRole === 'admin' || userRole === 'developer') && pendingTasks.passwordResets === 0 && (
+                          <div className="flex items-start space-x-2 p-3 bg-gray-50 rounded-lg border border-dashed border-gray-200 opacity-50">
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-gray-100">
+                              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                              </svg>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-semibold text-gray-400">Password Resets</div>
+                              <div className="text-xs text-gray-400 mt-0.5">No pending requests</div>
+                            </div>
+                            <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-gray-400 bg-gray-100 rounded-full">0</span>
+                          </div>
+                        )}
+
+                        {(userRole === 'admin' || userRole === 'developer') && pendingTasks.guestUsers === 0 && (
+                          <div className="flex items-start space-x-2 p-3 bg-gray-50 rounded-lg border border-dashed border-gray-200 opacity-50">
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-gray-100">
+                              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                              </svg>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-semibold text-gray-400">Guest Users</div>
+                              <div className="text-xs text-gray-400 mt-0.5">No guests awaiting role</div>
+                            </div>
+                            <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-gray-400 bg-gray-100 rounded-full">0</span>
+                          </div>
+                        )}
                       </>
-                    )}
                   </div>
                 </div>
               )}
 
               {/* Today's Events - Admin and Developer only (others see it in the right column) */}
               {(userRole === 'admin' || userRole === 'developer') && (
-              <div className="rounded-xl p-4 shadow-sm border-2 border-gray-200" style={{ backgroundColor: '#FFFFFF' }}>
-                <div className="flex items-center space-x-3 mb-4">
-                  <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center">
-                    <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              <div className="rounded-xl p-4 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300" style={{ backgroundColor: '#FFFFFF' }}>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center">
+                      <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-black">Today's Events</h3>
+                      <p className="text-xs text-black/70">{getTodaysEvents().length} scheduled</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => onNavigate('schedule')}
+                    className="text-gray-400 hover:text-black transition-colors"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-black">Today's Events</h3>
-                    <p className="text-xs text-black/70">{getTodaysEvents().length} scheduled</p>
-                  </div>
+                  </button>
                 </div>
                 <div className="space-y-2">
                   {getTodaysEvents().length > 0 ? (
-                    getTodaysEvents().map((schedule) => {
+                    getTodaysEvents().slice(0, 2).map((schedule) => {
                       const courseColor = getCourseColor(schedule.course_id)
                       return (
                         <div key={schedule.id} className="flex items-start space-x-2 p-2 bg-white rounded-lg border border-gray-200 hover:shadow-sm transition-all">
@@ -1665,7 +1803,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="text-sm font-semibold text-black line-clamp-1">{schedule.title}</div>
-                            <div className="text-xs text-gray-600 mt-0.5">{schedule.course_title}</div>
+                            <div className="text-xs text-gray-600 mt-0.5">{schedule.course?.title}</div>
                             <div className="text-xs text-gray-500 mt-1">{formatScheduleTime(schedule.start_date, schedule.end_date)}</div>
                           </div>
                         </div>
@@ -1706,17 +1844,11 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             )}
           </div>
               
-              <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+              <div className="flex flex-wrap" style={{ gap: '20px' }}>
                 {courses.length > 0 ? (
                   <>
                     {courses.slice(0, 3).map((course) => {
                       const courseColor = getCourseColor(course.id)
-                      const courseGroup = course.course_group || course.description || 'General'
-                      const createdDate = new Date(course.created_at).toLocaleDateString('en-US', { 
-                        month: 'short', 
-                        day: 'numeric', 
-                        year: 'numeric' 
-                      })
                       const enrollmentTypeBadges = getEnrollmentTypeDisplay(course.enrollment_type)
                       
                       const isStudentOrStudent = ((userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student'))
@@ -1725,7 +1857,8 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                       return (
                         <div 
                           key={course.id} 
-                          className={`group relative bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col ${isLocked ? 'opacity-60' : ''}`}
+                          className={`group relative bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col ${isLocked ? 'opacity-60' : ''}`}
+                          style={{ width: '300px' }}
                         >
                           {/* Locked Badge for trainees who are NOT enrolled */}
                           {isLocked && (
@@ -1751,36 +1884,22 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                             </div>
                           )}
 
-                          {/* Decorative Top Element */}
-                          <div className="relative">
-                            <div className="relative overflow-hidden" style={{ height: '60px' }}>
-                              <div className="w-full h-full" style={{ 
-                                background: courseColor?.color_hex ? `linear-gradient(135deg, ${courseColor.color_hex}20 0%, ${courseColor.color_hex}10 100%)` : 'linear-gradient(135deg, #BBF7D020 0%, #BBF7D010 100%)'
-                              }} />
-                              {/* Vertical Line - Hidden for Student and Scholar users */}
-                              {!(((userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student')) || userRole === 'scholar') && (
-                                <div 
-                                  className="absolute left-0 top-0 w-1 h-full"
-                                  style={{ 
-                                    backgroundColor: courseColor?.color_hex || '#22C55E'
-                                  }}
-                                />
-                              )}
-                            </div>
+                          {/* Decorative Top Strip */}
+                          <div className="relative overflow-hidden" style={{ height: '100px' }}>
+                            <div className="w-full h-full" style={{ 
+                              background: courseColor?.color_hex ? `linear-gradient(135deg, ${courseColor.color_hex}20 0%, ${courseColor.color_hex}10 100%)` : 'linear-gradient(135deg, #1f7a8c20 0%, #1f7a8c10 100%)'
+                            }} />
+                            <div 
+                              className="absolute left-0 top-0 w-1 h-full"
+                              style={{ backgroundColor: courseColor?.color_hex || '#1f7a8c' }}
+                            />
                           </div>
 
                           {/* Course Header */}
-                          <div className="relative overflow-hidden bg-white border-b border-gray-200 p-6">
-                            {/* Course Title */}
-                            <h3 className="text-lg font-semibold text-black mb-2 line-clamp-2">
+                          <div className="relative bg-white border-b border-gray-200 p-6">
+                            <h3 className="text-lg font-semibold text-black line-clamp-2">
                               {course.title}
                             </h3>
-                            
-                            {/* Course Group and Date */}
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-gray-600 font-medium">{courseGroup}</span>
-                              <span className="text-xs text-gray-500">{createdDate}</span>
-                            </div>
                           </div>
                           
                           {/* Card Content */}
@@ -1873,24 +1992,21 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                   <button
                     key={`placeholder-${index}`}
                     onClick={() => onNavigate('course-management')}
-                    className="relative rounded-xl border-2 border-dashed border-gray-300 overflow-hidden flex flex-col h-full hover:border-gray-400 hover:bg-gray-50 transition-all cursor-pointer"
+                    className="relative bg-white rounded-2xl border-2 border-dashed border-gray-300 overflow-hidden flex flex-col hover:border-gray-400 hover:bg-gray-50 transition-all cursor-pointer"
+                    style={{ width: '300px' }}
                   >
-                    {/* Decorative Top Element */}
-                    <div className="relative">
-                      <div className="relative overflow-hidden" style={{ height: '60px' }}>
-                        <div className="w-full h-full bg-gray-100" />
-                      </div>
+                    {/* Decorative Top Strip */}
+                    <div className="relative overflow-hidden" style={{ height: '100px' }}>
+                      <div className="w-full h-full bg-gray-100" />
+                      <div className="absolute left-0 top-0 w-1 h-full bg-gray-300" />
                     </div>
-                    
+
                     <div className="p-6 flex flex-col flex-1 items-center justify-center">
-                      {/* Icon */}
-                      <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-gray-200 transition-colors">
+                      <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mb-4">
                         <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                         </svg>
                       </div>
-                      
-                      {/* Text */}
                       <h3 className="text-sm font-semibold text-gray-400 mb-1">Add New Course</h3>
                       <p className="text-xs text-gray-400 text-center">Create a new course to expand your curriculum</p>
                     </div>
@@ -1904,24 +2020,21 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                   <button
                     key={`placeholder-${index}`}
                     onClick={() => onNavigate('course-management')}
-                    className="relative rounded-xl border-2 border-dashed border-gray-300 overflow-hidden flex flex-col h-full hover:border-gray-400 hover:bg-gray-50 transition-all cursor-pointer"
+                    className="relative bg-white rounded-2xl border-2 border-dashed border-gray-300 overflow-hidden flex flex-col hover:border-gray-400 hover:bg-gray-50 transition-all cursor-pointer"
+                    style={{ width: '300px' }}
                   >
-                    {/* Decorative Top Element */}
-                    <div className="relative">
-                      <div className="relative overflow-hidden" style={{ height: '60px' }}>
-                        <div className="w-full h-full bg-gray-100" />
-                      </div>
+                    {/* Decorative Top Strip */}
+                    <div className="relative overflow-hidden" style={{ height: '100px' }}>
+                      <div className="w-full h-full bg-gray-100" />
+                      <div className="absolute left-0 top-0 w-1 h-full bg-gray-300" />
                     </div>
-                    
+
                     <div className="p-6 flex flex-col flex-1 items-center justify-center">
-                      {/* Icon */}
-                      <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-gray-200 transition-colors">
+                      <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mb-4">
                         <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                         </svg>
                       </div>
-                      
-                      {/* Text */}
                       <h3 className="text-sm font-semibold text-gray-400 mb-1">Add New Course</h3>
                       <p className="text-xs text-gray-400 text-center">Create a new course to expand your curriculum</p>
                     </div>
@@ -1945,13 +2058,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
               
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Courses Card - Redesigned */}
-                <div className="group relative bg-gradient-to-br from-blue-50 via-white to-indigo-50 rounded-2xl p-8 shadow-lg border border-blue-100 hover:shadow-xl transition-all duration-300 overflow-hidden">
-                  {/* Background Pattern */}
-                  <div className="absolute top-0 right-0 w-32 h-32 opacity-5">
-                    <svg className="w-full h-full text-blue-600" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                  </div>
+                <div className="group relative bg-white rounded-2xl p-8 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 overflow-hidden">
                   
                   {/* Header */}
                   <div className="flex items-center justify-between mb-8">
@@ -1963,7 +2070,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                       </div>
                       <div>
                         <h3 className="text-xl font-bold text-gray-900">Courses</h3>
-                        <p className="text-sm text-gray-600">Learning Content</p>
+                        <p className="text-sm font-semibold" style={{ color: '#1f7a8c' }}>{stats.totalModules} total content</p>
                       </div>
                     </div>
                     <button 
@@ -1986,7 +2093,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                           </svg>
                         </div>
-                        <div className="text-2xl font-bold text-gray-900 mb-1">{stats.totalCourses}</div>
+                        <div className="text-2xl font-bold mb-1" style={{ color: '#1f7a8c' }}>{stats.totalCourses}</div>
                         <div className="text-xs font-medium text-gray-600">Courses</div>
                       </div>
                     </div>
@@ -1999,7 +2106,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                           </svg>
                         </div>
-                        <div className="text-2xl font-bold text-gray-900 mb-1">{stats.totalSubjects}</div>
+                        <div className="text-2xl font-bold mb-1" style={{ color: '#1f7a8c' }}>{stats.totalSubjects}</div>
                         <div className="text-xs font-medium text-gray-600">Subjects</div>
                       </div>
                     </div>
@@ -2012,24 +2119,57 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                           </svg>
                         </div>
-                        <div className="text-2xl font-bold text-gray-900 mb-1">{stats.totalModules}</div>
+                        <div className="text-2xl font-bold mb-1" style={{ color: '#1f7a8c' }}>{stats.totalModules}</div>
                         <div className="text-xs font-medium text-gray-600">Modules</div>
+                      </div>
+                    </div>
+
+                    {/* Quizzes */}
+                    <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-white/50 hover:bg-white/90 transition-all duration-200">
+                      <div className="flex flex-col items-center text-center">
+                        <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center mb-3">
+                          <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <div className="text-2xl font-bold mb-1" style={{ color: '#1f7a8c' }}>{stats.totalQuizzes}</div>
+                        <div className="text-xs font-medium text-gray-600">Quizzes</div>
+                      </div>
+                    </div>
+
+                    {/* Activities */}
+                    <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-white/50 hover:bg-white/90 transition-all duration-200">
+                      <div className="flex flex-col items-center text-center">
+                        <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center mb-3">
+                          <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                          </svg>
+                        </div>
+                        <div className="text-2xl font-bold mb-1" style={{ color: '#1f7a8c' }}>{stats.totalActivities}</div>
+                        <div className="text-xs font-medium text-gray-600">Activities</div>
+                      </div>
+                    </div>
+
+                    {/* Exams */}
+                    <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-white/50 hover:bg-white/90 transition-all duration-200">
+                      <div className="flex flex-col items-center text-center">
+                        <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center mb-3">
+                          <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </div>
+                        <div className="text-2xl font-bold mb-1" style={{ color: '#1f7a8c' }}>{stats.totalExams}</div>
+                        <div className="text-xs font-medium text-gray-600">Exams</div>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Users Card - Redesigned */}
-                <div className="group relative bg-gradient-to-br from-emerald-50 via-white to-teal-50 rounded-2xl p-8 shadow-lg border border-emerald-100 hover:shadow-xl transition-all duration-300 overflow-hidden">
-                  {/* Background Pattern */}
-                  <div className="absolute top-0 right-0 w-32 h-32 opacity-5">
-                    <svg className="w-full h-full text-emerald-600" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </div>
-                  
+                <div className="group relative bg-white rounded-2xl p-8 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 overflow-hidden">
+
                   {/* Header */}
-                  <div className="flex items-center justify-between mb-8">
+                  <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center space-x-3">
                       <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center shadow-lg">
                         <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2038,12 +2178,12 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                       </div>
                       <div>
                         <h3 className="text-xl font-bold text-gray-900">Users</h3>
-                        <p className="text-sm text-gray-600">Platform Members</p>
+                        <p className="text-sm font-semibold" style={{ color: '#1f7a8c' }}>{stats.totalUsers} total</p>
                       </div>
                     </div>
-                    <button 
+                    <button
                       onClick={() => onNavigate('user-management')}
-                      className="w-10 h-10 bg-white/80 hover:bg-white rounded-xl flex items-center justify-center text-gray-600 hover:text-emerald-600 transition-all duration-200 shadow-sm hover:shadow-md"
+                      className="w-10 h-10 bg-gray-50 hover:bg-gray-100 rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-800 transition-all duration-200"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -2051,99 +2191,41 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                     </button>
                   </div>
 
-                  {/* Stats Grid - 2 columns, 3 rows */}
-                  <div className="grid grid-cols-2 gap-4">
-                    {/* Students */}
-                    <div className="bg-white/70 backdrop-blur-sm rounded-xl p-5 border border-white/50 hover:bg-white/90 transition-all duration-200">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                          </svg>
+                  {/* Role breakdown list */}
+                  <div className="space-y-3">                    {[
+                      { label: 'SHS Students',     value: userStats.totalSHSStudents,     color: 'bg-green-500' },
+                      { label: 'JHS Students',     value: userStats.totalJHSStudents,     color: 'bg-yellow-500' },
+                      { label: 'College Students', value: userStats.totalCollegeStudents, color: 'bg-orange-500' },
+                      { label: 'Scholars',         value: userStats.totalScholars,        color: 'bg-purple-500' },
+                      { label: 'Instructors',      value: userStats.totalInstructors,     color: 'bg-blue-500' },
+                      { label: 'Admin',            value: userStats.totalAdmins,          color: 'bg-red-500' },
+                      { label: 'Developer',        value: userStats.totalDevelopers,      color: 'bg-indigo-500' },
+                      { label: 'Guests',           value: userStats.totalGuests,          color: 'bg-gray-400' },
+                    ].map(({ label, value, color }) => {
+                      const total = userStats.totalSHSStudents + userStats.totalJHSStudents + userStats.totalCollegeStudents + userStats.totalScholars + userStats.totalInstructors + userStats.totalAdmins + userStats.totalDevelopers + userStats.totalGuests
+                      const rawPct = total > 0 ? (value / total) * 100 : 0
+                      const pct = value > 0 && rawPct < 1 ? 1 : Math.round(rawPct)
+                      const displayPct = total > 0 && value > 0 ? (rawPct < 1 ? '<1' : Math.round(rawPct).toString()) : '0'
+                      return (
+                        <div key={label}>
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center">
+                              <span className="text-sm font-medium text-gray-700">{label}</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-xs text-gray-400">{displayPct}%</span>
+                              <span className="text-sm font-bold w-8 text-right" style={{ color: '#1f7a8c' }}>{value}</span>
+                            </div>
+                          </div>
+                          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full transition-all duration-500`} style={{ width: `${pct}%`, backgroundColor: '#1f7a8c' }} />
+                          </div>
                         </div>
-                        <div>
-                          <div className="text-2xl font-bold text-gray-900">{userStats.totalStudents}</div>
-                          <div className="text-sm font-medium text-gray-600">Students</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Instructors */}
-                    <div className="bg-white/70 backdrop-blur-sm rounded-xl p-5 border border-white/50 hover:bg-white/90 transition-all duration-200">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                          </svg>
-                        </div>
-                        <div>
-                          <div className="text-2xl font-bold text-gray-900">{userStats.totalInstructors}</div>
-                          <div className="text-sm font-medium text-gray-600">Instructors</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Scholars */}
-                    <div className="bg-white/70 backdrop-blur-sm rounded-xl p-5 border border-white/50 hover:bg-white/90 transition-all duration-200">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
-                          </svg>
-                        </div>
-                        <div>
-                          <div className="text-2xl font-bold text-gray-900">{userStats.totalScholars}</div>
-                          <div className="text-sm font-medium text-gray-600">Scholars</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Admin */}
-                    <div className="bg-white/70 backdrop-blur-sm rounded-xl p-5 border border-white/50 hover:bg-white/90 transition-all duration-200">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                          </svg>
-                        </div>
-                        <div>
-                          <div className="text-2xl font-bold text-gray-900">{userStats.totalAdmins}</div>
-                          <div className="text-sm font-medium text-gray-600">Admin</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Developer */}
-                    <div className="bg-white/70 backdrop-blur-sm rounded-xl p-5 border border-white/50 hover:bg-white/90 transition-all duration-200">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                          </svg>
-                        </div>
-                        <div>
-                          <div className="text-2xl font-bold text-gray-900">{userStats.totalDevelopers}</div>
-                          <div className="text-sm font-medium text-gray-600">Developer</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Guests */}
-                    <div className="bg-white/70 backdrop-blur-sm rounded-xl p-5 border border-white/50 hover:bg-white/90 transition-all duration-200">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        </div>
-                        <div>
-                          <div className="text-2xl font-bold text-gray-900">{userStats.totalGuests}</div>
-                          <div className="text-sm font-medium text-gray-600">Guests</div>
-                        </div>
-                      </div>
-                    </div>
+                      )
+                    })}
                   </div>
+
+
                 </div>
               </div>
             </div>
@@ -2158,7 +2240,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Enrolled Courses */}
-                <div className="bg-white rounded-xl shadow-sm border-2 border-gray-200 min-h-[120px] flex flex-col">
+                <div className="bg-white rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 min-h-[120px] flex flex-col">
                   <div className="p-4 flex flex-col flex-1">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Enrolled</span>
@@ -2176,7 +2258,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 </div>
 
                 {/* Completed Lessons */}
-                <div className="bg-white rounded-xl shadow-sm border-2 border-gray-200 min-h-[120px] flex flex-col">
+                <div className="bg-white rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 min-h-[120px] flex flex-col">
                   <div className="p-4 flex flex-col flex-1">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Completed</span>
@@ -2194,7 +2276,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 </div>
 
                 {/* Overall Progress */}
-                <div className="bg-white rounded-xl shadow-sm border-2 border-gray-200 min-h-[120px] flex flex-col">
+                <div className="bg-white rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 min-h-[120px] flex flex-col">
                   <div className="p-4 flex flex-col flex-1">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Progress</span>
@@ -2228,7 +2310,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* My Courses */}
-                <div className="bg-white rounded-xl shadow-sm border-2 border-gray-200 min-h-[120px] flex flex-col">
+                <div className="bg-white rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 min-h-[120px] flex flex-col">
                   <div className="p-4 flex flex-col flex-1">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Courses</span>
@@ -2246,7 +2328,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 </div>
 
                 {/* Total Students */}
-                <div className="bg-white rounded-xl shadow-sm border-2 border-gray-200 min-h-[120px] flex flex-col">
+                <div className="bg-white rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 min-h-[120px] flex flex-col">
                   <div className="p-4 flex flex-col flex-1">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Students</span>
@@ -2264,7 +2346,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 </div>
 
                 {/* Active Subjects */}
-                <div className="bg-white rounded-xl shadow-sm border-2 border-gray-200 min-h-[120px] flex flex-col">
+                <div className="bg-white rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 min-h-[120px] flex flex-col">
                   <div className="p-4 flex flex-col flex-1">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Subjects</span>
