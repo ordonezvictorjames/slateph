@@ -49,7 +49,7 @@ export default function MytraineesPage() {
         return
       }
 
-      const courseIds = [...new Set(instructorSubjects.map((s: any) => s.course_id))]
+      const courseIds = Array.from(new Set(instructorSubjects.map((s: any) => s.course_id)))
 
       // Get trainees enrolled in these courses
       const { data: enrollments, error: enrollmentsError } = await supabase
