@@ -713,7 +713,7 @@ export default function CourseManagementPage() {
         // Further filter by enrollment type
         if (enrollmentType === 'trainee') {
           // Only show students (not scholars)
-          available = available.filter(t => t.(role === 'shs_student' || role === 'jhs_student' || role === 'college_student'))
+          available = available.filter(t => t.role === 'shs_student' || t.role === 'jhs_student' || t.role === 'college_student')
         } else if (enrollmentType === 'tesda_scholar') {
           // Only show scholars
           available = available.filter(t => t.role === 'tesda_scholar')
