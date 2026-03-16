@@ -1370,8 +1370,10 @@ export default function TasksPage() {
               <option value="">Select a role</option>
               <option value="admin">Admin</option>
               <option value="instructor">Instructor</option>
-              <option value="student">Student</option>
-              <option value="scholar">Scholar</option>
+              <option value="jhs_student">JHS Student</option>
+              <option value="shs_student">SHS Student</option>
+              <option value="college_student">College Student</option>
+              <option value="scholar">TESDA Scholar</option>
             </select>
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">
               <p className="text-xs text-blue-800">

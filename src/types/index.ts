@@ -5,7 +5,7 @@ export interface Profile {
   id: string
   first_name: string
   last_name: string
-  role: 'admin' | 'developer' | 'guest' | 'instructor' | 'scholar' | 'student'
+  role: 'admin' | 'developer' | 'guest' | 'instructor' | 'scholar' | 'shs_student' | 'jhs_student' | 'college_student'
   email: string
   avatar_url?: string
   banner_url?: string
@@ -50,6 +50,6 @@ export interface Assignment {
 export interface AuthUser {
   id: string
   email: string
-  role: 'admin' | 'developer' | 'guest' | 'instructor' | 'scholar' | 'student'
+  role: 'admin' | 'developer' | 'guest' | 'instructor' | 'scholar' | 'shs_student' | 'jhs_student' | 'college_student'
   profile: Profile
 }

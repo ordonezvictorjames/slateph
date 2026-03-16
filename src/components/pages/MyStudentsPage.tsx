@@ -33,23 +33,23 @@ export default function MytraineesPage() {
     try {
       setLoading(true)
 
-      // Get courses taught by this instructor
-      const { data: instructorCourses, error: coursesError } = await supabase
-        .from('courses')
-        .select('id, title')
+      // Get course IDs where this instructor is assigned to at least one subject
+      const { data: instructorSubjects, error: subjectsError } = await supabase
+        .from('subjects')
+        .select('course_id')
         .eq('instructor_id', user?.id)
 
-      if (coursesError) {
-        console.error('Error fetching instructor courses:', coursesError)
+      if (subjectsError) {
+        console.error('Error fetching instructor subjects:', subjectsError)
         return
       }
 
-      if (!instructorCourses || instructorCourses.length === 0) {
+      if (!instructorSubjects || instructorSubjects.length === 0) {
         settrainees([])
         return
       }
 
-      const courseIds = instructorCourses.map((course: Pick<Course, 'id' | 'title'>) => course.id)
+      const courseIds = [...new Set(instructorSubjects.map((s: any) => s.course_id))]
 
       // Get trainees enrolled in these courses
       const { data: enrollments, error: enrollmentsError } = await supabase

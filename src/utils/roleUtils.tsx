@@ -1,7 +1,7 @@
 // Utility functions for user role badges
 // Provides consistent styling across all pages
 
-export type UserRole = 'admin' | 'developer' | 'guest' | 'instructor' | 'scholar' | 'student'
+export type UserRole = 'admin' | 'developer' | 'guest' | 'instructor' | 'scholar' | 'shs_student' | 'jhs_student' | 'college_student'
 
 export const getRoleColor = (role: string): string => {
   switch (role) {
@@ -11,8 +11,12 @@ export const getRoleColor = (role: string): string => {
       return 'bg-green-100 text-green-800'
     case 'scholar':
       return 'bg-amber-100 text-amber-800'
-    case 'student':
+    case 'shs_student':
       return 'bg-blue-100 text-blue-800'
+    case 'jhs_student':
+      return 'bg-cyan-100 text-cyan-800'
+    case 'college_student':
+      return 'bg-indigo-100 text-indigo-800'
     case 'guest':
       return 'bg-gray-100 text-gray-800'
     case 'developer':
@@ -29,9 +33,13 @@ export const getRoleLabel = (role: string): string => {
     case 'instructor':
       return 'Instructor'
     case 'scholar':
-      return 'Scholar'
-    case 'student':
-      return 'Student'
+      return 'TESDA Scholar'
+    case 'shs_student':
+      return 'SHS Student'
+    case 'jhs_student':
+      return 'JHS Student'
+    case 'college_student':
+      return 'College Student'
     case 'guest':
       return 'Guest'
     case 'developer':

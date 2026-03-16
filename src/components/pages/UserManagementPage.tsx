@@ -17,7 +17,7 @@ interface UserData {
   first_name: string
   last_name: string
   email: string
-  role: 'admin' | 'developer' | 'instructor' | 'scholar' | 'student' | 'guest'
+  role: 'admin' | 'developer' | 'instructor' | 'scholar' | 'shs_student' | 'jhs_student' | 'college_student' | 'guest'
   status: string
   teams: string[]
   avatar_url: string | null
@@ -40,7 +40,7 @@ interface Profile {
   first_name: string
   last_name: string
   email?: string
-  role: 'admin' | 'developer' | 'instructor' | 'scholar' | 'student' | 'guest'
+  role: 'admin' | 'developer' | 'instructor' | 'scholar' | 'shs_student' | 'jhs_student' | 'college_student' | 'guest'
   status?: string
   avatar_url: string | null
   banner_url?: string | null
@@ -55,20 +55,8 @@ interface Profile {
   last_login_at?: string | null
 }
 
-const animalAvatars = [
-  { id: 'cat', name: 'Cat', emoji: '🐱' },
-  { id: 'dog', name: 'Dog', emoji: '🐶' },
-  { id: 'rabbit', name: 'Rabbit', emoji: '🐰' },
-  { id: 'fox', name: 'Fox', emoji: '🦊' },
-  { id: 'bear', name: 'Bear', emoji: '🐻' },
-  { id: 'panda', name: 'Panda', emoji: '🐼' },
-  { id: 'koala', name: 'Koala', emoji: '🐨' },
-  { id: 'tiger', name: 'Tiger', emoji: '🐯' },
-  { id: 'lion', name: 'Lion', emoji: '🦁' },
-  { id: 'monkey', name: 'Monkey', emoji: '🐵' },
-  { id: 'pig', name: 'Pig', emoji: '🐷' },
-  { id: 'frog', name: 'Frog', emoji: '🐸' },
-]
+
+
 
 const scientistSections = [
   'Einstein',
@@ -98,8 +86,6 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
   const [showSessionsModal, setShowSessionsModal] = useState(false)
   const [selectedUserForSessions, setSelectedUserForSessions] = useState<UserData | null>(null)
   const [viewingProfile, setViewingProfile] = useState<UserData | null>(null)
-  const [selectedAvatar, setSelectedAvatar] = useState<string>('cat')
-  const [avatarType, setAvatarType] = useState<'animal' | 'upload'>('animal')
   const [uploadedImage, setUploadedImage] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -170,12 +156,8 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
       batch_number: null,
       account_tier: 'visitor'
     })
-    setSelectedAvatar('cat')
-    setAvatarType('animal')
     setUploadedImage(null)
   }
-
-  // Fetch users on component mount
   useEffect(() => {
     fetchUsers()
   }, [])
@@ -226,11 +208,6 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
     }
   }
 
-  const handleAvatarSelect = (animalId: string) => {
-    setSelectedAvatar(animalId)
-    const animal = animalAvatars.find(a => a.id === animalId)
-    setNewUser(prev => ({ ...prev, avatar_url: animal?.emoji || null }))
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -307,8 +284,6 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
         batch_number: null,
         account_tier: 'visitor'
       })
-      setSelectedAvatar('cat')
-      setAvatarType('animal')
       setUploadedImage(null)
       setShowAddModal(false)
 
@@ -328,7 +303,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
       last_name: userData.last_name,
       email: userData.email,
       password: '',
-      role: userData.role as 'admin' | 'developer' | 'instructor' | 'scholar' | 'student' | 'guest',
+      role: userData.role as 'admin' | 'developer' | 'instructor' | 'scholar' | 'shs_student' | 'jhs_student' | 'college_student' | 'guest',
       status: userData.status as 'active' | 'inactive' | 'pending',
       bio: '',
       avatar_url: userData.avatar_url,
@@ -341,33 +316,16 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
     
     // Reset avatar states first
     setUploadedImage(null)
-    setSelectedAvatar('cat')
-    setAvatarType('animal')
     
     // Then set based on existing avatar
     // Properly handle avatar state when editing
     if (userData.avatar_url) {
       if (userData.avatar_url.startsWith('data:')) {
-        setAvatarType('upload')
         setUploadedImage(userData.avatar_url)
-      } else if (userData.avatar_url.length <= 2) {
-        // It's an emoji
-        setAvatarType('animal')
-        const animal = animalAvatars.find(a => a.emoji === userData.avatar_url)
-        if (animal) {
-          setSelectedAvatar(animal.id)
-        } else {
-          setSelectedAvatar('cat')
-        }
-      } else {
+      } else if (userData.avatar_url.length > 2) {
         // It's a URL
-        setAvatarType('upload')
         setUploadedImage(userData.avatar_url)
       }
-    } else {
-      // No avatar, default to animal
-      setAvatarType('animal')
-      setSelectedAvatar('cat')
     }
     
     setShowEditModal(true)
@@ -393,10 +351,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
     try {
       // Determine the final avatar_url based on avatar type
       let finalAvatarUrl = newUser.avatar_url
-      if (avatarType === 'animal') {
-        const animal = animalAvatars.find(a => a.id === selectedAvatar)
-        finalAvatarUrl = animal?.emoji || null
-      } else if (avatarType === 'upload') {
+      if (uploadedImage) {
         finalAvatarUrl = uploadedImage
       }
 
@@ -529,8 +484,6 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
         account_tier: 'visitor'
       })
       setEditingUser(null)
-      setSelectedAvatar('cat')
-      setAvatarType('animal')
       setUploadedImage(null)
       setShowEditModal(false)
 
@@ -696,8 +649,10 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
               <option value="admin">Admin</option>
               <option value="developer">Developer</option>
               <option value="instructor">Instructor</option>
-              <option value="scholar">Scholar</option>
-              <option value="student">Student</option>
+              <option value="jhs_student">JHS Student</option>
+              <option value="shs_student">SHS Student</option>
+              <option value="college_student">College Student</option>
+              <option value="scholar">TESDA Scholar</option>
               <option value="guest">Guest</option>
             </select>
           </div>
@@ -804,7 +759,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500 mb-1">Students</p>
-              <p className="text-2xl font-bold text-orange-600">{users.filter(u => u.role === 'student').length}</p>
+              <p className="text-2xl font-bold text-orange-600">{users.filter(u => u.role === 'shs_student' || u.role === 'jhs_student' || u.role === 'college_student').length}</p>
             </div>
             <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
               <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -875,14 +830,12 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10">
                           {u.avatar_url ? (
-                            u.avatar_url.startsWith('data:') ? (
+                            u.avatar_url.startsWith('data:') || u.avatar_url.startsWith('http') ? (
                               <img className="h-10 w-10 rounded-full object-cover" src={u.avatar_url} alt="" />
-                            ) : u.avatar_url.length <= 2 ? (
-                              <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-xl">
-                                {u.avatar_url}
-                              </div>
                             ) : (
-                              <img className="h-10 w-10 rounded-full object-cover" src={u.avatar_url} alt="" />
+                              <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center text-sm font-medium text-primary-600">
+                                {u.first_name.charAt(0)}{u.last_name.charAt(0)}
+                              </div>
                             )
                           ) : (
                             <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-sm font-medium text-gray-600">
@@ -939,7 +892,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
                           </svg>
-                        ) : u.role === 'student' ? (
+                        ) : (u.role === 'shs_student' || u.role === 'jhs_student' || u.role === 'college_student') ? (
                           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" />
                           </svg>
@@ -1156,14 +1109,12 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                   <div className="flex items-start mb-4">
                     <div className="flex-shrink-0 h-14 w-14">
                       {u.avatar_url ? (
-                        u.avatar_url.startsWith('data:') ? (
+                        u.avatar_url.startsWith('data:') || u.avatar_url.startsWith('http') ? (
                           <img className="h-14 w-14 rounded-full object-cover" src={u.avatar_url} alt="" />
-                        ) : u.avatar_url.length <= 2 ? (
-                          <div className="h-14 w-14 rounded-full bg-gray-200 flex items-center justify-center text-2xl">
-                            {u.avatar_url}
-                          </div>
                         ) : (
-                          <img className="h-14 w-14 rounded-full object-cover" src={u.avatar_url} alt="" />
+                          <div className="h-14 w-14 rounded-full bg-primary-100 flex items-center justify-center text-sm font-medium text-primary-600">
+                            {u.first_name.charAt(0)}{u.last_name.charAt(0)}
+                          </div>
                         )
                       ) : (
                         <div className="h-14 w-14 rounded-full bg-gray-200 flex items-center justify-center text-sm font-medium text-gray-600">
@@ -1200,17 +1151,17 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                     <span className={`px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getRoleColor(u.role as string)}`}>
                       {getRoleLabel(u.role as string)}
                     </span>
-                    {u.role === 'student' && u.strand && (
+                    {(u.role === 'shs_student' || u.role === 'jhs_student' || u.role === 'college_student') && u.strand && (
                       <span className="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-primary-500/10 text-primary-500">
                         {u.strand}
                       </span>
                     )}
-                    {u.role === 'student' && u.section && (
+                    {(u.role === 'shs_student' || u.role === 'jhs_student' || u.role === 'college_student') && u.section && (
                       <span className="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-indigo-50 text-indigo-700">
                         {u.section}
                       </span>
                     )}
-                    {u.role === 'student' && u.grade && (
+                    {(u.role === 'shs_student' || u.role === 'jhs_student' || u.role === 'college_student') && u.grade && (
                       <span className="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-50 text-purple-700">
                         Grade {u.grade}
                       </span>
@@ -1353,8 +1304,6 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
         user={newUser}
         onInputChange={handleInputChange}
         submitting={submitting}
-        selectedAvatar={selectedAvatar}
-        onAvatarSelect={handleAvatarSelect}
         isEditMode={false}
       />
 
@@ -1365,12 +1314,6 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
         user={newUser}
         onInputChange={handleInputChange}
         submitting={submitting}
-        selectedAvatar={selectedAvatar}
-        onAvatarSelect={(id) => {
-          setSelectedAvatar(id)
-          const animal = animalAvatars.find(a => a.id === id)
-          handleInputChange('avatar_url', animal?.emoji || null)
-        }}
         isEditMode={true}
       />
 
@@ -1498,7 +1441,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                   </div>
 
                   {/* SHS Strand - Only for trainees */}
-                  {newUser.role === 'student' && (
+                  {(newUser.role === 'shs_student' || newUser.role === 'jhs_student' || newUser.role === 'college_student') && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         SHS Strand
@@ -1524,7 +1467,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                   )}
 
                   {/* Section and Grade - Only for trainees */}
-                  {newUser.role === 'student' && (
+                  {(newUser.role === 'shs_student' || newUser.role === 'jhs_student' || newUser.role === 'college_student') && (
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1558,33 +1501,6 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                       </div>
                     </div>
                   )}
-                </div>
-              </div>
-
-              {/* Avatar Selection */}
-              <div className="mb-6">
-                <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center">
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Choose Avatar
-                </h3>
-                <div className="grid grid-cols-12 gap-2">
-                  {animalAvatars.map((animal) => (
-                    <button
-                      key={animal.id}
-                      type="button"
-                      onClick={() => handleAvatarSelect(animal.id)}
-                      className={`aspect-square flex items-center justify-center text-2xl rounded-xl border-2 transition-all transform hover:scale-110 ${
-                        selectedAvatar === animal.id
-                          ? 'border-black bg-gray-100 shadow-md scale-105'
-                          : 'border-gray-200 hover:border-gray-400 hover:shadow-sm'
-                      }`}
-                      title={animal.name}
-                    >
-                      {animal.emoji}
-                    </button>
-                  ))}
                 </div>
               </div>
 
@@ -1728,7 +1644,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                   </div>
 
                   {/* SHS Strand - Only for trainees */}
-                  {newUser.role === 'student' && (
+                  {(newUser.role === 'shs_student' || newUser.role === 'jhs_student' || newUser.role === 'college_student') && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         SHS Strand
@@ -1754,7 +1670,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                   )}
 
                   {/* Section and Grade - Only for trainees */}
-                  {newUser.role === 'student' && (
+                  {(newUser.role === 'shs_student' || newUser.role === 'jhs_student' || newUser.role === 'college_student') && (
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1788,36 +1704,6 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                       </div>
                     </div>
                   )}
-                </div>
-              </div>
-
-              {/* Avatar Selection */}
-              <div className="mb-6">
-                <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center">
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Choose Avatar
-                </h3>
-                <div className="grid grid-cols-12 gap-2">
-                  {animalAvatars.map((animal) => (
-                    <button
-                      key={animal.id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedAvatar(animal.id)
-                        handleInputChange('avatar_url', animal.emoji)
-                      }}
-                      className={`aspect-square flex items-center justify-center text-2xl rounded-xl border-2 transition-all transform hover:scale-110 ${
-                        selectedAvatar === animal.id
-                          ? 'border-black bg-gray-100 shadow-md scale-105'
-                          : 'border-gray-200 hover:border-gray-400 hover:shadow-sm'
-                      }`}
-                      title={animal.name}
-                    >
-                      {animal.emoji}
-                    </button>
-                  ))}
                 </div>
               </div>
 
