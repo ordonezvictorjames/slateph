@@ -104,9 +104,10 @@ export default function CourseManagementPage() {
   const userRole = user?.profile?.role
   const hasPermission = userRole === 'admin' || userRole === 'developer'
   
-  const [currentView, setCurrentView] = useState<'courses' | 'subjects' | 'modules'>('courses')
+  const [currentView, setCurrentView] = useState<'courses' | 'subjects' | 'modules' | 'lesson'>('courses')
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null)
+  const [selectedModule, setSelectedModule] = useState<CourseModule | null>(null)
   
   // Data states
   const [courses, setCourses] = useState<Course[]>([])
@@ -1719,10 +1720,15 @@ export default function CourseManagementPage() {
     }
   }
 
+  const handleBackToModules = () => {
+    setCurrentView('modules')
+    setSelectedModule(null)
+  }
+
   // Helper function to start lesson/presentation
   const handleStartLesson = (module: CourseModule) => {
-    setCurrentPresentationModule(module)
-    setShowPresentationModal(true)
+    setSelectedModule(module)
+    setCurrentView('lesson')
   }
 
   // Color selection handler
@@ -1988,7 +1994,20 @@ export default function CourseManagementPage() {
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
-          <span className="text-black font-medium">{selectedSubject.title}</span>
+          <button
+            onClick={currentView === 'lesson' ? handleBackToModules : undefined}
+            className={`hover:text-gray-700 ${currentView === 'modules' ? 'text-black font-medium' : ''}`}
+          >
+            {selectedSubject.title}
+          </button>
+        </>
+      )}
+      {currentView === 'lesson' && selectedModule && (
+        <>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+          <span className="text-black font-medium">{selectedModule.title}</span>
         </>
       )}
     </div>
@@ -2239,11 +2258,11 @@ export default function CourseManagementPage() {
                 <div className="p-3 h-full">
                   <div className="space-y-2 overflow-y-auto" style={{ maxHeight: '480px' }}>
                   {subjects.map((subject) => (
-                    <div key={subject.id} onClick={() => handleSubjectSelect(subject)} className="flex items-center gap-4 px-4 py-4 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors min-h-[88px] cursor-pointer">
+                    <div key={subject.id} onClick={() => handleSubjectSelect(subject)} className="flex items-center gap-4 px-4 py-4 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors min-h-[120px] cursor-pointer">
                       {/* Order number */}
                       <span className="flex-shrink-0 text-xs font-bold text-gray-400 w-5 text-center">{subject.order_index}</span>
                       {/* Image placeholder */}
-                      <div className="flex-shrink-0 w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center border border-gray-200 overflow-hidden">
+                      <div className="flex-shrink-0 w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center border border-gray-200 overflow-hidden">
                         {subject.thumbnail_url ? (
                           <img src={subject.thumbnail_url} alt={subject.title} className="w-full h-full object-cover" />
                         ) : (
@@ -2253,12 +2272,12 @@ export default function CourseManagementPage() {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-900 truncate">{subject.title}</p>
+                        <p className="text-base font-semibold text-gray-900 truncate">{subject.title}</p>
                         <div className="flex items-center gap-1 mt-0.5">
-                          <svg className="w-3 h-3 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                           </svg>
-                          <span className={`text-xs ${subject.trainee_name === 'Unassigned' ? 'text-gray-400 italic' : 'text-gray-500'}`}>
+                          <span className={`text-sm ${subject.trainee_name === 'Unassigned' ? 'text-gray-400 italic' : 'text-gray-500'}`}>
                             {subject.trainee_name}
                           </span>
                           {subject.online_class_link && (
@@ -2272,7 +2291,7 @@ export default function CourseManagementPage() {
                           )}
                         </div>
                       </div>
-                      <span className={`flex-shrink-0 inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full ${
+                      <span className={`flex-shrink-0 inline-flex items-center px-2.5 py-1 text-sm font-semibold rounded-full ${
                         subject.status === 'active' ? 'bg-green-100 text-green-700' :
                         subject.status === 'inactive' ? 'bg-red-100 text-red-700' :
                         'bg-yellow-100 text-yellow-700'
@@ -2476,7 +2495,8 @@ export default function CourseManagementPage() {
                 {modules.map((module, index) => (
                   <div
                     key={module.id}
-                    className="flex items-center gap-4 px-4 py-4 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors min-h-[88px]"
+                    onClick={() => handleStartLesson(module)}
+                    className="flex items-center gap-4 px-4 py-4 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors min-h-[88px] cursor-pointer"
                   >
                     {/* Order number */}
                     <span className="flex-shrink-0 text-xs font-bold text-gray-400 w-5 text-center">{index + 1}</span>
@@ -2514,19 +2534,7 @@ export default function CourseManagementPage() {
                     {/* Actions */}
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       <button
-                        onClick={() => handleStartLesson(module)}
-                        className="px-2.5 py-1.5 text-white rounded-lg font-medium text-xs transition-colors flex items-center gap-1"
-                        style={{ backgroundColor: getButtonBg() }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
-                      >
-                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M8 5v14l11-7z" />
-                        </svg>
-                        Start
-                      </button>
-                      <button
-                        onClick={() => handleEditModule(module)}
+                        onClick={(e) => { e.stopPropagation(); handleEditModule(module) }}
                         className="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-colors" title="Edit"
                       >
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2534,7 +2542,7 @@ export default function CourseManagementPage() {
                         </svg>
                       </button>
                       <button
-                        onClick={() => handleDeleteModule(module)}
+                        onClick={(e) => { e.stopPropagation(); handleDeleteModule(module) }}
                         className="p-1.5 bg-red-50 hover:bg-red-100 text-red-500 rounded-lg transition-colors" title="Delete"
                       >
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2684,6 +2692,35 @@ export default function CourseManagementPage() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lesson View */}
+      {currentView === 'lesson' && selectedModule && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">{selectedModule.title}</h2>
+              <p className="text-sm text-gray-500 mt-0.5 capitalize">{selectedModule.content_type.replace(/_/g, ' ')}</p>
+            </div>
+            <button
+              onClick={handleBackToModules}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back to Modules
+            </button>
+          </div>
+          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden" style={{ height: 'calc(100vh - 220px)' }}>
+            <LessonViewer
+              module={selectedModule}
+              isOpen={true}
+              onClose={handleBackToModules}
+              inline={true}
+            />
           </div>
         </div>
       )}

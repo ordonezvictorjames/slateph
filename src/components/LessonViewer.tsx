@@ -23,11 +23,12 @@ interface LessonViewerProps {
   module: Module
   isOpen: boolean
   onClose: () => void
+  inline?: boolean
 }
 
-export default function LessonViewer({ module, isOpen, onClose }: LessonViewerProps) {
+export default function LessonViewer({ module, isOpen, onClose, inline = false }: LessonViewerProps) {
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !inline) {
       console.log('LessonViewer opened:', module.title, module.content_type)
       if (module.content_type === 'online_conference' && module.conference_url) {
         window.open(module.conference_url, '_blank')
@@ -37,10 +38,12 @@ export default function LessonViewer({ module, isOpen, onClose }: LessonViewerPr
     }
     
     return () => {
-      // Restore body scrollbar when viewer closes
-      document.body.style.overflow = 'unset'
+      if (!inline) {
+        // Restore body scrollbar when viewer closes
+        document.body.style.overflow = 'unset'
+      }
     }
-  }, [isOpen, module])
+  }, [isOpen, module, inline])
 
   // Add ESC key handler
   useEffect(() => {
@@ -58,6 +61,7 @@ export default function LessonViewer({ module, isOpen, onClose }: LessonViewerPr
 
   if (!isOpen) return null
 
+  // Helper functions defined after the early return guard
   const getCanvaEmbedUrl = (url: string) => {
     if (url.includes('canva.com/design/')) {
       const designId = url.match(/design\/([^\/\?]+)/)?.[1]
@@ -362,6 +366,15 @@ export default function LessonViewer({ module, isOpen, onClose }: LessonViewerPr
           </div>
         )
     }
+  }
+
+  // Inline mode: render content directly without fixed overlay
+  if (inline) {
+    return (
+      <div className="w-full h-full overflow-hidden">
+        {renderContent()}
+      </div>
+    )
   }
 
   return (
