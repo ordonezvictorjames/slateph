@@ -351,7 +351,7 @@ export default function TasksPage() {
       // Assign trainee to the first subject
       const { error: assignError } = await supabase
         .from('subjects')
-        .update({ trainee_id: selectedtrainee.id })
+        .update({ instructor_id: selectedtrainee.id })
         .eq('id', subjects[0].id)
 
       if (assignError) throw assignError

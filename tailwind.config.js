@@ -186,5 +186,16 @@ module.exports = {
       },
     },
   },
+  safelist: [
+    'bg-primary-700',
+    'text-white',
+    'hover:bg-primary-700',
+    'hover:text-white',
+    'bg-yellow-100',
+    'text-yellow-800',
+    'bg-red-100',
+    'text-red-800',
+    'animate-pulse',
+  ],
   plugins: [],
 }

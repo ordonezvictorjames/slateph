@@ -34,7 +34,7 @@ export default function LastLoginCountdown({ lastLoginAt, isDeveloper }: LastLog
 
       if (days > 0) {
         setTimeLeft(`${days}d ${hours}h ${minutes}m left`)
-        setColorClass('bg-green-100 text-green-800')
+        setColorClass('bg-primary-700 text-white')
       } else if (hours > 0) {
         setTimeLeft(`⏰ ${hours}h ${minutes}m ${seconds}s left`)
         setColorClass('bg-yellow-100 text-yellow-800')

@@ -24,8 +24,9 @@ import FeatureRequestsPage from '@/components/pages/FeatureRequestsPage'
 import TasksPage from '@/components/pages/TasksPage'
 import AIAssistantPage from '@/components/pages/AIAssistantPage'
 import LibraryPage from '@/components/pages/LibraryPage'
+import BadgesPage from '@/components/pages/BadgesPage'
 
-export type PageType = 'dashboard' | 'user-management' | 'course-management' | 'my-courses' | 'schedule' | 'analytics' | 'profile' | 'settings' | 'system-tracker' | 'code-generator' | 'feature-requests' | 'tasks' | 'games' | 'activity' | 'ai-assistant' | 'library'
+export type PageType = 'dashboard' | 'user-management' | 'course-management' | 'my-courses' | 'schedule' | 'analytics' | 'profile' | 'settings' | 'system-tracker' | 'code-generator' | 'feature-requests' | 'tasks' | 'games' | 'activity' | 'ai-assistant' | 'library' | 'badges'
 
 export default function Dashboard() {
   const { signOut } = useAuth()
@@ -77,6 +78,7 @@ export default function Dashboard() {
       case 'tasks': return <TasksPage />
       case 'ai-assistant': return <AIAssistantPage />
       case 'library': return <LibraryPage />
+      case 'badges': return <BadgesPage />
       default: return <DashboardHome onNavigate={setCurrentPage} />
     }
   }

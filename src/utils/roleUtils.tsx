@@ -6,23 +6,23 @@ export type UserRole = 'admin' | 'developer' | 'guest' | 'instructor' | 'scholar
 export const getRoleColor = (role: string): string => {
   switch (role) {
     case 'admin':
-      return 'bg-purple-100 text-purple-800'
+      return 'bg-primary-700 text-white'
     case 'instructor':
-      return 'bg-green-100 text-green-800'
+      return 'bg-primary-700 text-white'
     case 'scholar':
-      return 'bg-amber-100 text-amber-800'
+      return 'bg-primary-700 text-white'
     case 'shs_student':
-      return 'bg-blue-100 text-blue-800'
+      return 'bg-primary-700 text-white'
     case 'jhs_student':
-      return 'bg-cyan-100 text-cyan-800'
+      return 'bg-primary-700 text-white'
     case 'college_student':
-      return 'bg-indigo-100 text-indigo-800'
+      return 'bg-primary-700 text-white'
     case 'guest':
-      return 'bg-gray-100 text-gray-800'
+      return 'bg-primary-700 text-white'
     case 'developer':
-      return 'bg-red-100 text-red-800'
+      return 'bg-primary-700 text-white'
     default:
-      return 'bg-gray-100 text-gray-800'
+      return 'bg-primary-700 text-white'
   }
 }
 

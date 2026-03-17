@@ -12,12 +12,12 @@ interface Course {
   id: string
   title: string
   description: string
-  course_group?: string
   course_type: 'academic' | 'tesda' | 'upskill'
   status: 'active' | 'inactive' | 'draft'
   enrollment_type: 'trainee' | 'tesda_scholar' | 'both'
   created_at: string
   subjects?: Subject[]
+  thumbnail_url?: string
 }
 
 interface Subject {
@@ -38,6 +38,7 @@ interface Subject {
   created_at: string
   modules?: CourseModule[]
   enrollment_count?: number
+  thumbnail_url?: string
 }
 
 interface CourseModule {
@@ -55,12 +56,11 @@ interface CourseModule {
   video_url?: string
   document_url?: string
   created_at: string
+  thumbnail_url?: string
 }
 
 interface NewCourse {
   title: string
-  description: string
-  course_group: string
   course_type: 'academic' | 'tesda' | 'upskill'
   status: 'active' | 'inactive' | 'draft'
   enrollment_type: 'trainee' | 'tesda_scholar' | 'both'
@@ -69,6 +69,7 @@ interface NewCourse {
   bg_class?: string
   text_class?: string
   border_class?: string
+  thumbnail_url?: string
 }
 
 interface NewSubject {
@@ -79,6 +80,7 @@ interface NewSubject {
   status: 'active' | 'inactive' | 'draft'
   enrollment_type: 'trainee' | 'tesda_scholar' | 'both'
   online_class_link?: string
+  thumbnail_url?: string
 }
 
 interface NewCourseModule {
@@ -92,6 +94,7 @@ interface NewCourseModule {
   text_content?: string
   video_url?: string
   document_url?: string
+  thumbnail_url?: string
 }
 
 export default function CourseManagementPage() {
@@ -138,6 +141,7 @@ export default function CourseManagementPage() {
   const [enrolledtrainees, setEnrolledtrainees] = useState<Array<{id: string, first_name: string, last_name: string, email: string, enrollment_id: string, enrolled_at: string, status: string}>>([])
   const [availabletrainees, setAvailabletrainees] = useState<Array<{id: string, first_name: string, last_name: string, email: string, role: string}>>([])
   const [selectedtrainees, setSelectedtrainees] = useState<string[]>([])
+  const [traineeRoleFilter, setTraineeRoleFilter] = useState<string>('all')
   const [selectedCourseForEnrollment, setSelectedCourseForEnrollment] = useState<Course | null>(null)
   const [availableColors, setAvailableColors] = useState<Array<{id: string, color_name: string, color_hex: string, bg_class: string, text_class: string, border_class: string}>>([])
   const [courseColors, setCourseColors] = useState<Array<{course_id: string, color_name: string, color_hex: string}>>([])
@@ -154,14 +158,11 @@ export default function CourseManagementPage() {
   const [showEnrolltraineesModal, setShowEnrolltraineesModal] = useState(false)
   const [currentPresentationModule, setCurrentPresentationModule] = useState<CourseModule | null>(null)
   
-  // View mode state
-  const [viewMode, setViewMode] = useState<'list' | 'card'>('card')
-  
+  // View mode state removed - card view only
+
   // Form states
   const [newCourse, setNewCourse] = useState<NewCourse>({
     title: '',
-    description: '',
-    course_group: '',
     course_type: 'academic',
     status: 'draft',
     enrollment_type: 'trainee',
@@ -169,7 +170,8 @@ export default function CourseManagementPage() {
     color_hex: '',
     bg_class: '',
     text_class: '',
-    border_class: ''
+    border_class: '',
+    thumbnail_url: ''
   })
   
   const [newSubject, setNewSubject] = useState<NewSubject>({
@@ -178,7 +180,8 @@ export default function CourseManagementPage() {
     instructor_id: '',
     order_index: 1,
     status: 'draft',
-    enrollment_type: 'trainee'
+    enrollment_type: 'trainee',
+    thumbnail_url: ''
   })
 
   const [newModule, setNewModule] = useState<NewCourseModule>({
@@ -191,7 +194,8 @@ export default function CourseManagementPage() {
     conference_url: '',
     text_content: '',
     video_url: '',
-    document_url: ''
+    document_url: '',
+    thumbnail_url: ''
   })
   
   // Editing states
@@ -353,6 +357,37 @@ export default function CourseManagementPage() {
     } catch (error) {
       console.error('Error uploading presentation:', error)
       showError('Upload Error', 'Failed to upload presentation')
+      return null
+    } finally {
+      setUploadingFile(false)
+    }
+  }
+
+  // Upload thumbnail image for courses, subjects, and modules
+  const uploadThumbnail = async (file: File, oldUrl?: string | null): Promise<string | null> => {
+    try {
+      setUploadingFile(true)
+      if (oldUrl && oldUrl.includes('supabase.co/storage')) {
+        try {
+          const urlParts = oldUrl.split('/documents/')
+          if (urlParts.length > 1) {
+            const oldPath = urlParts[1].split('?')[0]
+            await supabase.storage.from('documents').remove([oldPath])
+          }
+        } catch {}
+      }
+      const fileExt = file.name.split('.').pop()
+      const fileName = `thumbnails/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+      const { error } = await supabase.storage.from('documents').upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: file.type
+      })
+      if (error) { showError('Upload Error', error.message); return null }
+      const { data: { publicUrl } } = supabase.storage.from('documents').getPublicUrl(fileName)
+      return publicUrl
+    } catch {
+      showError('Upload Error', 'Failed to upload image')
       return null
     } finally {
       setUploadingFile(false)
@@ -821,11 +856,10 @@ export default function CourseManagementPage() {
         .from('courses')
         .insert([{
           title: newCourse.title,
-          description: newCourse.course_group, // Store course group in description field for now
-          course_group: newCourse.course_group,
           course_type: newCourse.course_type,
           status: newCourse.status,
-          enrollment_type: newCourse.enrollment_type
+          enrollment_type: newCourse.enrollment_type,
+          thumbnail_url: newCourse.thumbnail_url || null
         }])
         .select()
         .single()
@@ -866,8 +900,6 @@ export default function CourseManagementPage() {
 
       setNewCourse({
         title: '',
-        description: '',
-        course_group: '',
         course_type: 'academic',
         status: 'draft',
         enrollment_type: 'trainee',
@@ -875,7 +907,8 @@ export default function CourseManagementPage() {
         color_hex: '',
         bg_class: '',
         text_class: '',
-        border_class: ''
+        border_class: '',
+        thumbnail_url: ''
       })
       setShowAddCourseModal(false)
       await fetchCourses()
@@ -940,12 +973,13 @@ export default function CourseManagementPage() {
         .insert([{
           course_id: selectedCourse.id,
           title: newSubject.title,
-          description: newSubject.title, // Use title as description since field is removed from UI
+          description: newSubject.title,
           instructor_id: newSubject.instructor_id || null,
           status: newSubject.status,
           enrollment_type: newSubject.enrollment_type,
           online_class_link: newSubject.online_class_link || null,
-          order_index: targetOrderIndex
+          order_index: targetOrderIndex,
+          thumbnail_url: newSubject.thumbnail_url || null
         }])
 
       if (error) {
@@ -960,7 +994,8 @@ export default function CourseManagementPage() {
         instructor_id: '',
         order_index: 1,
         status: 'draft',
-        enrollment_type: 'trainee'
+        enrollment_type: 'trainee',
+        thumbnail_url: ''
       })
       setShowAddSubjectModal(false)
       await fetchSubjects(selectedCourse.id)
@@ -1012,7 +1047,7 @@ export default function CourseManagementPage() {
       const moduleData = {
         subject_id: selectedSubject.id,
         title: newModule.title,
-        description: newModule.title, // Use title as description since field is removed from UI
+        description: newModule.title,
         content_type: newModule.content_type,
         status: newModule.status,
         order_index: nextOrderIndex,
@@ -1021,7 +1056,8 @@ export default function CourseManagementPage() {
         conference_url: newModule.conference_url || null,
         text_content: newModule.text_content || null,
         video_url: newModule.video_url || null,
-        document_url: newModule.document_url || null
+        document_url: newModule.document_url || null,
+        thumbnail_url: newModule.thumbnail_url || null
       }
 
       console.log('Creating module with data:', moduleData)
@@ -1046,7 +1082,8 @@ export default function CourseManagementPage() {
         conference_url: '',
         text_content: '',
         video_url: '',
-        document_url: ''
+        document_url: '',
+        thumbnail_url: ''
       })
       setShowAddModuleModal(false)
       await fetchModules(selectedSubject.id)
@@ -1096,7 +1133,8 @@ export default function CourseManagementPage() {
       conference_url: module.conference_url || '',
       text_content: module.text_content || '',
       video_url: module.video_url || '',
-      document_url: module.document_url || ''
+      document_url: module.document_url || '',
+      thumbnail_url: module.thumbnail_url || ''
     })
     setShowEditModuleModal(true)
   }
@@ -1109,7 +1147,7 @@ export default function CourseManagementPage() {
     try {
       const updateData = {
         title: newModule.title,
-        description: newModule.title, // Use title as description since field is removed from UI
+        description: newModule.title,
         content_type: newModule.content_type,
         status: newModule.status,
         duration_minutes: newModule.duration_minutes || null,
@@ -1117,7 +1155,8 @@ export default function CourseManagementPage() {
         conference_url: newModule.conference_url || null,
         text_content: newModule.text_content || null,
         video_url: newModule.video_url || null,
-        document_url: newModule.document_url || null
+        document_url: newModule.document_url || null,
+        thumbnail_url: newModule.thumbnail_url || null
       }
 
       console.log('Updating module with data:', updateData)
@@ -1140,7 +1179,8 @@ export default function CourseManagementPage() {
         status: 'draft',
         duration_minutes: 0,
         canva_url: '',
-        conference_url: ''
+        conference_url: '',
+        thumbnail_url: ''
       })
       setEditingModule(null)
       setShowEditModuleModal(false)
@@ -1174,8 +1214,6 @@ export default function CourseManagementPage() {
     
     setNewCourse({
       title: course.title,
-      description: course.description,
-      course_group: course.course_group || course.description, // Use course_group if available, fallback to description
       course_type: course.course_type || 'academic',
       status: course.status,
       enrollment_type: course.enrollment_type,
@@ -1183,7 +1221,8 @@ export default function CourseManagementPage() {
       color_hex: courseColor?.color_hex || '',
       bg_class: courseColor?.bg_class || '',
       text_class: courseColor?.text_class || '',
-      border_class: courseColor?.border_class || ''
+      border_class: courseColor?.border_class || '',
+      thumbnail_url: course.thumbnail_url || ''
     })
     setShowEditCourseModal(true)
   }
@@ -1200,11 +1239,10 @@ export default function CourseManagementPage() {
         .from('courses')
         .update({
           title: newCourse.title,
-          description: newCourse.course_group, // Store course group in description field for now
-          course_group: newCourse.course_group,
           course_type: newCourse.course_type,
           status: newCourse.status,
-          enrollment_type: newCourse.enrollment_type
+          enrollment_type: newCourse.enrollment_type,
+          thumbnail_url: newCourse.thumbnail_url || null
         })
         .eq('id', editingCourse.id)
 
@@ -1300,8 +1338,6 @@ export default function CourseManagementPage() {
 
       setNewCourse({
         title: '',
-        description: '',
-        course_group: '',
         course_type: 'academic',
         status: 'draft',
         enrollment_type: 'trainee',
@@ -1309,7 +1345,8 @@ export default function CourseManagementPage() {
         color_hex: '',
         bg_class: '',
         text_class: '',
-        border_class: ''
+        border_class: '',
+        thumbnail_url: ''
       })
       setEditingCourse(null)
       setShowEditCourseModal(false)
@@ -1356,7 +1393,8 @@ export default function CourseManagementPage() {
       order_index: subject.order_index,
       status: subject.status,
       enrollment_type: subject.enrollment_type,
-      online_class_link: subject.online_class_link || ''
+      online_class_link: subject.online_class_link || '',
+      thumbnail_url: subject.thumbnail_url || ''
     })
     setShowEditSubjectModal(true)
   }
@@ -1411,12 +1449,13 @@ export default function CourseManagementPage() {
         .from('subjects')
         .update({
           title: newSubject.title,
-          description: newSubject.title, // Use title as description since field is removed from UI
+          description: newSubject.title,
           instructor_id: newSubject.instructor_id || null,
           status: newSubject.status,
           enrollment_type: newSubject.enrollment_type,
           online_class_link: newSubject.online_class_link || null,
-          order_index: newSubject.order_index
+          order_index: newSubject.order_index,
+          thumbnail_url: newSubject.thumbnail_url || null
         })
         .eq('id', editingSubject.id)
 
@@ -1432,7 +1471,8 @@ export default function CourseManagementPage() {
         instructor_id: '',
         order_index: 1,
         status: 'draft',
-        enrollment_type: 'trainee'
+        enrollment_type: 'trainee',
+        thumbnail_url: ''
       })
       setEditingSubject(null)
       setShowEditSubjectModal(false)
@@ -1455,6 +1495,7 @@ export default function CourseManagementPage() {
   const handleEnrolltrainees = (course: Course) => {
       setSelectedCourseForEnrollment(course)
       setSelectedtrainees([])
+      setTraineeRoleFilter('all')
       fetchEnrollments(course.id, course.enrollment_type)
       setShowEnrolltraineesModal(true)
     }
@@ -1997,167 +2038,23 @@ export default function CourseManagementPage() {
       {currentView === 'courses' && (
         <div className="space-y-6">
           {/* Welcome Banner */}
-          <div className="overflow-visible relative min-h-[80px] mb-6">
+          <div className="overflow-visible relative mb-6">
             <div className="flex items-center justify-between">
-              <div className="z-10 pr-4">
-                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+              <div className="z-10">
+                <h2 className="text-xl font-bold text-gray-900">
                   Course Management
                 </h2>
-                <p className="text-gray-600">
+                <p className="text-sm text-gray-500 mt-0.5">
                   Create and manage courses for your learning management system
                 </p>
               </div>
-              
-              {/* Book Illustration - Overlapping */}
-              <div className="hidden md:block absolute -top-16 w-40 h-40 z-0" style={{ right: '5px' }}>
-                <img 
-                  src="/book.png" 
-                  alt="Book illustration" 
-                  className="w-full h-full object-contain"
-                />
-              </div>
             </div>
           </div>
 
-          {/* Statistics Summary */}
-          <div className="grid grid-cols-8 gap-4">
-            {/* Total Courses */}
-            <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500 mb-1">Courses</p>
-                  <p className="text-xl font-bold text-black">{courses.length}</p>
-                </div>
-                <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                </svg>
-              </div>
-            </div>
-
-            {/* Active Courses */}
-            <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500 mb-1">Active</p>
-                  <p className="text-xl font-bold text-black">{courses.filter(c => c.status === 'active').length}</p>
-                </div>
-                <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-            </div>
-
-            {/* Inactive Courses */}
-            <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500 mb-1">Inactive</p>
-                  <p className="text-xl font-bold text-black">{courses.filter(c => c.status === 'inactive').length}</p>
-                </div>
-                <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-            </div>
-
-            {/* Draft Courses */}
-            <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500 mb-1">Draft</p>
-                  <p className="text-xl font-bold text-black">{courses.filter(c => c.status === 'draft').length}</p>
-                </div>
-                <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-              </div>
-            </div>
-
-            {/* Total Subjects */}
-            <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500 mb-1">Subjects</p>
-                  <p className="text-xl font-bold text-black">{statistics.totalSubjects}</p>
-                </div>
-                <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
-              </div>
-            </div>
-
-            {/* Total Modules */}
-            <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500 mb-1">Modules</p>
-                  <p className="text-xl font-bold text-black">{statistics.totalModules}</p>
-                </div>
-                <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-            </div>
-
-            {/* Total Students */}
-            <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500 mb-1">Students</p>
-                  <p className="text-xl font-bold text-black">{statistics.totalStudents}</p>
-                </div>
-                <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-              </div>
-            </div>
-
-            {/* Total Instructors */}
-            <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500 mb-1">Instructors</p>
-                  <p className="text-xl font-bold text-black">{statistics.totalInstructors}</p>
-                </div>
-                <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100">
-              <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-black">Courses</h2>
                 <div className="flex items-center gap-3">
-                  {/* View Toggle */}
-                  <div className="flex gap-2">
-                    <button
-                          onClick={() => setViewMode('list')}
-                          className={`px-3 py-2 rounded-lg border transition-colors flex items-center gap-2 ${
-                            viewMode === 'list'
-                              ? 'bg-primary-500 text-white border-primary-500'
-                              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                          }`}
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => setViewMode('card')}
-                          className={`px-3 py-2 rounded-lg border transition-colors flex items-center gap-2 ${
-                            viewMode === 'card'
-                              ? 'bg-primary-500 text-white border-primary-500'
-                              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                          }`}
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                          </svg>
-                        </button>
-                      </div>
                       {courses.length > 0 && (
                         <button 
                           onClick={() => setShowAddCourseModal(true)}
@@ -2174,9 +2071,7 @@ export default function CourseManagementPage() {
                       )}
                     </div>
                   </div>
-                </div>
 
-          <div className="p-6">
             {courses.length === 0 ? (
               <div className="text-center py-12">
                 <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
@@ -2196,284 +2091,105 @@ export default function CourseManagementPage() {
                   Create Course
                 </button>
               </div>
-            ) : viewMode === 'list' ? (
-              /* List View */
-              <>
-                {/* Desktop Table */}
-                <div className="hidden lg:block overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Course</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Enrollment</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                      </tr>
-                    </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {courses.map((course) => (
-                      <tr key={course.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4">
-                          <div className="flex items-center">
-                            <div className="w-3 h-3 rounded-full bg-gray-400 mr-3 flex-shrink-0" />
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">{course.title}</div>
-                              <div className="text-sm text-gray-500 line-clamp-1">{course.description}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                            {course.course_type === 'academic' ? 'Academic' : course.course_type === 'tesda' ? 'TESDA' : 'UpSkill'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex flex-wrap gap-1">
-                            {getEnrollmentTypeDisplay(course.enrollment_type).map((badge, idx) => (
-                              <span key={idx} className={`inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full ${badge.color}`}>
-                                {badge.text}
-                              </span>
-                            ))}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${getStatusColor(course.status)}`}>
-                            {course.status.charAt(0).toUpperCase() + course.status.slice(1)}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={() => handleCourseSelect(course)}
-                              className="px-3 py-1.5 text-white rounded-lg text-xs transition-colors"
-                              style={{ backgroundColor: getButtonBg() }}
-                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
-                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
-                            >
-                              Subjects
-                            </button>
-                            <button
-                              onClick={() => handleEnrolltrainees(course)}
-                              className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
-                              title="Enroll students"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                              </svg>
-                            </button>
-                            <button
-                              onClick={() => handleEditCourse(course)}
-                              className="p-1.5 text-green-500 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors"
-                              title="Edit course"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                              </svg>
-                            </button>
-                            <button
-                              onClick={() => handleDeleteCourse(course)}
-                              className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-                              title="Delete course"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Mobile Card View */}
-              <div className="lg:hidden space-y-4 p-4">
-                {courses.map((course) => (
-                  <div key={course.id} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <div className="flex items-center mb-2">
-                          <div className="w-3 h-3 rounded-full bg-gray-400 mr-3 flex-shrink-0" />
-                          <h3 className="font-medium text-gray-900 text-sm">{course.title}</h3>
-                        </div>
-                        <p className="text-xs text-gray-500 line-clamp-2 mb-2">{course.description}</p>
-                        
-                        <div className="flex flex-wrap gap-2 mb-3">
-                          <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                            {course.course_type === 'academic' ? 'Academic' : course.course_type === 'tesda' ? 'TESDA' : 'UpSkill'}
-                          </span>
-                          
-                          {getEnrollmentTypeDisplay(course.enrollment_type).map((badge, idx) => (
-                            <span key={idx} className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${badge.color}`}>
-                              {badge.text}
-                            </span>
-                          ))}
-                          
-                          <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(course.status)}`}>
-                            {course.status.charAt(0).toUpperCase() + course.status.slice(1)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        onClick={() => handleCourseSelect(course)}
-                        className="flex-1 min-w-0 px-3 py-2 text-white rounded-lg text-xs font-medium transition-colors"
-                        style={{ backgroundColor: getButtonBg() }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
-                      >
-                        Subjects
-                      </button>
-                      <button
-                        onClick={() => handleEnrolltrainees(course)}
-                        className="px-3 py-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg text-xs font-medium transition-colors"
-                        title="Enroll students"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={() => handleEditCourse(course)}
-                        className="px-3 py-2 text-green-600 bg-green-50 hover:bg-green-100 rounded-lg text-xs font-medium transition-colors"
-                        title="Edit course"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={() => handleDeleteCourse(course)}
-                        className="px-3 py-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg text-xs font-medium transition-colors"
-                        title="Delete course"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
             ) : (
               /* Card View */
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+              <div className="bg-white rounded-2xl border border-gray-200 p-6">
+              <div className="flex flex-wrap" style={{ gap: '25px' }}>
                 {courses.map((course) => {
                   const courseColor = getCourseColor(course.id)
-                  const courseGroup = course.course_group || course.description || 'General'
                   const createdDate = new Date(course.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                   
                   return (
                     <div 
-                      key={course.id} 
-                      className="group relative bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col"
-                      style={{ width: '300px' }}
+                      key={course.id}
+                      onClick={() => handleCourseSelect(course)}
+                      className="group relative bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col cursor-pointer"
+                      style={{ width: '300px', height: '280px' }}
                     >
-                      {/* Decorative Top Strip */}
-                      <div className="relative overflow-hidden" style={{ height: '100px' }}>
-                        <div className="w-full h-full" style={{ 
-                          background: courseColor?.color_hex ? `linear-gradient(135deg, ${courseColor.color_hex}20 0%, ${courseColor.color_hex}10 100%)` : 'linear-gradient(135deg, #1f7a8c20 0%, #1f7a8c10 100%)'
-                        }} />
-                        <div className="absolute left-0 top-0 w-1 h-full" style={{ backgroundColor: courseColor?.color_hex || '#1f7a8c' }} />
-                      </div>
+                      {/* Decorative Top Strip � 40% */}
+                      <div className="relative overflow-hidden flex-[2]">
+                        {course.thumbnail_url ? (
+                          <img
+                            src={course.thumbnail_url}
+                            alt={course.title}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full" style={{ 
+                            background: courseColor?.color_hex ? `linear-gradient(135deg, ${courseColor.color_hex}20 0%, ${courseColor.color_hex}10 100%)` : 'linear-gradient(135deg, #1f7a8c20 0%, #1f7a8c10 100%)'
+                          }} />
+                        )}
 
-                      {/* Course Header */}
-                      <div className="relative bg-white border-b border-gray-200 p-6">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-lg font-semibold text-black mb-2 line-clamp-2">
-                              {course.title}
-                            </h3>
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-gray-600 font-medium">{courseGroup}</span>
-                              <span className="text-xs text-gray-500">{createdDate}</span>
-                            </div>
-                          </div>
-                          
-                          {/* Action Buttons */}
-                          <div className="flex items-center space-x-1 ml-2 flex-shrink-0">
-                            <button
-                              onClick={() => handleEnrolltrainees(course)}
-                              className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
-                              title="Enroll students"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                              </svg>
-                            </button>
-                            <button
-                              onClick={() => handleEditCourse(course)}
-                              className="p-2 text-green-500 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors"
-                              title="Edit course"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                              </svg>
-                            </button>
-                            <button
-                              onClick={() => handleDeleteCourse(course)}
-                              className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-                              title="Delete course"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Card Content */}
-                      <div className="p-5 flex flex-col flex-1">
-                        {/* Badges */}
-                        <div className="flex flex-wrap gap-2 mb-4">
-                          <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${getStatusColor(course.status)}`}>
-                            <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+                        {/* Status + Course Type badges overlaid on image */}
+                        <div className="absolute bottom-2 left-3 flex items-center gap-1.5">
+                          <span className={`inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full backdrop-blur-sm ${getStatusColor(course.status)}`}>
+                            <div className={`w-1.5 h-1.5 rounded-full mr-1 ${
                               course.status === 'active' ? 'bg-green-600' :
                               course.status === 'inactive' ? 'bg-red-600' :
                               'bg-yellow-600'
                             }`} />
                             {course.status.charAt(0).toUpperCase() + course.status.slice(1)}
                           </span>
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100/90 text-blue-800 backdrop-blur-sm">
                             {course.course_type === 'academic' ? 'Academic' : course.course_type === 'tesda' ? 'TESDA' : 'UpSkill'}
                           </span>
-                          {getEnrollmentTypeDisplay(course.enrollment_type).map((d, idx) => (
-                            <span key={idx} className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${d.color}`}>
-                              {d.text}
-                            </span>
-                          ))}
                         </div>
+                      </div>
 
-                        {/* Action Button - Always at bottom */}
-                        <div className="mt-auto">
-                          <button 
-                            onClick={() => handleCourseSelect(course)}
-                            className="w-full px-4 py-3 text-white rounded-xl font-semibold text-sm transition-all duration-200 hover:shadow-lg"
-                            style={{ backgroundColor: getButtonBg() }}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
+                      {/* Bottom 60% � header + content */}
+                      <div className="flex-[3] flex flex-col overflow-hidden">
+
+                      {/* Course Header */}
+                      <div className="relative bg-white border-b border-gray-200 p-4">
+                        <h3 className="text-lg font-semibold text-black mb-1 line-clamp-2">
+                          {course.title}
+                        </h3>
+                        <span className="text-xs text-gray-500">{createdDate}</span>
+                      </div>
+
+                      {/* Card Content */}
+                      <div className="p-4 flex flex-col flex-1 overflow-hidden">
+                        {/* Action Buttons */}
+                        <div className="flex items-center gap-2 mt-auto">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleEnrolltrainees(course) }}
+                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                            title="Enroll students"
                           >
-                            <div className="flex items-center justify-center space-x-2">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                              </svg>
-                              <span>Manage Subjects</span>
-                            </div>
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                            </svg>
+                            Enroll
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleEditCourse(course) }}
+                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-green-600 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
+                            title="Edit course"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            Edit
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDeleteCourse(course) }}
+                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+                            title="Delete course"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            Delete
                           </button>
                         </div>
                       </div>
+                      </div>{/* end bottom 60% wrapper */}
                     </div>
                   )
                 })}
               </div>
+              </div>
             )}
-          </div>
           </div>
         </div>
       )}
@@ -2482,216 +2198,166 @@ export default function CourseManagementPage() {
       {currentView === 'subjects' && selectedCourse && (
         <div className="space-y-6">
           {/* Welcome Banner */}
-          <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100 overflow-visible relative min-h-[120px]">
+          <div className="overflow-visible relative mb-6">
             <div className="flex items-center justify-between">
-              <div className="z-10 pr-4">
-                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+              <div className="z-10">
+                <h2 className="text-xl font-bold text-gray-900">
                   {selectedCourse.title}
                 </h2>
-                <p className="text-gray-600">
+                <p className="text-sm text-gray-500 mt-0.5">
                   Manage subjects and assign trainees
                 </p>
-              </div>
-              
-              {/* Book Illustration - Overlapping */}
-              <div className="hidden md:block absolute -top-16 w-48 h-48 z-0" style={{ right: '5px' }}>
-                <img 
-                  src="/book.png" 
-                  alt="Book illustration" 
-                  className="w-full h-full object-contain opacity-90"
-                />
               </div>
             </div>
           </div>
 
-          {/* Subject Cards Container - Full Width */}
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                {/* Statistics and Add Button - At the top */}
-                <div className="p-6 border-b border-gray-200 bg-gray-50">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">Course Statistics</h3>
-                    <button
-                      onClick={() => setShowAddSubjectModal(true)}
-                      className="px-4 py-2 text-white rounded-lg transition-colors flex items-center gap-2"
-                      style={{ backgroundColor: getButtonBg() }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                      </svg>
-                      <span>Add Subject</span>
-                    </button>
+          {/* 70/30 layout: subjects list left, stats right */}
+          <div className="flex gap-4 items-stretch">
+
+            {/* Subjects List � 70% */}
+            <div className="flex-[7] min-w-0 flex flex-col">
+              {subjects.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                    <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
                   </div>
-                  
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
-                      <div className="flex items-center gap-2">
-                        <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                        </svg>
-                        <span className="text-xs text-gray-600">Total</span>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No subjects yet</h3>
+                  <p className="text-gray-600 mb-4">Start building your course by adding subjects</p>
+                  <button
+                    onClick={() => setShowAddSubjectModal(true)}
+                    className="px-4 py-2 text-white rounded-lg transition-colors"
+                    style={{ backgroundColor: getButtonBg() }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
+                  >
+                    Add Subject
+                  </button>
+                </div>
+              ) : (
+                <div className="p-3 h-full">
+                  <div className="space-y-2 overflow-y-auto" style={{ maxHeight: '480px' }}>
+                  {subjects.map((subject) => (
+                    <div key={subject.id} onClick={() => handleSubjectSelect(subject)} className="flex items-center gap-4 px-4 py-4 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors min-h-[88px] cursor-pointer">
+                      {/* Order number */}
+                      <span className="flex-shrink-0 text-xs font-bold text-gray-400 w-5 text-center">{subject.order_index}</span>
+                      {/* Image placeholder */}
+                      <div className="flex-shrink-0 w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center border border-gray-200 overflow-hidden">
+                        {subject.thumbnail_url ? (
+                          <img src={subject.thumbnail_url} alt={subject.title} className="w-full h-full object-cover" />
+                        ) : (
+                          <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                          </svg>
+                        )}
                       </div>
-                      <span className="text-xl font-bold text-gray-900">{subjects.length}</span>
-                    </div>
-
-                    <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-green-200">
-                      <div className="flex items-center gap-2">
-                        <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span className="text-xs text-gray-600">Active</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 truncate">{subject.title}</p>
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <svg className="w-3 h-3 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                          <span className={`text-xs ${subject.trainee_name === 'Unassigned' ? 'text-gray-400 italic' : 'text-gray-500'}`}>
+                            {subject.trainee_name}
+                          </span>
+                          {subject.online_class_link && (
+                            <>
+                              <span className="text-gray-300 mx-1">�</span>
+                              <a href={subject.online_class_link} target="_blank" rel="noopener noreferrer"
+                                className="text-xs text-blue-500 hover:underline" onClick={(e) => e.stopPropagation()}>
+                                Join class
+                              </a>
+                            </>
+                          )}
+                        </div>
                       </div>
-                      <span className="text-xl font-bold text-green-700">
-                        {subjects.filter(s => s.status === 'active').length}
+                      <span className={`flex-shrink-0 inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full ${
+                        subject.status === 'active' ? 'bg-green-100 text-green-700' :
+                        subject.status === 'inactive' ? 'bg-red-100 text-red-700' :
+                        'bg-yellow-100 text-yellow-700'
+                      }`}>
+                        {subject.status.charAt(0).toUpperCase() + subject.status.slice(1)}
                       </span>
-                    </div>
-
-                    <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-yellow-200">
-                      <div className="flex items-center gap-2">
-                        <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span className="text-xs text-gray-600">Draft</span>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <button onClick={(e) => { e.stopPropagation(); handleEditSubject(subject) }}
+                          className="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-colors" title="Edit">
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); handleDeleteSubject(subject) }}
+                          className="p-1.5 bg-red-50 hover:bg-red-100 text-red-500 rounded-lg transition-colors" title="Delete">
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
                       </div>
-                      <span className="text-xl font-bold text-yellow-700">
-                        {subjects.filter(s => s.status === 'draft').length}
-                      </span>
                     </div>
-
-                    <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-red-200">
-                      <div className="flex items-center gap-2">
-                        <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span className="text-xs text-gray-600">Inactive</span>
-                      </div>
-                      <span className="text-xl font-bold text-red-700">
-                        {subjects.filter(s => s.status === 'inactive').length}
-                      </span>
-                    </div>
+                  ))}
                   </div>
                 </div>
+              )}
+            </div>
 
-                {/* Subject Cards */}
-                <div className="p-6">
-                  {subjects.length === 0 ? (
-                    <div className="text-center py-12">
-                      <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                        <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                        </svg>
-                      </div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">No subjects yet</h3>
-                      <p className="text-gray-600 mb-4">Start building your course by adding subjects to organize your content</p>
-                      <button 
-                        onClick={() => setShowAddSubjectModal(true)}
-                        className="px-4 py-2 text-white rounded-lg transition-colors"
-                        style={{ backgroundColor: getButtonBg() }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
-                      >
-                        Add Subject
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-                      {subjects.map((subject, index) => (
-                        <div
-                          key={subject.id}
-                          className="bg-white rounded-xl border-2 border-gray-100 hover:border-gray-300 hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col"
-                          style={{ height: '250px' }}
-                        >
-                          <div className="p-4 flex flex-col flex-1">
-                            {/* Status badge + top row */}
-                            <div className="flex items-start justify-between mb-2">
-                              <div className="flex items-center gap-2">
-                                <div className="flex-shrink-0 flex items-center justify-center w-8 h-8 bg-gray-100 rounded-lg border border-gray-200">
-                                  <span className="text-sm font-bold text-gray-700">{subject.order_index}</span>
-                                </div>
-                              </div>
-                              <span className={`inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full ${
-                                subject.status === 'active' ? 'bg-green-100 text-green-700' :
-                                subject.status === 'inactive' ? 'bg-red-100 text-red-700' :
-                                'bg-yellow-100 text-yellow-700'
-                              }`}>
-                                {subject.status.charAt(0).toUpperCase() + subject.status.slice(1)}
-                              </span>
-                            </div>
-
-                            {/* Title */}
-                            <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 leading-snug mb-1">
-                              {subject.title}
-                            </h3>
-
-                            {/* Instructor + online class link — just above buttons */}
-                            <div className="mt-auto mb-3 space-y-1">
-                              <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                                <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                </svg>
-                                <span className={subject.trainee_name === 'Unassigned' ? 'text-gray-400 italic' : 'text-gray-700 font-medium'}>
-                                  {subject.trainee_name}
-                                </span>
-                              </div>
-                              {subject.online_class_link && (
-                                <div className="flex items-center gap-1.5 text-xs">
-                                  <svg className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                  </svg>
-                                  <a
-                                    href={subject.online_class_link}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-blue-600 hover:underline font-medium"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    Join Online Class
-                                  </a>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Action buttons */}
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => handleSubjectSelect(subject)}
-                                className="flex-1 px-3 py-1.5 text-white rounded-lg font-medium text-xs transition-colors flex items-center justify-center gap-1.5"
-                                style={{ backgroundColor: getButtonBg() }}
-                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
-                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
-                              >
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                                </svg>
-                                Modules
-                              </button>
-                              <button
-                                onClick={() => handleEditSubject(subject)}
-                                className="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
-                                title="Edit subject"
-                              >
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
-                              </button>
-                              <button
-                                onClick={() => handleDeleteSubject(subject)}
-                                className="p-1.5 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg transition-colors"
-                                title="Delete subject"
-                              >
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+            {/* Statistics Card � 30% */}
+            <div className="flex-[3] min-w-0 bg-white border border-gray-200 rounded-xl p-4 self-stretch">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-gray-700">Statistics</h3>
+                <button
+                  onClick={() => setShowAddSubjectModal(true)}
+                  className="px-3 py-1.5 text-white rounded-lg transition-colors flex items-center gap-1.5 text-xs"
+                  style={{ backgroundColor: getButtonBg() }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Add Subject
+                </button>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                    <span className="text-xs text-gray-600">Total</span>
+                  </div>
+                  <span className="text-lg font-bold text-gray-900">{subjects.length}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-green-200">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="text-xs text-gray-600">Active</span>
+                  </div>
+                  <span className="text-lg font-bold text-green-700">{subjects.filter(s => s.status === 'active').length}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-yellow-200">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="text-xs text-gray-600">Draft</span>
+                  </div>
+                  <span className="text-lg font-bold text-yellow-700">{subjects.filter(s => s.status === 'draft').length}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-red-200">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="text-xs text-gray-600">Inactive</span>
+                  </div>
+                  <span className="text-lg font-bold text-red-700">{subjects.filter(s => s.status === 'inactive').length}</span>
                 </div>
               </div>
+            </div>
+
+          </div>
         </div>
       )}
 
@@ -2699,24 +2365,15 @@ export default function CourseManagementPage() {
       {currentView === 'modules' && selectedSubject && (
         <div className="space-y-6">
           {/* Welcome Banner */}
-          <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100 overflow-visible relative min-h-[120px]">
+          <div className="overflow-visible relative mb-6">
             <div className="flex items-center justify-between">
-              <div className="z-10 pr-4">
-                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+              <div className="z-10">
+                <h2 className="text-xl font-bold text-gray-900">
                   {selectedSubject.title}
                 </h2>
-                <p className="text-gray-600">
+                <p className="text-sm text-gray-500 mt-0.5">
                   Create and organize learning modules
                 </p>
-              </div>
-              
-              {/* Book Illustration - Overlapping */}
-              <div className="hidden md:block absolute -top-16 w-48 h-48 z-0" style={{ right: '5px' }}>
-                <img 
-                  src="/book.png" 
-                  alt="Book illustration" 
-                  className="w-full h-full object-contain opacity-90"
-                />
               </div>
             </div>
           </div>
@@ -2815,134 +2472,75 @@ export default function CourseManagementPage() {
                 </button>
               </div>
             ) : (
-              <div className="flex flex-wrap gap-4">
+              <div className="space-y-2 overflow-y-auto" style={{ maxHeight: '480px' }}>
                 {modules.map((module, index) => (
                   <div
                     key={module.id}
-                    className="group bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col"
-                    style={{ width: '300px' }}
+                    className="flex items-center gap-4 px-4 py-4 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors min-h-[88px]"
                   >
-                    {/* Module Header with Gradient Background */}
-                    <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 p-5 border-b border-gray-200">
-                      {/* Module Number and Status Row */}
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          {/* Module Number Badge */}
-                          <div className="flex items-center justify-center w-10 h-10 bg-white border-2 border-gray-300 rounded-lg shadow-sm">
-                            <span className="text-lg font-bold text-gray-700">{index + 1}</span>
+                    {/* Order number */}
+                    <span className="flex-shrink-0 text-xs font-bold text-gray-400 w-5 text-center">{index + 1}</span>
+                    {/* Image placeholder */}
+                    <div className="flex-shrink-0 w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center border border-gray-200 overflow-hidden">
+                      {module.thumbnail_url ? (
+                        <img src={module.thumbnail_url} alt={module.title} className="w-full h-full object-cover" />
+                      ) : (
+                        getContentTypeIcon(module.content_type)
+                      )}
+                    </div>
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 truncate">{module.title}</p>
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                        {module.duration_minutes && (
+                          <div className="flex items-center gap-1 text-xs text-gray-500">
+                            <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span>{module.duration_minutes} min</span>
                           </div>
-                          {/* Content Type Icon */}
-                          <div className="flex items-center justify-center w-10 h-10 bg-white border border-gray-200 rounded-lg">
-                            {getContentTypeIcon(module.content_type)}
-                          </div>
-                        </div>
-                        
-                        {/* Status Badge */}
+                        )}
                         {'status' in module && module.status && (
-                          <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-md ${
-                            module.status === 'active' ? 'bg-green-100 text-green-700 border border-green-200' :
-                            module.status === 'inactive' ? 'bg-red-100 text-red-700 border border-red-200' :
-                            'bg-yellow-100 text-yellow-700 border border-yellow-200'
+                          <span className={`inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full ${
+                            module.status === 'active' ? 'bg-green-100 text-green-700' :
+                            module.status === 'inactive' ? 'bg-red-100 text-red-700' :
+                            'bg-yellow-100 text-yellow-700'
                           }`}>
                             {module.status.charAt(0).toUpperCase() + module.status.slice(1)}
                           </span>
                         )}
                       </div>
-                      
-                      {/* Module Title */}
-                      <h3 className="text-lg font-bold text-gray-900 line-clamp-2 leading-tight">
-                        {module.title}
-                      </h3>
                     </div>
-
-                    {/* Document/Slide Thumbnail Preview */}
-                    {(module.content_type === 'pdf_document' || module.content_type === 'slide_presentation' || module.content_type === 'online_document') && module.document_url && (
-                      <div className="relative w-full h-32 bg-gradient-to-br from-blue-50 to-indigo-50 border-b border-gray-200 overflow-hidden flex items-center justify-center">
-                        <div className="text-center">
-                          <div className="flex justify-center mb-2">
-                            {module.content_type === 'pdf_document' ? (
-                              <svg className="w-12 h-12 text-red-500" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" />
-                                <path d="M14 2v6h6" />
-                                <text x="7" y="17" fontSize="6" fill="white" fontWeight="bold">PDF</text>
-                              </svg>
-                            ) : module.content_type === 'slide_presentation' ? (
-                              <svg className="w-12 h-12 text-orange-500" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" />
-                                <path d="M14 2v6h6" />
-                                <text x="6" y="17" fontSize="6" fill="white" fontWeight="bold">PPT</text>
-                              </svg>
-                            ) : (
-                              <svg className="w-12 h-12 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" />
-                                <path d="M14 2v6h6" />
-                                <text x="6" y="17" fontSize="6" fill="white" fontWeight="bold">DOC</text>
-                              </svg>
-                            )}
-                          </div>
-                          <p className="text-xs font-medium text-gray-600 px-4">
-                            {module.content_type === 'pdf_document' ? 'PDF Document' : 
-                             module.content_type === 'slide_presentation' ? 'Slide Presentation' : 'Online Document'}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">✓ File uploaded</p>
-                        </div>
-                        <div className="absolute bottom-2 right-2 bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-semibold flex items-center gap-1">
-                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                          Saved
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Module Content */}
-                    <div className="p-5 flex flex-col flex-1">
-                      {/* Module Info */}
-                      <div className="mt-auto space-y-3">
-                        {/* Duration Badge */}
-                        {module.duration_minutes && (
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span className="font-medium">{module.duration_minutes} minutes</span>
-                          </div>
-                        )}
-
-                        {/* Action Buttons */}
-                        <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
-                          <button
-                            onClick={() => handleStartLesson(module)}
-                            className="flex-1 px-4 py-2.5 text-white rounded-lg font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
-                            style={{ backgroundColor: getButtonBg() }}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
-                          >
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M8 5v14l11-7z" />
-                            </svg>
-                            <span>Start</span>
-                          </button>
-                          <button
-                            onClick={() => handleEditModule(module)}
-                            className="px-3 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium text-sm hover:bg-gray-200 transition-colors duration-200 flex items-center justify-center"
-                            title="Edit module"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                          </button>
-                          <button
-                            onClick={() => handleDeleteModule(module)}
-                            className="px-3 py-2.5 bg-red-50 text-red-600 rounded-lg font-medium text-sm hover:bg-red-100 transition-colors duration-200 flex items-center justify-center"
-                            title="Delete module"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
+                    {/* Actions */}
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <button
+                        onClick={() => handleStartLesson(module)}
+                        className="px-2.5 py-1.5 text-white rounded-lg font-medium text-xs transition-colors flex items-center gap-1"
+                        style={{ backgroundColor: getButtonBg() }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
+                      >
+                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                        Start
+                      </button>
+                      <button
+                        onClick={() => handleEditModule(module)}
+                        className="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-colors" title="Edit"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteModule(module)}
+                        className="p-1.5 bg-red-50 hover:bg-red-100 text-red-500 rounded-lg transition-colors" title="Delete"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -3121,35 +2719,20 @@ export default function CourseManagementPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-medium text-black mb-1">Course Group *</label>
-                <select
-                  required
-                  value={newCourse.course_group}
-                  onChange={(e) => setNewCourse(prev => ({ ...prev, course_group: e.target.value }))}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
-                >
-                  <option value="">Select a course group</option>
-                  <option value="Programming">Programming</option>
-                  <option value="Web Development">Web Development</option>
-                  <option value="Mobile Development">Mobile Development</option>
-                  <option value="Robotics">Robotics</option>
-                  <option value="Automation & Control">Automation & Control</option>
-                  <option value="Data Science & AI">Data Science & AI</option>
-                  <option value="Networking & Cybersecurity">Networking & Cybersecurity</option>
-                  <option value="Software Tools">Software Tools</option>
-                  <option value="Game Development">Game Development</option>
-                  <option value="Engineering & Technology">Engineering & Technology</option>
-
-                </select>
-              </div>
 
               <div>
                 <label className="block text-xs font-medium text-black mb-1">Course Type *</label>
                 <select
                   required
                   value={newCourse.course_type}
-                  onChange={(e) => setNewCourse(prev => ({ ...prev, course_type: e.target.value as 'academic' | 'tesda' | 'upskill' }))}
+                  onChange={(e) => {
+                    const ct = e.target.value as 'academic' | 'tesda' | 'upskill'
+                    setNewCourse(prev => ({
+                      ...prev,
+                      course_type: ct,
+                      enrollment_type: ct === 'tesda' ? 'tesda_scholar' : 'trainee'
+                    }))
+                  }}
                   className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]">
                   <option value="academic">Academic Course</option>
                   <option value="tesda">TESDA Course</option>
@@ -3171,41 +2754,53 @@ export default function CourseManagementPage() {
                     <option value="inactive">Inactive</option>
                   </select>
                 </div>
-                
-                <div>
-                  <label className="block text-xs font-medium text-black mb-1">Enrollment Type *</label>
-                  <select
-                    required
-                    value={newCourse.enrollment_type}
-                    onChange={(e) => setNewCourse(prev => ({ ...prev, enrollment_type: e.target.value as 'trainee' | 'tesda_scholar' | 'both' }))}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
-                  >
-                    <option value="trainee">Trainee</option>
-                    <option value="tesda_scholar">TESDA Scholar</option>
-                    <option value="both">Both</option>
-                  </select>
-                </div>
+
+              </div>
+
+              {/* Thumbnail Image */}
+              <div>
+                <label className="block text-xs font-medium text-black mb-1">Cover Image</label>
+                {newCourse.thumbnail_url && (
+                  <div className="mb-2 relative w-full h-28 rounded-lg overflow-hidden border border-gray-200">
+                    <img src={newCourse.thumbnail_url} alt="thumbnail" className="w-full h-full object-cover" />
+                    <button type="button" onClick={() => setNewCourse(prev => ({ ...prev, thumbnail_url: '' }))}
+                      className="absolute top-1 right-1 p-1 bg-white rounded-full shadow text-gray-500 hover:text-red-500">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                  </div>
+                )}
+                <input type="file" accept="image/*" disabled={uploadingFile}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0]
+                    if (file) {
+                      const url = await uploadThumbnail(file, newCourse.thumbnail_url)
+                      if (url) setNewCourse(prev => ({ ...prev, thumbnail_url: url }))
+                    }
+                  }}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-gray-100 file:text-gray-700 disabled:opacity-50"
+                />
+                {uploadingFile && <p className="text-xs text-gray-500 mt-1">Uploading...</p>}
               </div>
 
               <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
                 <button
                   type="button"
                   onClick={() => setShowAddCourseModal(false)}
-                  disabled={submitting}
+                  disabled={submitting || uploadingFile}
                   className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting}
+                  disabled={submitting || uploadingFile}
                   className="px-4 py-2 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center space-x-2"
                   style={{ backgroundColor: getButtonBg() }}
-                  onMouseEnter={(e) => !submitting && (e.currentTarget.style.backgroundColor = getButtonHoverBg())}
-                  onMouseLeave={(e) => !submitting && (e.currentTarget.style.backgroundColor = getButtonBg())}
+                  onMouseEnter={(e) => !submitting && !uploadingFile && (e.currentTarget.style.backgroundColor = getButtonHoverBg())}
+                  onMouseLeave={(e) => !submitting && !uploadingFile && (e.currentTarget.style.backgroundColor = getButtonBg())}
                 >
-                  {submitting && <ButtonLoading />}
-                  <span>{submitting ? 'Creating...' : 'Create Course'}</span>
+                  {(submitting || uploadingFile) && <ButtonLoading />}
+                  <span>{uploadingFile ? 'Uploading...' : submitting ? 'Creating...' : 'Create Course'}</span>
                 </button>
               </div>
             </form>
@@ -3300,25 +2895,50 @@ export default function CourseManagementPage() {
                 </div>
               </div>
 
+              {/* Thumbnail Image */}
+              <div>
+                <label className="block text-xs font-medium text-black mb-1">Cover Image</label>
+                {newSubject.thumbnail_url && (
+                  <div className="mb-2 relative w-full h-28 rounded-lg overflow-hidden border border-gray-200">
+                    <img src={newSubject.thumbnail_url} alt="thumbnail" className="w-full h-full object-cover" />
+                    <button type="button" onClick={() => setNewSubject(prev => ({ ...prev, thumbnail_url: '' }))}
+                      className="absolute top-1 right-1 p-1 bg-white rounded-full shadow text-gray-500 hover:text-red-500">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                  </div>
+                )}
+                <input type="file" accept="image/*" disabled={uploadingFile}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0]
+                    if (file) {
+                      const url = await uploadThumbnail(file, newSubject.thumbnail_url)
+                      if (url) setNewSubject(prev => ({ ...prev, thumbnail_url: url }))
+                    }
+                  }}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-gray-100 file:text-gray-700 disabled:opacity-50"
+                />
+                {uploadingFile && <p className="text-xs text-gray-500 mt-1">Uploading...</p>}
+              </div>
+
               <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
                 <button
                   type="button"
                   onClick={() => setShowAddSubjectModal(false)}
-                  disabled={submitting}
+                  disabled={submitting || uploadingFile}
                   className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting}
+                  disabled={submitting || uploadingFile}
                   className="px-4 py-2 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center space-x-2"
                   style={{ backgroundColor: getButtonBg() }}
-                  onMouseEnter={(e) => !submitting && (e.currentTarget.style.backgroundColor = getButtonHoverBg())}
-                  onMouseLeave={(e) => !submitting && (e.currentTarget.style.backgroundColor = getButtonBg())}
+                  onMouseEnter={(e) => !submitting && !uploadingFile && (e.currentTarget.style.backgroundColor = getButtonHoverBg())}
+                  onMouseLeave={(e) => !submitting && !uploadingFile && (e.currentTarget.style.backgroundColor = getButtonBg())}
                 >
-                  {submitting && <ButtonLoading />}
-                  <span>{submitting ? 'Creating...' : 'Create Subject'}</span>
+                  {(submitting || uploadingFile) && <ButtonLoading />}
+                  <span>{uploadingFile ? 'Uploading...' : submitting ? 'Creating...' : 'Create Subject'}</span>
                 </button>
               </div>
             </form>
@@ -3413,25 +3033,50 @@ export default function CourseManagementPage() {
                 </div>
               </div>
 
+              {/* Thumbnail Image */}
+              <div>
+                <label className="block text-xs font-medium text-black mb-1">Cover Image</label>
+                {newSubject.thumbnail_url && (
+                  <div className="mb-2 relative w-full h-28 rounded-lg overflow-hidden border border-gray-200">
+                    <img src={newSubject.thumbnail_url} alt="thumbnail" className="w-full h-full object-cover" />
+                    <button type="button" onClick={() => setNewSubject(prev => ({ ...prev, thumbnail_url: '' }))}
+                      className="absolute top-1 right-1 p-1 bg-white rounded-full shadow text-gray-500 hover:text-red-500">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                  </div>
+                )}
+                <input type="file" accept="image/*" disabled={uploadingFile}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0]
+                    if (file) {
+                      const url = await uploadThumbnail(file, newSubject.thumbnail_url)
+                      if (url) setNewSubject(prev => ({ ...prev, thumbnail_url: url }))
+                    }
+                  }}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-gray-100 file:text-gray-700 disabled:opacity-50"
+                />
+                {uploadingFile && <p className="text-xs text-gray-500 mt-1">Uploading...</p>}
+              </div>
+
               <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
                 <button
                   type="button"
                   onClick={() => setShowEditSubjectModal(false)}
-                  disabled={submitting}
+                  disabled={submitting || uploadingFile}
                   className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting}
+                  disabled={submitting || uploadingFile}
                   className="px-4 py-2 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center space-x-2"
                   style={{ backgroundColor: getButtonBg() }}
-                  onMouseEnter={(e) => !submitting && (e.currentTarget.style.backgroundColor = getButtonHoverBg())}
-                  onMouseLeave={(e) => !submitting && (e.currentTarget.style.backgroundColor = getButtonBg())}
+                  onMouseEnter={(e) => !submitting && !uploadingFile && (e.currentTarget.style.backgroundColor = getButtonHoverBg())}
+                  onMouseLeave={(e) => !submitting && !uploadingFile && (e.currentTarget.style.backgroundColor = getButtonBg())}
                 >
-                  {submitting && <ButtonLoading />}
-                  <span>{submitting ? 'Updating...' : 'Update Subject'}</span>
+                  {(submitting || uploadingFile) && <ButtonLoading />}
+                  <span>{uploadingFile ? 'Uploading...' : submitting ? 'Updating...' : 'Update Subject'}</span>
                 </button>
               </div>
             </form>
@@ -3504,7 +3149,7 @@ export default function CourseManagementPage() {
                     placeholder="https://www.canva.com/design/..."
                   />
                   <div className="text-xs text-gray-500 mt-1">
-                    💡 Tip: Make sure your Canva presentation is set to "Anyone with the link can view"
+                    ?? Tip: Make sure your Canva presentation is set to "Anyone with the link can view"
                   </div>
                 </div>
               )}
@@ -3527,7 +3172,7 @@ export default function CourseManagementPage() {
                     placeholder="https://www.youtube.com/watch?v=..."
                   />
                   <div className="text-xs text-gray-500 mt-1">
-                    💡 Tip: Supports YouTube, Vimeo, and direct video URLs
+                    ?? Tip: Supports YouTube, Vimeo, and direct video URLs
                   </div>
                 </div>
               )}
@@ -3550,7 +3195,7 @@ export default function CourseManagementPage() {
                     placeholder="https://docs.google.com/document/..."
                   />
                   <div className="text-xs text-gray-500 mt-1">
-                    💡 Tip: Make sure your document is set to "Anyone with the link can view"
+                    ?? Tip: Make sure your document is set to "Anyone with the link can view"
                   </div>
                 </div>
               )}
@@ -3596,7 +3241,7 @@ export default function CourseManagementPage() {
                   )}
                   {!uploadingFile && newModule.document_url && (
                     <div className="text-xs text-green-600 mt-1">
-                      ✓ File uploaded successfully
+                      ? File uploaded successfully
                     </div>
                   )}
                 </div>
@@ -3643,7 +3288,7 @@ export default function CourseManagementPage() {
                   )}
                   {!uploadingFile && newModule.document_url && (
                     <div className="text-xs text-green-600 mt-1">
-                      ✓ Presentation uploaded successfully
+                      ? Presentation uploaded successfully
                     </div>
                   )}
                 </div>
@@ -3661,6 +3306,31 @@ export default function CourseManagementPage() {
                   <option value="active">Active</option>
                   <option value="inactive">Inactive</option>
                 </select>
+              </div>
+
+              {/* Thumbnail Image */}
+              <div>
+                <label className="block text-xs font-medium text-black mb-1">Cover Image</label>
+                {newModule.thumbnail_url && (
+                  <div className="mb-2 relative w-full h-28 rounded-lg overflow-hidden border border-gray-200">
+                    <img src={newModule.thumbnail_url} alt="thumbnail" className="w-full h-full object-cover" />
+                    <button type="button" onClick={() => setNewModule(prev => ({ ...prev, thumbnail_url: '' }))}
+                      className="absolute top-1 right-1 p-1 bg-white rounded-full shadow text-gray-500 hover:text-red-500">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                  </div>
+                )}
+                <input type="file" accept="image/*" disabled={uploadingFile}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0]
+                    if (file) {
+                      const url = await uploadThumbnail(file, newModule.thumbnail_url)
+                      if (url) setNewModule(prev => ({ ...prev, thumbnail_url: url }))
+                    }
+                  }}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-gray-100 file:text-gray-700 disabled:opacity-50"
+                />
+                {uploadingFile && <p className="text-xs text-gray-500 mt-1">Uploading...</p>}
               </div>
 
               <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
@@ -3754,7 +3424,7 @@ export default function CourseManagementPage() {
                     placeholder="https://www.canva.com/design/..."
                   />
                   <div className="text-xs text-gray-500 mt-1">
-                    💡 Tip: Make sure your Canva presentation is set to "Anyone with the link can view"
+                    ?? Tip: Make sure your Canva presentation is set to "Anyone with the link can view"
                   </div>
                 </div>
               )}
@@ -3777,7 +3447,7 @@ export default function CourseManagementPage() {
                     placeholder="https://www.youtube.com/watch?v=..."
                   />
                   <div className="text-xs text-gray-500 mt-1">
-                    💡 Tip: Supports YouTube, Vimeo, and direct video URLs
+                    ?? Tip: Supports YouTube, Vimeo, and direct video URLs
                   </div>
                 </div>
               )}
@@ -3800,7 +3470,7 @@ export default function CourseManagementPage() {
                     placeholder="https://docs.google.com/document/..."
                   />
                   <div className="text-xs text-gray-500 mt-1">
-                    💡 Tip: Make sure your document is set to "Anyone with the link can view"
+                    ?? Tip: Make sure your document is set to "Anyone with the link can view"
                   </div>
                 </div>
               )}
@@ -3846,7 +3516,7 @@ export default function CourseManagementPage() {
                   )}
                   {!uploadingFile && newModule.document_url && (
                     <div className="text-xs text-green-600 mt-1">
-                      ✓ File uploaded successfully
+                      ? File uploaded successfully
                     </div>
                   )}
                 </div>
@@ -3913,6 +3583,31 @@ export default function CourseManagementPage() {
                 </select>
               </div>
 
+              {/* Thumbnail Image */}
+              <div>
+                <label className="block text-xs font-medium text-black mb-1">Cover Image</label>
+                {newModule.thumbnail_url && (
+                  <div className="mb-2 relative w-full h-28 rounded-lg overflow-hidden border border-gray-200">
+                    <img src={newModule.thumbnail_url} alt="thumbnail" className="w-full h-full object-cover" />
+                    <button type="button" onClick={() => setNewModule(prev => ({ ...prev, thumbnail_url: '' }))}
+                      className="absolute top-1 right-1 p-1 bg-white rounded-full shadow text-gray-500 hover:text-red-500">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                  </div>
+                )}
+                <input type="file" accept="image/*" disabled={uploadingFile}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0]
+                    if (file) {
+                      const url = await uploadThumbnail(file, newModule.thumbnail_url)
+                      if (url) setNewModule(prev => ({ ...prev, thumbnail_url: url }))
+                    }
+                  }}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-gray-100 file:text-gray-700 disabled:opacity-50"
+                />
+                {uploadingFile && <p className="text-xs text-gray-500 mt-1">Uploading...</p>}
+              </div>
+
               <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
                 <button
                   type="button"
@@ -3970,35 +3665,20 @@ export default function CourseManagementPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-medium text-black mb-1">Course Group *</label>
-                <select
-                  required
-                  value={newCourse.course_group}
-                  onChange={(e) => setNewCourse(prev => ({ ...prev, course_group: e.target.value }))}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
-                >
-                  <option value="">Select a course group</option>
-                  <option value="Programming">Programming</option>
-                  <option value="Web Development">Web Development</option>
-                  <option value="Mobile Development">Mobile Development</option>
-                  <option value="Robotics">Robotics</option>
-                  <option value="Automation & Control">Automation & Control</option>
-                  <option value="Data Science & AI">Data Science & AI</option>
-                  <option value="Networking & Cybersecurity">Networking & Cybersecurity</option>
-                  <option value="Software Tools">Software Tools</option>
-                  <option value="Game Development">Game Development</option>
-                  <option value="Engineering & Technology">Engineering & Technology</option>
-
-                </select>
-              </div>
 
               <div>
                 <label className="block text-xs font-medium text-black mb-1">Course Type *</label>
                 <select
                   required
                   value={newCourse.course_type}
-                  onChange={(e) => setNewCourse(prev => ({ ...prev, course_type: e.target.value as 'academic' | 'tesda' | 'upskill' }))}
+                  onChange={(e) => {
+                    const ct = e.target.value as 'academic' | 'tesda' | 'upskill'
+                    setNewCourse(prev => ({
+                      ...prev,
+                      course_type: ct,
+                      enrollment_type: ct === 'tesda' ? 'tesda_scholar' : 'trainee'
+                    }))
+                  }}
                   className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]">
                   <option value="academic">Academic Course</option>
                   <option value="tesda">TESDA Course</option>
@@ -4020,41 +3700,53 @@ export default function CourseManagementPage() {
                     <option value="inactive">Inactive</option>
                   </select>
                 </div>
-                
-                <div>
-                  <label className="block text-xs font-medium text-black mb-1">Enrollment Type *</label>
-                  <select
-                    required
-                    value={newCourse.enrollment_type}
-                    onChange={(e) => setNewCourse(prev => ({ ...prev, enrollment_type: e.target.value as 'trainee' | 'tesda_scholar' | 'both' }))}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
-                  >
-                    <option value="trainee">Trainee</option>
-                    <option value="tesda_scholar">TESDA Scholar</option>
-                    <option value="both">Both</option>
-                  </select>
-                </div>
+
+              </div>
+
+              {/* Thumbnail Image */}
+              <div>
+                <label className="block text-xs font-medium text-black mb-1">Cover Image</label>
+                {newCourse.thumbnail_url && (
+                  <div className="mb-2 relative w-full h-28 rounded-lg overflow-hidden border border-gray-200">
+                    <img src={newCourse.thumbnail_url} alt="thumbnail" className="w-full h-full object-cover" />
+                    <button type="button" onClick={() => setNewCourse(prev => ({ ...prev, thumbnail_url: '' }))}
+                      className="absolute top-1 right-1 p-1 bg-white rounded-full shadow text-gray-500 hover:text-red-500">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                  </div>
+                )}
+                <input type="file" accept="image/*" disabled={uploadingFile}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0]
+                    if (file) {
+                      const url = await uploadThumbnail(file, newCourse.thumbnail_url)
+                      if (url) setNewCourse(prev => ({ ...prev, thumbnail_url: url }))
+                    }
+                  }}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-gray-100 file:text-gray-700 disabled:opacity-50"
+                />
+                {uploadingFile && <p className="text-xs text-gray-500 mt-1">Uploading...</p>}
               </div>
 
               <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
                 <button
                   type="button"
                   onClick={() => setShowEditCourseModal(false)}
-                  disabled={submitting}
+                  disabled={submitting || uploadingFile}
                   className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting}
+                  disabled={submitting || uploadingFile}
                   className="px-4 py-2 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center space-x-2"
                   style={{ backgroundColor: getButtonBg() }}
-                  onMouseEnter={(e) => !submitting && (e.currentTarget.style.backgroundColor = getButtonHoverBg())}
-                  onMouseLeave={(e) => !submitting && (e.currentTarget.style.backgroundColor = getButtonBg())}
+                  onMouseEnter={(e) => !submitting && !uploadingFile && (e.currentTarget.style.backgroundColor = getButtonHoverBg())}
+                  onMouseLeave={(e) => !submitting && !uploadingFile && (e.currentTarget.style.backgroundColor = getButtonBg())}
                 >
-                  {submitting && <ButtonLoading />}
-                  <span>{submitting ? 'Updating...' : 'Update Course'}</span>
+                  {(submitting || uploadingFile) && <ButtonLoading />}
+                  <span>{uploadingFile ? 'Uploading...' : submitting ? 'Updating...' : 'Update Course'}</span>
                 </button>
               </div>
             </form>
@@ -4148,17 +3840,30 @@ export default function CourseManagementPage() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Available trainees */}
                 <div>
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center justify-between mb-3">
                     <h3 className="text-lg font-semibold text-black">Available trainees</h3>
                     <span className="px-2 py-1 bg-gray-200 text-gray-800 text-xs font-medium rounded-full">
-                      {availabletrainees.length} available
+                      {availabletrainees.filter(t => traineeRoleFilter === 'all' || t.role === traineeRoleFilter).length} available
                     </span>
                   </div>
+
+                  {/* Role filter */}
+                  <select
+                    value={traineeRoleFilter}
+                    onChange={(e) => setTraineeRoleFilter(e.target.value)}
+                    className="w-full mb-3 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+                  >
+                    <option value="all">All Types</option>
+                    <option value="jhs_student">JHS Student</option>
+                    <option value="shs_student">SHS Student</option>
+                    <option value="college_student">College Student</option>
+                    <option value="scholar">TESDA Scholar</option>
+                  </select>
                   
                   <div className="border border-gray-200 rounded-lg max-h-96 overflow-y-auto">
-                    {availabletrainees.length > 0 ? (
+                    {availabletrainees.filter(t => traineeRoleFilter === 'all' || t.role === traineeRoleFilter).length > 0 ? (
                       <div className="divide-y divide-gray-200">
-                        {availabletrainees.map((trainee) => (
+                        {availabletrainees.filter(t => traineeRoleFilter === 'all' || t.role === traineeRoleFilter).map((trainee) => (
                           <div key={trainee.id} className="p-3 hover:bg-gray-50">
                             <label className="flex items-center space-x-3 cursor-pointer">
                               <input

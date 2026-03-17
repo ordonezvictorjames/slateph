@@ -203,6 +203,12 @@ export default function Sidebar({ currentPage, onPageChange, hideHamburger = fal
       roles: ['admin', 'developer'],
       items: [
         { 
+          id: 'badges' as PageType, 
+          icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><circle cx="12" cy="8" r="5" /><path strokeLinecap="round" strokeLinejoin="round" d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12" /></svg>, 
+          label: 'Badges', 
+          roles: ['admin', 'developer'] 
+        },
+        { 
           id: 'profile' as PageType, 
           icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>, 
           label: 'Profile', 
@@ -252,6 +258,12 @@ export default function Sidebar({ currentPage, onPageChange, hideHamburger = fal
       title: 'Apps',
       roles: ['shs_student', 'jhs_student', 'college_student', 'scholar'],
       items: [
+        { 
+          id: 'badges' as PageType, 
+          icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><circle cx="12" cy="8" r="5" /><path strokeLinecap="round" strokeLinejoin="round" d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12" /></svg>, 
+          label: 'Badges', 
+          roles: ['shs_student', 'jhs_student', 'college_student', 'scholar'] 
+        },
         { 
           id: 'profile' as PageType, 
           icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>, 
@@ -320,6 +332,12 @@ export default function Sidebar({ currentPage, onPageChange, hideHamburger = fal
       title: 'Apps',
       roles: ['instructor'],
       items: [
+        { 
+          id: 'badges' as PageType, 
+          icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><circle cx="12" cy="8" r="5" /><path strokeLinecap="round" strokeLinejoin="round" d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12" /></svg>, 
+          label: 'Badges', 
+          roles: ['instructor'] 
+        },
         { 
           id: 'profile' as PageType, 
           icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>, 
@@ -443,36 +461,24 @@ export default function Sidebar({ currentPage, onPageChange, hideHamburger = fal
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-2 overflow-y-auto flex flex-col justify-between">
+      <nav className="flex-1 px-2 overflow-y-hidden flex flex-col justify-between">
         <div className="space-y-1">
           {visibleMenuGroups.map((group, groupIndex) => {
             const isCollapsed = collapsedGroups[group.title] || false
             
             return (
               <div key={group.title}>
-                {/* Group Header - clickable to collapse/expand */}
+                {/* Group Header */}
                 {(isHovered || isMobileOpen) && (
-                  <button
-                    onClick={() => toggleGroup(group.title)}
-                    className="w-full px-3 py-2 mb-1 flex items-center justify-between hover:bg-gray-100 rounded transition-colors"
-                  >
-                    <h3 className="text-[10px] font-semibold text-black uppercase tracking-wider">
+                  <div className="w-full px-3 py-2 mb-1">
+                    <h3 className="text-[8px] font-semibold text-black uppercase tracking-wider">
                       {group.title}
                     </h3>
-                    <svg 
-                      className={`w-3 h-3 text-gray-500 transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`}
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
+                  </div>
                 )}
                 
-                {/* Group Items - hidden when collapsed */}
-                {!isCollapsed && (
-                  <ul className={(isHovered || isMobileOpen) ? 'space-y-1' : 'space-y-2'}>
+                {/* Group Items */}
+                <ul className={(isHovered || isMobileOpen) ? 'space-y-1' : 'space-y-2'}>
                     {group.items.map((item) => (
                       <li key={item.id}>
                         <button 
@@ -503,7 +509,6 @@ export default function Sidebar({ currentPage, onPageChange, hideHamburger = fal
                       </li>
                     ))}
                   </ul>
-                )}
                 
                 {/* Group Separator - only show between groups when hovered */}
                 {(isHovered || isMobileOpen) && groupIndex < visibleMenuGroups.length - 1 && (

@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -20,6 +20,7 @@ interface Course {
   created_at: string
   total_enrollments?: number
   is_user_enrolled?: boolean
+  thumbnail_url?: string
 }
 
 interface CourseColor {
@@ -231,7 +232,7 @@ function UpcomingScheduleList() {
       {schedules.map((schedule) => {
         const courseColor = getCourseColor(schedule.course_id)
         return (
-          <div key={schedule.id} className="flex items-start space-x-3 p-3 bg-white rounded-lg border border-[#DCFCE7] hover:shadow-sm transition-all">
+          <div key={schedule.id} className="flex items-start space-x-3 p-3 bg-white rounded-lg border border-[#DCFCE7] transition-all">
             <div 
               className="w-8 h-8 rounded-lg mt-0.5 flex items-center justify-center flex-shrink-0"
               style={{ 
@@ -252,13 +253,13 @@ function UpcomingScheduleList() {
                     {schedule.title}
                   </h4>
                   <p className="text-xs text-gray-600 mt-0.5">
-                    {schedule.course?.title} � Batch {schedule.batch_number}
+                    {schedule.course?.title} ? Batch {schedule.batch_number}
                   </p>
                   <div className="flex items-center space-x-2 mt-1">
                     <span className="text-xs text-gray-500">
                       {formatDate(schedule.start_date)} - {formatDate(schedule.end_date)}
                     </span>
-                    <span className="text-xs text-gray-400">�</span>
+                    <span className="text-xs text-gray-400">?</span>
                     <span className="text-xs text-gray-500">
                       {formatTime(schedule.start_date)}
                     </span>
@@ -444,7 +445,7 @@ function RecentActivityList() {
               <span className="text-xs text-gray-500">
                 {activity.user?.first_name} {activity.user?.last_name}
               </span>
-              <span className="text-xs text-gray-400">�</span>
+              <span className="text-xs text-gray-400">?</span>
               <span className="text-xs text-gray-500">
                 {formatTimeAgo(activity.created_at)}
               </span>
@@ -483,6 +484,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [currentTime, setCurrentTime] = useState(new Date())
   const [showProfileDropdown, setShowProfileDropdown] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const [userStats, setUserStats] = useState<UserStats>({
     totalStudents: 0,
     totalSHSStudents: 0,
@@ -599,7 +601,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
     const startingDayOfWeek = firstDay.getDay()
     
     // Calculate days to show (only 2 weeks = 14 days)
-    const totalCells = 14 // 2 rows � 7 days
+    const totalCells = 14 // 2 rows ? 7 days
     const days = []
     
     // Previous month days (to fill the first week)
@@ -1141,235 +1143,172 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
           
           {/* Profile Card - Shows first on mobile, last on desktop */}
           <div className="xl:col-span-2 xl:order-2 space-y-4 md:space-y-6 flex flex-col">
-            {/* Combined Notification and Avatar Card */}
-            <div className="bg-white rounded-xl p-4 h-[70px] shadow-lg border border-gray-100">
-              <div className="flex items-center justify-between h-full">
-                {/* Left side: Notifications */}
-                <div className="flex items-center space-x-2">
-                  {/* Notification Bell */}
-                  <NotificationBell />
-                </div>
-
-                {/* Right side: User Profile */}
-                <div className="relative" ref={dropdownRef}>
-                  <button 
-                    onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                    className="flex items-center space-x-2 hover:bg-gray-50 rounded-lg p-2 transition-colors"
-                  >
-                    <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
-                      {(user?.profile as any)?.avatar_url ? (
-                        // Check if it's a base64 image, emoji, or URL
-                        (user?.profile as any).avatar_url.startsWith('data:') ? (
-                          <img 
-                            src={(user?.profile as any).avatar_url} 
-                            alt="Profile"
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (user?.profile as any).avatar_url.length <= 2 ? (
-                          <span className="text-2xl">
-                            {(user?.profile as any).avatar_url}
-                          </span>
-                        ) : (
-                          <img 
-                            src={(user?.profile as any).avatar_url} 
-                            alt="Profile"
-                            className="w-full h-full object-cover"
-                          />
-                        )
-                      ) : (
-                        <span className="text-gray-600 font-medium text-sm">
-                          {user?.profile?.first_name && user?.profile?.last_name
-                            ? `${user.profile.first_name.charAt(0).toUpperCase()}${user.profile.last_name.charAt(0).toUpperCase()}`
-                            : displayUser?.email
-                              ? displayUser.email.charAt(0).toUpperCase()
-                              : 'U'
-                          }
-                        </span>
-                      )}
-                    </div>
-                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-
-                  {/* Dropdown Menu */}
-                  {showProfileDropdown && (
-                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
-                      <div className="px-4 py-3 border-b border-gray-100">
-                        <p className="text-sm font-medium text-gray-900">
-                          {user?.profile?.first_name && user?.profile?.last_name 
-                            ? `${user.profile.first_name} ${user.profile.last_name}`
-                            : 'User'
-                          }
-                        </p>
-                        <p className="text-xs text-gray-500 mt-0.5">{user?.email || displayUser?.email}</p>
-                      </div>
-                      
-                      <div className="py-1">
-                        <button 
-                          onClick={() => {
-                            onNavigate('profile')
-                            setShowProfileDropdown(false)
-                          }}
-                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                          </svg>
-                          <span>Profile</span>
-                        </button>
-                        
-                        <button 
-                          onClick={() => {
-                            onNavigate('settings')
-                            setShowProfileDropdown(false)
-                          }}
-                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          </svg>
-                          <span>Settings</span>
-                        </button>
-                      </div>
-
-                      <div className="border-t border-gray-100 py-1">
-                        <button 
-                          onClick={() => {
-                            signOut()
-                            setShowProfileDropdown(false)
-                          }}
-                          className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                          </svg>
-                          <span>Sign out</span>
-                        </button>
-                      </div>
-                    </div>
+            {/* Avatar / Profile Card */}
+            <div className="bg-white rounded-xl border border-gray-100 overflow-hidden relative" ref={dropdownRef}>
+              {/* Cover Banner */}
+              {/* Cover + overlapping avatar */}
+              <div className="relative h-24">
+                {(user?.profile as any)?.banner_url ? (
+                  <img src={(user?.profile as any).banner_url} alt="Cover" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full" style={{ background: 'linear-gradient(135deg, #1f7a8c 0%, #0f4c5c 100%)' }} />
+                )}
+                {/* Avatar absolutely positioned to overlap the bottom edge */}
+                <button
+                  onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                  className="absolute left-1/2 -translate-x-1/2 -bottom-7 w-14 h-14 rounded-full border-2 border-white bg-gray-200 overflow-hidden flex items-center justify-center"
+                >
+                  {(user?.profile as any)?.avatar_url ? (
+                    (user?.profile as any).avatar_url.startsWith('data:') ? (
+                      <img src={(user?.profile as any).avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (user?.profile as any).avatar_url.length <= 2 ? (
+                      <span className="text-2xl">{(user?.profile as any).avatar_url}</span>
+                    ) : (
+                      <img src={(user?.profile as any).avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                    )
+                  ) : (
+                    <span className="text-gray-600 font-medium text-sm">
+                      {user?.profile?.first_name && user?.profile?.last_name
+                        ? `${user.profile.first_name.charAt(0).toUpperCase()}${user.profile.last_name.charAt(0).toUpperCase()}`
+                        : displayUser?.email ? displayUser.email.charAt(0).toUpperCase() : 'U'}
+                    </span>
                   )}
+                </button>
+              </div>
+
+              {/* Name + email + badges */}
+              <div className="px-4 pb-4 pt-10 flex flex-col items-center">
+                <p className="font-bold text-sm text-gray-900 text-center">
+                  {user?.profile?.first_name && user?.profile?.last_name
+                    ? `${user.profile.first_name} ${user.profile.last_name}`
+                    : 'User'}
+                </p>
+                <p className="text-xs text-gray-400 mt-0.5 text-center">
+                  {user?.email || displayUser?.email || ''}
+                </p>
+
+                {/* Badges placeholder */}
+                <div className="flex items-center gap-1.5 mt-3 flex-wrap justify-center">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 text-gray-400 text-xs">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                      <circle cx="12" cy="8" r="5" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12" />
+                    </svg>
+                    No badges yet
+                  </span>
                 </div>
               </div>
+
+              {/* Dropdown Menu */}
+              {showProfileDropdown && (
+                <div className="absolute mt-2 w-56 bg-white rounded-xl border border-gray-100 py-2 z-50" style={{ top: 'auto', right: '1rem' }}>
+                  <div className="px-4 py-3 border-b border-gray-100">
+                    <p className="text-sm font-medium text-gray-900">
+                      {user?.profile?.first_name && user?.profile?.last_name
+                        ? `${user.profile.first_name} ${user.profile.last_name}`
+                        : 'User'}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-0.5">{user?.email || displayUser?.email}</p>
+                  </div>
+
+                  <div className="py-1">
+                    <button
+                      onClick={() => { onNavigate('profile'); setShowProfileDropdown(false) }}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      <span>Profile</span>
+                    </button>
+                    <button
+                      onClick={() => { onNavigate('settings'); setShowProfileDropdown(false) }}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      <span>Settings</span>
+                    </button>
+                  </div>
+
+                  <div className="border-t border-gray-100 py-1">
+                    <button
+                      onClick={() => { signOut(); setShowProfileDropdown(false) }}
+                      className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                      </svg>
+                      <span>Sign out</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Welcome Card - Mobile only */}
-            <div className="xl:hidden bg-white rounded-lg p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 overflow-visible relative min-h-[120px]">
-              <div className="flex items-center justify-between">
-                <div className="z-10 pr-4">
-                  <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">
-                    Welcome back, {displayUser.profile?.first_name || displayUser?.email?.split('@')[0] || 'User'}!
+            <div className="xl:hidden px-2 py-3 overflow-visible relative">
+              <div className="flex items-center gap-3">
+                {/* Left: greeting */}
+                <div className="flex-1">
+                  <h2 className="text-base font-bold text-gray-900 leading-tight">
+                    Hello, {displayUser.profile?.first_name || displayUser?.email?.split('@')[0] || 'User'}!
                   </h2>
-                  <p className="text-gray-600 text-sm">
-                    {((userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student')) 
-                      ? 'Ready to continue your learning journey?'
-                      : 'Manage your platform efficiently.'}
-                  </p>
+                  <p className="text-xs text-gray-500 mt-0.5">Let's learn something new today!</p>
                 </div>
-                
-                {/* Book Illustration - Smaller for sidebar */}
-                <div className="hidden md:block absolute -top-8 w-[160px] h-[160px] z-0" style={{ right: '5px' }}>
-                  <img 
-                    src="/book.png" 
-                    alt="Book illustration" 
-                    className="w-full h-full object-contain"
-                  />
+
+                {/* Right: search + bell */}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="relative">
+                    <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input
+                      type="text"
+                      placeholder="Search.."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-48 pl-8 pr-3 py-2 text-xs bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-gray-300 text-gray-700 placeholder-gray-400"
+                    />
+                  </div>
+                  <NotificationBell />
                 </div>
               </div>
             </div>
 
             {/* Digital Clock */}
-            <div className="rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 overflow-hidden relative" style={{ minHeight: '140px' }}>
-              {/* Background illustration */}
-              <div className="absolute inset-0">
-                {(() => {
-                  const h = currentTime.getHours()
-                  if (h >= 18 && h < 21) return (
-                    <svg viewBox="0 0 200 140" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
-                      <defs><linearGradient id="bgEve" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#ff7043"/><stop offset="55%" stopColor="#ffb74d"/><stop offset="100%" stopColor="#ffe0b2"/></linearGradient></defs>
-                      <rect width="200" height="140" fill="url(#bgEve)"/>
-                      <circle cx="100" cy="118" r="28" fill="#ff6f00" opacity="0.85"/><circle cx="100" cy="118" r="20" fill="#ffca28"/>
-                      <rect x="0" y="115" width="200" height="25" fill="#1a5c6e" opacity="0.7"/>
-                      <rect x="78" y="115" width="44" height="25" fill="#ffca28" opacity="0.25"/>
-                      <ellipse cx="38" cy="35" rx="28" ry="10" fill="#ff8a65" opacity="0.55"/>
-                      <ellipse cx="56" cy="28" rx="18" ry="8" fill="#ffab91" opacity="0.45"/>
-                      <ellipse cx="155" cy="45" rx="24" ry="9" fill="#ff8a65" opacity="0.45"/>
-                      <circle cx="18" cy="14" r="1.2" fill="white" opacity="0.7"/>
-                      <circle cx="172" cy="18" r="1.2" fill="white" opacity="0.6"/>
-                    </svg>
-                  )
-                  if (h >= 21 || h < 5) return (
-                    <svg viewBox="0 0 200 140" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
-                      <defs><linearGradient id="bgNight" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#0d1b2a"/><stop offset="100%" stopColor="#1f3a5f"/></linearGradient></defs>
-                      <rect width="200" height="140" fill="url(#bgNight)"/>
-                      <circle cx="160" cy="30" r="16" fill="#fff9c4"/><circle cx="167" cy="24" r="13" fill="#1f3a5f"/>
-                      {[[20,12],[45,8],[70,18],[95,6],[120,14],[30,28],[80,5],[150,10],[10,22],[185,16],[55,25]].map(([x,y],i) => (
-                        <circle key={i} cx={x} cy={y} r="1" fill="white" opacity={0.4 + (i % 4) * 0.15}/>
-                      ))}
-                      <rect x="0" y="112" width="200" height="28" fill="#0a2030" opacity="0.9"/>
-                      <rect x="8" y="90" width="10" height="22" fill="#0a2030"/><rect x="22" y="80" width="13" height="32" fill="#0a2030"/>
-                      <rect x="158" y="88" width="11" height="24" fill="#0a2030"/><rect x="173" y="76" width="14" height="36" fill="#0a2030"/>
-                      <rect x="25" y="84" width="2" height="2" fill="#ffeb3b" opacity="0.8"/>
-                      <rect x="175" y="80" width="2" height="2" fill="#ffeb3b" opacity="0.8"/>
-                    </svg>
-                  )
-                  if (h >= 5 && h < 12) return (
-                    <svg viewBox="0 0 200 140" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
-                      <defs><linearGradient id="bgMorn" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#b3e5fc"/><stop offset="60%" stopColor="#ffe0b2"/><stop offset="100%" stopColor="#ffcc80"/></linearGradient></defs>
-                      <rect width="200" height="140" fill="url(#bgMorn)"/>
-                      <circle cx="100" cy="130" r="30" fill="#ffb300" opacity="0.9"/><circle cx="100" cy="130" r="22" fill="#ffe57f"/>
-                      <rect x="0" y="115" width="200" height="25" fill="#1f7a8c" opacity="0.45"/>
-                      <ellipse cx="45" cy="40" rx="30" ry="11" fill="white" opacity="0.7"/>
-                      <ellipse cx="148" cy="50" rx="26" ry="10" fill="white" opacity="0.6"/>
-                    </svg>
-                  )
-                  return (
-                    <svg viewBox="0 0 200 140" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
-                      <defs><linearGradient id="bgDay" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#29b6f6"/><stop offset="100%" stopColor="#b3e5fc"/></linearGradient></defs>
-                      <rect width="200" height="140" fill="url(#bgDay)"/>
-                      <circle cx="165" cy="28" r="20" fill="#fff176"/><circle cx="165" cy="28" r="14" fill="#ffee58"/>
-                      <rect x="0" y="115" width="200" height="25" fill="#1f7a8c" opacity="0.35"/>
-                      <ellipse cx="42" cy="42" rx="32" ry="12" fill="white" opacity="0.8"/>
-                      <ellipse cx="62" cy="34" rx="22" ry="10" fill="white" opacity="0.7"/>
-                      <ellipse cx="132" cy="52" rx="28" ry="11" fill="white" opacity="0.7"/>
-                    </svg>
-                  )
-                })()}
-              </div>
-
-              {/* Time content on top */}
-              <div className="relative z-10 p-4 flex flex-col items-center justify-center" style={{ minHeight: '140px' }}>
-
-                {/* Time */}
+            <div className="rounded-xl border border-gray-100 transition-all duration-300 bg-white">
+              <div className="px-4 py-3 flex flex-col items-center justify-center">
                 <div className="flex items-end space-x-2 mb-1">
-                  <span className="font-bold tabular-nums leading-none" style={{ fontSize: '48px', color: '#ffffff', textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>
+                  <span className="font-bold tabular-nums leading-none" style={{ fontSize: '36px', color: '#0f4c5c' }}>
                     {String(currentTime.getHours() % 12 || 12).padStart(2, '0')}
                   </span>
                   <div className="flex flex-col space-y-1.5 mb-3">
-                    <div className="w-2 h-2 rounded-full bg-white opacity-90" />
-                    <div className="w-2 h-2 rounded-full bg-white opacity-90" />
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#0f4c5c' }} />
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#0f4c5c' }} />
                   </div>
-                  <span className="font-bold tabular-nums leading-none" style={{ fontSize: '48px', color: '#ffffff', textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>
+                  <span className="font-bold tabular-nums leading-none" style={{ fontSize: '36px', color: '#0f4c5c' }}>
                     {String(currentTime.getMinutes()).padStart(2, '0')}
                   </span>
                   <div className="flex flex-col items-center mb-2 ml-1">
-                    <span className="text-sm font-bold" style={{ color: 'white', textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}>
+                    <span className="text-sm font-bold" style={{ color: '#0f4c5c' }}>
                       {currentTime.getHours() >= 12 ? 'PM' : 'AM'}
                     </span>
-                    <span className="text-sm font-bold tabular-nums" style={{ color: 'white', textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}>
+                    <span className="text-sm font-bold tabular-nums" style={{ color: '#0f4c5c' }}>
                       {String(currentTime.getSeconds()).padStart(2, '0')}
                     </span>
                   </div>
                 </div>
-                <p className="text-sm font-semibold mt-2" style={{ color: 'white', textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}>
+                <p className="text-sm font-semibold mt-1" style={{ color: '#0f4c5c' }}>
                   {currentTime.toLocaleDateString('en-US', { month: 'short', weekday: 'long', day: 'numeric' })}
                 </p>
               </div>
             </div>
 
             {/* Upcoming Schedule */}
-            <div className="rounded-xl p-4 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300" style={{ backgroundColor: '#FFFFFF' }}>
+            <div className="rounded-xl p-4 border border-gray-100 transition-all duration-300" style={{ backgroundColor: '#FFFFFF' }}>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center">
@@ -1397,7 +1336,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
             {/* Today's Events - Student, Scholar, Instructor only (moved below calendar) */}
             {(((userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student')) || userRole === 'scholar' || userRole === 'instructor') && (
-              <div className="rounded-xl p-4 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300" style={{ backgroundColor: '#FFFFFF' }}>
+              <div className="rounded-xl p-4 border border-gray-100 transition-all duration-300" style={{ backgroundColor: '#FFFFFF' }}>
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center">
@@ -1424,7 +1363,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                     getTodaysEvents().slice(0, 2).map((schedule) => {
                       const courseColor = getCourseColor(schedule.course_id)
                       return (
-                        <div key={schedule.id} className="flex items-start space-x-2 p-2 bg-white rounded-lg border border-gray-200 hover:shadow-sm transition-all">
+                        <div key={schedule.id} className="flex items-start space-x-2 p-2 bg-white rounded-lg border border-gray-200 transition-all">
                           <div 
                             className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
                             style={{ backgroundColor: courseColor?.color_hex ? `${courseColor.color_hex}20` : '#BBF7D0' }}
@@ -1455,7 +1394,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
             {/* Recent Activity - Admin and Developer only */}
             {(userRole === 'admin' || userRole === 'developer') && (
-            <div className="bg-white rounded-lg p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 flex flex-col" style={{ height: '815px' }}>
+            <div className="bg-white rounded-lg p-6 border border-gray-100 transition-all duration-300 flex flex-col" style={{ height: '815px' }}>
 
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-bold text-gray-800">Recent Activity</h3>
@@ -1480,26 +1419,31 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
           <div className="xl:col-span-5 xl:order-1 space-y-6 md:space-y-8">
             
             {/* Welcome Card - Desktop only */}
-            <div className="hidden xl:block bg-white rounded-lg p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 overflow-visible relative min-h-[120px]">
-              <div className="flex items-center justify-between">
-                <div className="z-10 pr-4">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                    Welcome back, {displayUser.profile?.first_name || displayUser?.email?.split('@')[0] || 'User'}!
+            <div className="hidden xl:block px-2 py-3 overflow-visible relative">
+              <div className="flex items-center gap-4">
+                {/* Left: greeting */}
+                <div className="flex-1">
+                  <h2 className="text-xl font-bold text-gray-900 leading-tight">
+                    Hello, {displayUser.profile?.first_name || displayUser?.email?.split('@')[0] || 'User'}!
                   </h2>
-                  <p className="text-gray-600">
-                    {((userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student')) 
-                      ? 'Ready to continue your learning journey? Explore your courses and track your progress.'
-                      : 'Manage your platform efficiently and keep track of all activities.'}
-                  </p>
+                  <p className="text-sm text-gray-500 mt-0.5">Let's learn something new today!</p>
                 </div>
-                
-                {/* Book Illustration - Full size for main content */}
-                <div className="absolute -top-8 w-[160px] h-[160px] z-0" style={{ right: '20px' }}>
-                  <img 
-                    src="/book.png" 
-                    alt="Book illustration" 
-                    className="w-full h-full object-contain"
-                  />
+
+                {/* Right: search + bell */}
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  <div className="relative">
+                    <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input
+                      type="text"
+                      placeholder="Search anything here.."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-72 pl-9 pr-4 py-2.5 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-gray-300 text-gray-700 placeholder-gray-400"
+                    />
+                  </div>
+                  <NotificationBell />
                 </div>
               </div>
             </div>
@@ -1508,7 +1452,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
               {/* Tasks Card - Only for Admin and Developer */}
               {(userRole === 'admin' || userRole === 'developer') && (
-                <div className="rounded-xl p-4 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 md:col-span-2" style={{ backgroundColor: '#FFFFFF' }}>
+                <div className="rounded-xl p-4 border border-gray-100 transition-all duration-300 md:col-span-2" style={{ backgroundColor: '#FFFFFF' }}>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-3">
                       <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center">
@@ -1536,7 +1480,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                         {userRole === 'developer' && pendingTasks.pendingFeatureRequests > 0 && (
                           <div 
                             onClick={() => onNavigate('tasks')}
-                            className="flex items-start space-x-2 p-3 bg-white rounded-lg border border-purple-200 hover:shadow-sm transition-all cursor-pointer"
+                            className="flex items-start space-x-2 p-3 bg-white rounded-lg border border-purple-200 transition-all cursor-pointer"
                           >
                             <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-gray-200">
                               <svg className="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1559,7 +1503,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                         {userRole === 'developer' && pendingTasks.ongoingFeatureRequests > 0 && (
                           <div 
                             onClick={() => onNavigate('tasks')}
-                            className="flex items-start space-x-2 p-3 bg-white rounded-lg border border-green-200 hover:shadow-sm transition-all cursor-pointer"
+                            className="flex items-start space-x-2 p-3 bg-white rounded-lg border border-green-200 transition-all cursor-pointer"
                           >
                             <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-gray-200">
                               <svg className="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1582,7 +1526,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                         {pendingTasks.unenrolledtrainees > 0 && (
                           <div 
                             onClick={() => onNavigate('tasks')}
-                            className="flex items-start space-x-2 p-3 bg-white rounded-lg border border-orange-200 hover:shadow-sm transition-all cursor-pointer"
+                            className="flex items-start space-x-2 p-3 bg-white rounded-lg border border-orange-200 transition-all cursor-pointer"
                           >
                             <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-gray-200">
                               <svg className="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1605,7 +1549,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                         {(userRole === 'admin' || userRole === 'developer') && pendingTasks.bugReports > 0 && (
                           <div 
                             onClick={() => onNavigate('tasks')}
-                            className="flex items-start space-x-2 p-3 bg-white rounded-lg border border-yellow-200 hover:shadow-sm transition-all cursor-pointer"
+                            className="flex items-start space-x-2 p-3 bg-white rounded-lg border border-yellow-200 transition-all cursor-pointer"
                           >
                             <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-gray-200">
                               <svg className="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1628,7 +1572,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                         {(userRole === 'admin' || userRole === 'developer') && pendingTasks.passwordResets > 0 && (
                           <div 
                             onClick={() => onNavigate('tasks')}
-                            className="flex items-start space-x-2 p-3 bg-white rounded-lg border border-red-200 hover:shadow-sm transition-all cursor-pointer"
+                            className="flex items-start space-x-2 p-3 bg-white rounded-lg border border-red-200 transition-all cursor-pointer"
                           >
                             <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-gray-200">
                               <svg className="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1651,7 +1595,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                         {pendingTasks.unassignedtrainees > 0 && (
                           <div 
                             onClick={() => onNavigate('tasks')}
-                            className="flex items-start space-x-2 p-3 bg-white rounded-lg border border-blue-200 hover:shadow-sm transition-all cursor-pointer"
+                            className="flex items-start space-x-2 p-3 bg-white rounded-lg border border-blue-200 transition-all cursor-pointer"
                           >
                             <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-gray-200">
                               <svg className="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1674,7 +1618,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                         {(userRole === 'admin' || userRole === 'developer') && pendingTasks.guestUsers > 0 && (
                           <div 
                             onClick={() => onNavigate('tasks')}
-                            className="flex items-start space-x-2 p-3 bg-white rounded-lg border border-indigo-200 hover:shadow-sm transition-all cursor-pointer"
+                            className="flex items-start space-x-2 p-3 bg-white rounded-lg border border-indigo-200 transition-all cursor-pointer"
                           >
                             <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-gray-200">
                               <svg className="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1760,7 +1704,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
               {/* Today's Events - Admin and Developer only (others see it in the right column) */}
               {(userRole === 'admin' || userRole === 'developer') && (
-              <div className="rounded-xl p-4 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300" style={{ backgroundColor: '#FFFFFF' }}>
+              <div className="rounded-xl p-4 border border-gray-100 transition-all duration-300" style={{ backgroundColor: '#FFFFFF' }}>
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center">
@@ -1787,7 +1731,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                     getTodaysEvents().slice(0, 2).map((schedule) => {
                       const courseColor = getCourseColor(schedule.course_id)
                       return (
-                        <div key={schedule.id} className="flex items-start space-x-2 p-2 bg-white rounded-lg border border-gray-200 hover:shadow-sm transition-all">
+                        <div key={schedule.id} className="flex items-start space-x-2 p-2 bg-white rounded-lg border border-gray-200 transition-all">
                           <div 
                             className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
                             style={{ 
@@ -1844,7 +1788,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             )}
           </div>
               
-              <div className="flex flex-wrap" style={{ gap: '20px' }}>
+              <div className="flex flex-wrap" style={{ gap: '25px' }}>
                 {courses.length > 0 ? (
                   <>
                     {courses.slice(0, 3).map((course) => {
@@ -1854,11 +1798,22 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                       const isStudentOrStudent = ((userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student'))
                       const isLocked = isStudentOrStudent && !course.is_user_enrolled
                       
+                      // Determine card click destination
+                      const handleCardClick = () => {
+                        if (isLocked) return
+                        if (userRole === 'admin' || userRole === 'developer') {
+                          onNavigate('course-management')
+                        } else {
+                          onNavigate('my-courses')
+                        }
+                      }
+
                       return (
                         <div 
                           key={course.id} 
-                          className={`group relative bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col ${isLocked ? 'opacity-60' : ''}`}
-                          style={{ width: '300px' }}
+                          onClick={handleCardClick}
+                          className={`group relative bg-white rounded-2xl transition-all duration-300 overflow-hidden flex flex-col ${isLocked ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:shadow-xl'}`}
+                          style={{ width: '300px', height: '280px' }}
                         >
                           {/* Locked Badge for trainees who are NOT enrolled */}
                           {isLocked && (
@@ -1884,26 +1839,34 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                             </div>
                           )}
 
-                          {/* Decorative Top Strip */}
-                          <div className="relative overflow-hidden" style={{ height: '100px' }}>
-                            <div className="w-full h-full" style={{ 
-                              background: courseColor?.color_hex ? `linear-gradient(135deg, ${courseColor.color_hex}20 0%, ${courseColor.color_hex}10 100%)` : 'linear-gradient(135deg, #1f7a8c20 0%, #1f7a8c10 100%)'
-                            }} />
-                            <div 
-                              className="absolute left-0 top-0 w-1 h-full"
-                              style={{ backgroundColor: courseColor?.color_hex || '#1f7a8c' }}
-                            />
+                          {/* Decorative Top Strip — 40% */}
+                          <div className="relative overflow-hidden flex-[2]">
+                            {course.thumbnail_url ? (
+                              <img
+                                src={course.thumbnail_url}
+                                alt={course.title}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full" style={{ 
+                                background: courseColor?.color_hex ? `linear-gradient(135deg, ${courseColor.color_hex}20 0%, ${courseColor.color_hex}10 100%)` : 'linear-gradient(135deg, #1f7a8c20 0%, #1f7a8c10 100%)'
+                              }} />
+                            )}
+
                           </div>
 
+                          {/* Bottom 60% — header + content */}
+                          <div className="flex-[3] flex flex-col overflow-hidden">
+
                           {/* Course Header */}
-                          <div className="relative bg-white border-b border-gray-200 p-6">
+                          <div className="relative bg-white border-b border-gray-200 p-4">
                             <h3 className="text-lg font-semibold text-black line-clamp-2">
                               {course.title}
                             </h3>
                           </div>
                           
                           {/* Card Content */}
-                          <div className="p-5 flex flex-col flex-1">
+                          <div className="p-4 flex flex-col flex-1 overflow-hidden">
                             {/* Badges Row: Status, Course Type, Enrollment Type */}
                             {!(((userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student')) || userRole === 'scholar') && (
                             <div className="flex flex-wrap gap-2 mb-4">
@@ -1929,60 +1892,8 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                               ))}
                             </div>
                             )}
-                            
-                            {/* Action Button */}
-                            <div className="mt-auto">
-                              {isLocked ? (
-                                <button 
-                                  className="w-full px-4 py-3 bg-primary-500 text-white rounded-xl font-semibold text-sm hover:bg-primary-600 transition-colors duration-200 flex items-center justify-center space-x-2"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                  </svg>
-                                  <span>Contact Admin</span>
-                                </button>
-                              ) : isStudentOrStudent && course.is_user_enrolled ? (
-                                <button 
-                                  onClick={() => onNavigate('my-courses')}
-                                  className="w-full px-4 py-3 text-white rounded-xl font-semibold text-sm transition-colors duration-200 flex items-center justify-center space-x-2"
-                                  style={{ backgroundColor: getButtonBg() }}
-                                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
-                                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
-                                >
-                                  <span>View Course</span>
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                  </svg>
-                                </button>
-                              ) : ((userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student')) ? (
-                                <button 
-                                  onClick={() => onNavigate('my-courses')}
-                                  className="w-full px-4 py-3 text-white rounded-xl font-semibold text-sm transition-colors duration-200 flex items-center justify-center space-x-2"
-                                  style={{ backgroundColor: getButtonBg() }}
-                                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
-                                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
-                                >
-                                  <span>View Course</span>
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                  </svg>
-                                </button>
-                              ) : (userRole === 'admin' || userRole === 'developer') ? (
-                                <button 
-                                  onClick={() => onNavigate('course-management')}
-                                  className="w-full px-4 py-3 text-white rounded-xl font-semibold text-sm transition-colors duration-200 flex items-center justify-center space-x-2"
-                                  style={{ backgroundColor: getButtonBg() }}
-                                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
-                                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
-                                >
-                                  <span>Manage Course</span>
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                  </svg>
-                                </button>
-                              ) : null}
-                            </div>
                           </div>
+                          </div>{/* end bottom 60% wrapper */}
                         </div>
                       )
                     })}
@@ -2058,12 +1969,12 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
               
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Courses Card - Redesigned */}
-                <div className="group relative bg-white rounded-2xl p-8 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 overflow-hidden">
+                <div className="group relative bg-white rounded-2xl p-8 border border-gray-100 transition-all duration-300 overflow-hidden">
                   
                   {/* Header */}
                   <div className="flex items-center justify-between mb-8">
                     <div className="flex items-center space-x-3">
-                      <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center shadow-lg">
+                      <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center">
                         <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                         </svg>
@@ -2075,7 +1986,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                     </div>
                     <button 
                       onClick={() => onNavigate('course-management')}
-                      className="w-10 h-10 bg-white/80 hover:bg-white rounded-xl flex items-center justify-center text-gray-600 hover:text-blue-600 transition-all duration-200 shadow-sm hover:shadow-md"
+                      className="w-10 h-10 bg-white/80 hover:bg-white rounded-xl flex items-center justify-center text-gray-600 hover:text-blue-600 transition-all duration-200"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -2166,12 +2077,12 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 </div>
 
                 {/* Users Card - Redesigned */}
-                <div className="group relative bg-white rounded-2xl p-8 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 overflow-hidden">
+                <div className="group relative bg-white rounded-2xl p-8 border border-gray-100 transition-all duration-300 overflow-hidden">
 
                   {/* Header */}
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center space-x-3">
-                      <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center shadow-lg">
+                      <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center">
                         <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
                         </svg>
@@ -2240,7 +2151,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Enrolled Courses */}
-                <div className="bg-white rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 min-h-[120px] flex flex-col">
+                <div className="bg-white rounded-xl border border-gray-100 transition-all duration-300 min-h-[120px] flex flex-col">
                   <div className="p-4 flex flex-col flex-1">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Enrolled</span>
@@ -2258,7 +2169,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 </div>
 
                 {/* Completed Lessons */}
-                <div className="bg-white rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 min-h-[120px] flex flex-col">
+                <div className="bg-white rounded-xl border border-gray-100 transition-all duration-300 min-h-[120px] flex flex-col">
                   <div className="p-4 flex flex-col flex-1">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Completed</span>
@@ -2276,7 +2187,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 </div>
 
                 {/* Overall Progress */}
-                <div className="bg-white rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 min-h-[120px] flex flex-col">
+                <div className="bg-white rounded-xl border border-gray-100 transition-all duration-300 min-h-[120px] flex flex-col">
                   <div className="p-4 flex flex-col flex-1">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Progress</span>
@@ -2310,7 +2221,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* My Courses */}
-                <div className="bg-white rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 min-h-[120px] flex flex-col">
+                <div className="bg-white rounded-xl border border-gray-100 transition-all duration-300 min-h-[120px] flex flex-col">
                   <div className="p-4 flex flex-col flex-1">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Courses</span>
@@ -2328,7 +2239,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 </div>
 
                 {/* Total Students */}
-                <div className="bg-white rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 min-h-[120px] flex flex-col">
+                <div className="bg-white rounded-xl border border-gray-100 transition-all duration-300 min-h-[120px] flex flex-col">
                   <div className="p-4 flex flex-col flex-1">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Students</span>
@@ -2346,7 +2257,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 </div>
 
                 {/* Active Subjects */}
-                <div className="bg-white rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 min-h-[120px] flex flex-col">
+                <div className="bg-white rounded-xl border border-gray-100 transition-all duration-300 min-h-[120px] flex flex-col">
                   <div className="p-4 flex flex-col flex-1">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Subjects</span>

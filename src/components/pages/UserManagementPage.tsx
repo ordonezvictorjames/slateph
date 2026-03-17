@@ -567,82 +567,21 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
   return (
     <div className="p-8">
       {/* Welcome Banner */}
-      <div className="overflow-visible relative min-h-[80px] mb-4 mt-6">
+      <div className="overflow-visible relative mb-4 mt-6">
         <div className="flex items-center justify-between">
-          <div className="z-10 pr-4">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+          <div className="z-10">
+            <h2 className="text-xl font-bold text-gray-900">
               User Management
             </h2>
-            <p className="text-gray-600">
+            <p className="text-sm text-gray-500 mt-0.5">
               Manage system users and their roles
             </p>
-          </div>
-          
-          {/* Book Illustration - Overlapping */}
-          <div className="hidden md:block absolute -top-16 w-40 h-40 z-0" style={{ right: '5px' }}>
-            <img 
-              src="/book.png" 
-              alt="Book illustration" 
-              className="w-full h-full object-contain"
-            />
           </div>
         </div>
       </div>
 
       {/* Filters + Stats combined panel */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 mb-6 overflow-hidden">
-
-        {/* Stats row */}
-        <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 divide-x divide-gray-100">
-          {/* Total */}
-          <div className="flex flex-col items-center justify-center px-3 py-4 gap-1">
-            <p className="text-xl font-bold text-primary-700 leading-none">{users.length}</p>
-            <p className="text-xs text-gray-400 leading-none">Total</p>
-          </div>
-          {/* Admin */}
-          <div className="flex flex-col items-center justify-center px-3 py-4 gap-1">
-            <p className="text-xl font-bold text-primary-700 leading-none">{users.filter(u => u.role === 'admin').length}</p>
-            <p className="text-xs text-gray-400 leading-none">Admin</p>
-          </div>
-          {/* Developer */}
-          <div className="flex flex-col items-center justify-center px-3 py-4 gap-1">
-            <p className="text-xl font-bold text-primary-700 leading-none">{users.filter(u => u.role === 'developer').length}</p>
-            <p className="text-xs text-gray-400 leading-none">Developer</p>
-          </div>
-          {/* Instructor */}
-          <div className="flex flex-col items-center justify-center px-3 py-4 gap-1">
-            <p className="text-xl font-bold text-primary-700 leading-none">{users.filter(u => u.role === 'instructor').length}</p>
-            <p className="text-xs text-gray-400 leading-none">Instructor</p>
-          </div>
-          {/* JHS */}
-          <div className="flex flex-col items-center justify-center px-3 py-4 gap-1">
-            <p className="text-xl font-bold text-primary-700 leading-none">{users.filter(u => u.role === 'jhs_student').length}</p>
-            <p className="text-xs text-gray-400 leading-none">JHS</p>
-          </div>
-          {/* SHS */}
-          <div className="flex flex-col items-center justify-center px-3 py-4 gap-1">
-            <p className="text-xl font-bold text-primary-700 leading-none">{users.filter(u => u.role === 'shs_student').length}</p>
-            <p className="text-xs text-gray-400 leading-none">SHS</p>
-          </div>
-          {/* College */}
-          <div className="flex flex-col items-center justify-center px-3 py-4 gap-1">
-            <p className="text-xl font-bold text-primary-700 leading-none">{users.filter(u => u.role === 'college_student').length}</p>
-            <p className="text-xs text-gray-400 leading-none">College</p>
-          </div>
-          {/* Scholar */}
-          <div className="flex flex-col items-center justify-center px-3 py-4 gap-1">
-            <p className="text-xl font-bold text-primary-700 leading-none">{users.filter(u => u.role === 'scholar').length}</p>
-            <p className="text-xs text-gray-400 leading-none">Scholar</p>
-          </div>
-          {/* Guest */}
-          <div className="flex flex-col items-center justify-center px-3 py-4 gap-1">
-            <p className="text-xl font-bold text-primary-700 leading-none">{users.filter(u => u.role === 'guest').length}</p>
-            <p className="text-xs text-gray-400 leading-none">Guest</p>
-          </div>
-        </div>
-
-        {/* Divider */}
-        <div className="border-t border-gray-100" />
 
         {/* Filter row */}
         <div className="flex flex-wrap items-end gap-3 px-5 py-4">

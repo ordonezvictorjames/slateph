@@ -78,8 +78,8 @@ export default function SchedulePage() {
 
   const fetchSchedules = async () => {
     const { data, error } = await supabase
-      .from('course_schedules_with_details')
-      .select('*')
+      .from('course_schedules')
+      .select('*, course:courses(title, course_type)')
       .order('start_date', { ascending: true })
 
     if (error) {
@@ -527,7 +527,7 @@ export default function SchedulePage() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="text-sm font-semibold text-black line-clamp-1">{s.title}</div>
-                            <div className="text-xs text-gray-600 mt-0.5">{s.course_title}</div>
+                            <div className="text-xs text-gray-600 mt-0.5">{s.course?.title}</div>
                             <div className="text-xs text-gray-500 mt-1">{timeStr}</div>
                           </div>
                         </div>
@@ -590,7 +590,7 @@ export default function SchedulePage() {
                               <div className="flex items-start justify-between">
                                 <div className="flex-1">
                                   <h4 className="text-sm font-semibold text-black truncate">{s.title}</h4>
-                                  <p className="text-xs text-gray-600 mt-0.5">{s.course_title} • Batch {s.batch_number}</p>
+                                  <p className="text-xs text-gray-600 mt-0.5">{s.course?.title} • Batch {s.batch_number}</p>
                                   <div className="flex items-center space-x-2 mt-1">
                                     <span className="text-xs text-gray-500">{fmtDate(s.start_date)} - {fmtDate(s.end_date)}</span>
                                     <span className="text-xs text-gray-400">•</span>
@@ -801,7 +801,7 @@ export default function SchedulePage() {
                               <div className="min-w-0 flex-1">
                                 <div className="text-xs font-medium" style={{ color }}>{startLabel}</div>
                                 <div className="text-sm font-bold truncate text-gray-800">{s.title}</div>
-                                {s.course_title && <div className="text-xs text-gray-500 truncate">{s.course_title}</div>}
+                                {s.course?.title && <div className="text-xs text-gray-500 truncate">{s.course?.title}</div>}
                               </div>
                               <div className="flex flex-col items-end gap-1 flex-shrink-0">
                                 <span className="text-xs font-semibold" style={{ color }}>Batch {s.batch_number}</span>
@@ -1169,7 +1169,7 @@ export default function SchedulePage() {
               <div className="space-y-2 mb-6 p-4 bg-gray-50 rounded-lg">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Course:</span>
-                  <span className="font-medium">{scheduleToDelete.course_title}</span>
+                  <span className="font-medium">{scheduleToDelete.course?.title}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Batch:</span>
@@ -1252,7 +1252,7 @@ export default function SchedulePage() {
                           </div>
                           <div>
                             <h3 className="font-bold text-gray-900 text-lg">{schedule.title}</h3>
-                            <p className="text-sm text-gray-600">{schedule.course_title}</p>
+                            <p className="text-sm text-gray-600">{schedule.course?.title}</p>
                           </div>
                         </div>
                         <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
