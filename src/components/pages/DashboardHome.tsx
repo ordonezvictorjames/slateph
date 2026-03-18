@@ -136,8 +136,6 @@ function UpcomingScheduleList() {
       const role = user?.profile?.role
       const isAdminOrDev = role === 'admin' || role === 'developer'
 
-      let scheduleIds: string[] | null = null
-
       if (!isAdminOrDev && user?.id) {
         const { data: enrollments, error: enrollError } = await supabase
           .from('schedule_enrollments')
@@ -145,37 +143,47 @@ function UpcomingScheduleList() {
           .eq('user_id', user.id)
 
         if (enrollError) {
-          // Table may not exist yet — show empty
           setSchedules([])
           setLoading(false)
           return
         }
-        scheduleIds = (enrollments || []).map((e: { schedule_id: string }) => e.schedule_id)
+
+        const scheduleIds: string[] = (enrollments || []).map((e: { schedule_id: string }) => e.schedule_id)
+
         if (scheduleIds.length === 0) {
           setSchedules([])
           setLoading(false)
           return
         }
-      }
 
-      let query = supabase
-        .from('course_schedules')
-        .select('*, course:courses(title, course_type)')
-        .gte('start_date', tomorrowStr)
-        .in('status', ['scheduled', 'active'])
-        .order('start_date', { ascending: true })
-        .limit(2)
+        const { data: schedulesData, error: schedulesError } = await supabase
+          .from('course_schedules')
+          .select('*, course:courses(title, course_type)')
+          .in('id', scheduleIds)
+          .gte('start_date', tomorrowStr)
+          .in('status', ['scheduled', 'active'])
+          .order('start_date', { ascending: true })
+          .limit(2)
 
-      if (scheduleIds !== null) {
-        query = query.in('id', scheduleIds as string[])
-      }
-
-      const { data: schedulesData, error: schedulesError } = await query
-
-      if (schedulesError) {
-        console.error('Error fetching schedules:', schedulesError)
+        if (schedulesError) {
+          console.error('Error fetching schedules:', schedulesError)
+        } else {
+          setSchedules(schedulesData || [])
+        }
       } else {
-        setSchedules(schedulesData || [])
+        const { data: schedulesData, error: schedulesError } = await supabase
+          .from('course_schedules')
+          .select('*, course:courses(title, course_type)')
+          .gte('start_date', tomorrowStr)
+          .in('status', ['scheduled', 'active'])
+          .order('start_date', { ascending: true })
+          .limit(2)
+
+        if (schedulesError) {
+          console.error('Error fetching schedules:', schedulesError)
+        } else {
+          setSchedules(schedulesData || [])
+        }
       }
 
       // Fetch course colors
