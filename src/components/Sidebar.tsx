@@ -381,25 +381,19 @@ export default function Sidebar({ currentPage, onPageChange, hideHamburger = fal
 
   return (
     <>
-      {/* Mobile Toggle Button */}
+      {/* Drawer Handle - fixed, tracks sidebar right edge, mobile only */}
       {!hideHamburger && (
         <button
           onClick={() => setIsMobileOpen(!isMobileOpen)}
-          className="fixed left-0 z-[60] lg:hidden w-8 h-8 rounded-full shadow-lg transition-all duration-200 hover:scale-105 flex items-center justify-center"
-          style={{ 
-            top: '50%',
-            transform: 'translateY(-50%)',
+          className="fixed top-1/2 -translate-y-1/2 z-[60] lg:hidden w-8 h-8 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 ease-in-out"
+          style={{
+            left: isMobileOpen ? '196px' : '0px',
             backgroundColor: '#1f7a8c',
             color: '#FFFFFF'
           }}
           aria-label="Toggle sidebar"
         >
-          <svg 
-            className="w-4 h-4" 
-            fill="none" 
-            stroke="currentColor" 
-            viewBox="0 0 24 24"
-          >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             {isMobileOpen ? (
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
             ) : (
@@ -433,6 +427,7 @@ export default function Sidebar({ currentPage, onPageChange, hideHamburger = fal
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
+
       {/* Header */}
       <div className="p-4">
         <div className="flex items-center">
