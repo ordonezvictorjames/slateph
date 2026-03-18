@@ -1171,8 +1171,8 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
         <div className="xl:hidden grid grid-cols-2 gap-3 mb-4">
           {/* Clock Card */}
           <div className="rounded-xl border border-gray-100 bg-white">
-            <div className="px-3 py-3 flex flex-col items-center justify-center">
-              <div className="flex items-end space-x-1 mb-1">
+            <div className="px-3 py-3 flex flex-col items-center justify-center w-full">
+              <div className="flex items-end justify-center space-x-1 mb-1 w-full">
                 <span className="font-bold tabular-nums leading-none" style={{ fontSize: '28px', color: '#0f4c5c' }}>
                   {String(currentTime.getHours() % 12 || 12).padStart(2, '0')}
                 </span>
@@ -1192,7 +1192,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                   </span>
                 </div>
               </div>
-              <p className="text-xs font-semibold mt-1 text-center" style={{ color: '#0f4c5c' }}>
+              <p className="text-xs font-semibold mt-1 text-center w-full" style={{ color: '#0f4c5c' }}>
                 {currentTime.toLocaleDateString('en-US', { month: 'short', weekday: 'short', day: 'numeric' })}
               </p>
             </div>
