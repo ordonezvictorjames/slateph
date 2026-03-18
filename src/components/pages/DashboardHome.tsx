@@ -102,6 +102,7 @@ function UpcomingScheduleList() {
   const [courseColors, setCourseColors] = useState<CourseColor[]>([])
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
+  const { user } = useAuth()
 
   useEffect(() => {
     fetchUpcomingSchedules()
@@ -122,7 +123,7 @@ function UpcomingScheduleList() {
     return () => {
       supabase.removeChannel(schedulesSubscription)
     }
-  }, [])
+  }, [user])
 
   const fetchUpcomingSchedules = async () => {
     try {
@@ -131,15 +132,45 @@ function UpcomingScheduleList() {
       const tomorrow = new Date(today)
       tomorrow.setDate(tomorrow.getDate() + 1)
       const tomorrowStr = tomorrow.toISOString().split('T')[0]
-      
-      // Fetch upcoming schedules with course info (exclude today's events)
-      const { data: schedulesData, error: schedulesError } = await supabase
+
+      const role = user?.profile?.role
+      const isAdminOrDev = role === 'admin' || role === 'developer'
+
+      let scheduleIds: string[] | null = null
+
+      if (!isAdminOrDev && user?.id) {
+        const { data: enrollments, error: enrollError } = await supabase
+          .from('schedule_enrollments')
+          .select('schedule_id')
+          .eq('user_id', user.id)
+
+        if (enrollError) {
+          // Table may not exist yet — show empty
+          setSchedules([])
+          setLoading(false)
+          return
+        }
+        scheduleIds = (enrollments || []).map((e: { schedule_id: string }) => e.schedule_id)
+        if (scheduleIds.length === 0) {
+          setSchedules([])
+          setLoading(false)
+          return
+        }
+      }
+
+      let query = supabase
         .from('course_schedules')
         .select('*, course:courses(title, course_type)')
         .gte('start_date', tomorrowStr)
         .in('status', ['scheduled', 'active'])
         .order('start_date', { ascending: true })
         .limit(2)
+
+      if (scheduleIds !== null) {
+        query = query.in('id', scheduleIds as string[])
+      }
+
+      const { data: schedulesData, error: schedulesError } = await query
 
       if (schedulesError) {
         console.error('Error fetching schedules:', schedulesError)
@@ -894,17 +925,48 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
         setCourseColors(colorsData || [])
       }
 
-      // Fetch course schedules for calendar
-      const { data: schedulesData, error: schedulesError } = await supabase
-        .from('course_schedules')
-        .select('*, course:courses(title, course_type)')
-        .in('status', ['scheduled', 'active'])
-        .order('start_date', { ascending: true })
+      // Fetch course schedules for calendar (filtered by enrollment for students/instructors)
+      const isAdminOrDev = userRole === 'admin' || userRole === 'developer'
 
-      if (schedulesError) {
-        console.error('Error fetching course schedules:', schedulesError)
+      if (isAdminOrDev) {
+        const { data: schedulesData, error: schedulesError } = await supabase
+          .from('course_schedules')
+          .select('*, course:courses(title, course_type)')
+          .in('status', ['scheduled', 'active'])
+          .order('start_date', { ascending: true })
+
+        if (schedulesError) {
+          console.error('Error fetching course schedules:', schedulesError)
+        } else {
+          setCourseSchedules(schedulesData || [])
+        }
       } else {
-        setCourseSchedules(schedulesData || [])
+        const { data: enrollments, error: enrollError } = await supabase
+          .from('schedule_enrollments')
+          .select('schedule_id')
+          .eq('user_id', user?.id)
+
+        if (enrollError) {
+          setCourseSchedules([])
+        } else {
+          const ids = (enrollments || []).map((e: { schedule_id: string }) => e.schedule_id)
+          if (ids.length === 0) {
+            setCourseSchedules([])
+          } else {
+            const { data: schedulesData, error: schedulesError } = await supabase
+              .from('course_schedules')
+              .select('*, course:courses(title, course_type)')
+              .in('id', ids)
+              .in('status', ['scheduled', 'active'])
+              .order('start_date', { ascending: true })
+
+            if (schedulesError) {
+              console.error('Error fetching course schedules:', schedulesError)
+            } else {
+              setCourseSchedules(schedulesData || [])
+            }
+          }
+        }
       }
 
       // Fetch dashboard statistics
@@ -1165,78 +1227,6 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
         </div>
 
         {/* Mobile Today's Events + Profile 2-column grid - shown only on mobile */}
-        {/* Mobile Clock + Profile 2-column grid - shown only on mobile */}
-        <div className="xl:hidden grid grid-cols-2 gap-3 mb-4 items-stretch">
-          {/* Clock Card */}
-          <div className="rounded-xl border border-gray-100 bg-white h-full">
-            <div className="px-3 py-3 flex flex-col items-center justify-center w-full h-full min-h-[100px]">
-              <div className="flex items-end justify-center space-x-1 mb-1 w-full">
-                <span className="font-bold tabular-nums leading-none" style={{ fontSize: '28px', color: '#0f4c5c' }}>
-                  {String(currentTime.getHours() % 12 || 12).padStart(2, '0')}
-                </span>
-                <div className="flex flex-col space-y-1 mb-2">
-                  <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#0f4c5c' }} />
-                  <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#0f4c5c' }} />
-                </div>
-                <span className="font-bold tabular-nums leading-none" style={{ fontSize: '28px', color: '#0f4c5c' }}>
-                  {String(currentTime.getMinutes()).padStart(2, '0')}
-                </span>
-                <div className="flex flex-col items-center mb-1.5 ml-0.5">
-                  <span className="text-xs font-bold" style={{ color: '#0f4c5c' }}>
-                    {currentTime.getHours() >= 12 ? 'PM' : 'AM'}
-                  </span>
-                  <span className="text-xs font-bold tabular-nums" style={{ color: '#0f4c5c' }}>
-                    {String(currentTime.getSeconds()).padStart(2, '0')}
-                  </span>
-                </div>
-              </div>
-              <p className="text-xs font-semibold mt-1 text-center w-full" style={{ color: '#0f4c5c' }}>
-                {currentTime.toLocaleDateString('en-US', { month: 'short', weekday: 'short', day: 'numeric' })}
-              </p>
-            </div>
-          </div>
-
-          {/* Profile Card (mobile) */}
-          <div className="bg-white rounded-xl border border-gray-100 overflow-hidden relative" ref={dropdownRef}>
-            <div className="relative h-16">
-              {(user?.profile as any)?.banner_url ? (
-                <img src={(user?.profile as any).banner_url} alt="Cover" className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full" style={{ background: 'linear-gradient(135deg, #1f7a8c 0%, #0f4c5c 100%)' }} />
-              )}
-              <button
-                onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                className="absolute left-1/2 -translate-x-1/2 -bottom-5 w-10 h-10 rounded-full border-2 border-white bg-gray-200 overflow-hidden flex items-center justify-center"
-              >
-                {(user?.profile as any)?.avatar_url ? (
-                  (user?.profile as any).avatar_url.startsWith('data:') ? (
-                    <img src={(user?.profile as any).avatar_url} alt="Profile" className="w-full h-full object-cover" />
-                  ) : (user?.profile as any).avatar_url.length <= 2 ? (
-                    <span className="text-lg">{(user?.profile as any).avatar_url}</span>
-                  ) : (
-                    <img src={(user?.profile as any).avatar_url} alt="Profile" className="w-full h-full object-cover" />
-                  )
-                ) : (
-                  <span className="text-gray-600 font-medium text-xs">
-                    {user?.profile?.first_name && user?.profile?.last_name
-                      ? `${user.profile.first_name.charAt(0).toUpperCase()}${user.profile.last_name.charAt(0).toUpperCase()}`
-                      : displayUser?.email ? displayUser.email.charAt(0).toUpperCase() : 'U'}
-                  </span>
-                )}
-              </button>
-            </div>
-            <div className="px-2 pb-3 pt-7 flex flex-col items-center">
-              <p className="font-bold text-xs text-gray-900 text-center leading-tight">
-                {user?.profile?.first_name && user?.profile?.last_name
-                  ? `${user.profile.first_name} ${user.profile.last_name}`
-                  : 'User'}
-              </p>
-              <p className="text-xs text-gray-400 mt-0.5 text-center truncate w-full px-1">
-                {user?.email || displayUser?.email || ''}
-              </p>
-            </div>
-          </div>
-        </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-7 gap-4 md:gap-6">
           
@@ -1376,78 +1366,78 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
               </div>
             </div>
 
-            {/* Today's Events + Upcoming Schedule - stacked on all sizes */}
-            <div className="grid grid-cols-1 xl:grid-cols-1 gap-3 xl:gap-0 xl:space-y-4">
+            {/* Today's Events + Upcoming Schedule - 2-col on mobile, stacked on desktop */}
+            <div className="grid grid-cols-2 xl:grid-cols-1 gap-3 xl:gap-0 xl:space-y-4">
 
               {/* Today's Events */}
-              <div className="rounded-xl p-4 border border-gray-100 transition-all duration-300" style={{ backgroundColor: '#FFFFFF' }}>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="rounded-xl p-2.5 xl:p-4 border border-gray-100 transition-all duration-300" style={{ backgroundColor: '#FFFFFF' }}>
+                <div className="flex items-center justify-between mb-2 xl:mb-4">
+                  <div className="flex items-center space-x-2 xl:space-x-3">
+                    <div className="w-7 h-7 xl:w-10 xl:h-10 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <svg className="w-3.5 h-3.5 xl:w-5 xl:h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
                     </div>
                     <div>
-                      <h3 className="font-bold text-black">Today's Events</h3>
-                      <p className="text-xs text-black/70">{getTodaysEvents().length} scheduled</p>
+                      <h3 className="font-bold text-black text-xs xl:text-sm">Today&apos;s Events</h3>
+                      <p className="text-[10px] xl:text-xs text-black/70">{getTodaysEvents().length} scheduled</p>
                     </div>
                   </div>
                   <button onClick={() => onNavigate('schedule')} className="text-gray-400 hover:text-black transition-colors">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-1.5 xl:space-y-2">
                   {getTodaysEvents().length > 0 ? (
                     getTodaysEvents().slice(0, 2).map((schedule) => {
                       const courseColor = getCourseColor(schedule.course_id)
                       return (
-                        <div key={schedule.id} className="flex items-start space-x-2 p-2 bg-white rounded-lg border border-gray-200 transition-all">
+                        <div key={schedule.id} className="flex items-start space-x-1.5 xl:space-x-2 p-1.5 xl:p-2 bg-white rounded-lg border border-gray-200 transition-all">
                           <div
-                            className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                            className="w-6 h-6 xl:w-8 xl:h-8 rounded-lg flex items-center justify-center flex-shrink-0"
                             style={{ backgroundColor: courseColor?.color_hex ? `${courseColor.color_hex}20` : '#BBF7D0' }}
                           >
-                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: courseColor?.color_hex || '#22C55E' }} />
+                            <div className="w-2 h-2 xl:w-2.5 xl:h-2.5 rounded-full" style={{ backgroundColor: courseColor?.color_hex || '#22C55E' }} />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="text-sm font-semibold text-black line-clamp-1">{schedule.title}</div>
-                            <div className="text-xs text-gray-600 mt-0.5">{schedule.course?.title}</div>
-                            <div className="text-xs text-gray-500 mt-1">{formatScheduleTime(schedule.start_date, schedule.end_date)}</div>
+                            <div className="text-[10px] xl:text-sm font-semibold text-black line-clamp-1">{schedule.title}</div>
+                            <div className="hidden xl:block text-xs text-gray-600 mt-0.5">{schedule.course?.title}</div>
+                            <div className="text-[9px] xl:text-xs text-gray-500 mt-0.5 xl:mt-1">{formatScheduleTime(schedule.start_date, schedule.end_date)}</div>
                           </div>
                         </div>
                       )
                     })
                   ) : (
-                    <div className="text-center py-6">
-                      <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center mx-auto mb-3">
-                        <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="text-center py-3 xl:py-6">
+                      <div className="w-8 h-8 xl:w-12 xl:h-12 bg-gray-200 rounded-xl flex items-center justify-center mx-auto mb-2 xl:mb-3">
+                        <svg className="w-4 h-4 xl:w-6 xl:h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                       </div>
-                      <p className="text-sm font-medium text-black">No events today</p>
+                      <p className="text-[10px] xl:text-sm font-medium text-black">No events today</p>
                     </div>
                   )}
                 </div>
               </div>
 
               {/* Upcoming Schedule */}
-              <div className="rounded-xl p-4 border border-gray-100 transition-all duration-300" style={{ backgroundColor: '#FFFFFF' }}>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="rounded-xl p-2.5 xl:p-4 border border-gray-100 transition-all duration-300" style={{ backgroundColor: '#FFFFFF' }}>
+                <div className="flex items-center justify-between mb-2 xl:mb-4">
+                  <div className="flex items-center space-x-2 xl:space-x-3">
+                    <div className="w-7 h-7 xl:w-10 xl:h-10 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <svg className="w-3.5 h-3.5 xl:w-5 xl:h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
                     <div>
-                      <h3 className="font-bold text-black">Upcoming Schedule</h3>
-                      <p className="text-xs text-black/70">Next events</p>
+                      <h3 className="font-bold text-black text-xs xl:text-sm">Upcoming Schedule</h3>
+                      <p className="text-[10px] xl:text-xs text-black/70">Next events</p>
                     </div>
                   </div>
                   <button onClick={() => onNavigate('schedule')} className="text-gray-400 hover:text-black transition-colors">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
