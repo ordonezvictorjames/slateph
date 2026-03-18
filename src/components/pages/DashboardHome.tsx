@@ -1889,6 +1889,58 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 </div>
               )}
 
+              {/* Today's Events - Admin/Developer, sits beside the Tasks card */}
+              {(userRole === 'admin' || userRole === 'developer') && (
+                <div className="rounded-xl p-4 border border-gray-100 transition-all duration-300" style={{ backgroundColor: '#FFFFFF' }}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center">
+                        <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-black">Today&apos;s Events</h3>
+                        <p className="text-xs text-black/70">{getTodaysEvents().length} scheduled</p>
+                      </div>
+                    </div>
+                    <button onClick={() => onNavigate('schedule')} className="text-gray-400 hover:text-black transition-colors">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {getTodaysEvents().length > 0 ? (
+                      getTodaysEvents().slice(0, 3).map((schedule) => {
+                        const courseColor = getCourseColor(schedule.course_id)
+                        return (
+                          <div key={schedule.id} className="flex items-start space-x-2 p-2 bg-white rounded-lg border border-gray-200 transition-all">
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: courseColor?.color_hex ? `${courseColor.color_hex}20` : '#BBF7D0' }}>
+                              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: courseColor?.color_hex || '#22C55E' }} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-semibold text-black line-clamp-1">{schedule.title}</div>
+                              <div className="text-xs text-gray-600 mt-0.5">{schedule.course?.title}</div>
+                              <div className="text-xs text-gray-500 mt-1">{formatScheduleTime(schedule.start_date, schedule.end_date)}</div>
+                            </div>
+                          </div>
+                        )
+                      })
+                    ) : (
+                      <div className="text-center py-6">
+                        <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3" style={{ backgroundColor: '#0f4c5c' }}>
+                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                        <p className="text-sm font-medium text-black">No events today</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
             </div>
 
         {/* Main Section - Courses */}
