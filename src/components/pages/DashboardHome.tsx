@@ -255,13 +255,13 @@ function UpcomingScheduleList() {
 
   if (schedules.length === 0) {
     return (
-      <div className="text-center py-8">
-        <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center mx-auto mb-3">
-          <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="text-center py-3 xl:py-6">
+        <div className="w-8 h-8 xl:w-12 xl:h-12 rounded-xl flex items-center justify-center mx-auto mb-2 xl:mb-3" style={{ backgroundColor: '#0f4c5c' }}>
+          <svg className="w-4 h-4 xl:w-6 xl:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
         </div>
-        <p className="text-sm font-medium text-black">No upcoming schedules</p>
+        <p className="text-[10px] xl:text-sm font-medium text-black">No upcoming schedules</p>
       </div>
     )
   }
@@ -741,8 +741,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
   }
 
   useEffect(() => {
-    if (hasFetchedRef.current) return
-    hasFetchedRef.current = true
+    if (!user?.id) return
     
     fetchDashboardData()
 
@@ -801,7 +800,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
       supabase.removeChannel(profilesSubscription)
       supabase.removeChannel(schedulesSubscription)
     }
-  }, [])
+  }, [user?.id])
 
   // Update time every second
   useEffect(() => {
@@ -1486,8 +1485,8 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                     })
                   ) : (
                     <div className="text-center py-3 xl:py-6">
-                      <div className="w-8 h-8 xl:w-12 xl:h-12 bg-gray-200 rounded-xl flex items-center justify-center mx-auto mb-2 xl:mb-3">
-                        <svg className="w-4 h-4 xl:w-6 xl:h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-8 h-8 xl:w-12 xl:h-12 rounded-xl flex items-center justify-center mx-auto mb-2 xl:mb-3" style={{ backgroundColor: '#0f4c5c' }}>
+                        <svg className="w-4 h-4 xl:w-6 xl:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                       </div>
@@ -1885,8 +1884,8 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                     })
                   ) : (
                     <div className="text-center py-6">
-                      <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center mx-auto mb-3">
-                        <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3" style={{ backgroundColor: '#0f4c5c' }}>
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                       </div>
