@@ -1228,7 +1228,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
         <div className="xl:hidden px-2 py-3 mb-2">
           {/* Row 1: greeting + notification bell */}
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-base font-bold text-gray-900 leading-tight">
+            <h2 className="text-3xl font-bold text-gray-900 leading-tight">
               Hello, {displayUser.profile?.first_name || displayUser?.email?.split('@')[0] || 'User'}!
             </h2>
             <NotificationBell />
@@ -1337,7 +1337,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
         <div className="grid grid-cols-1 xl:grid-cols-7 gap-4 md:gap-6">
           
           {/* Profile Card - Shows on desktop only (mobile version is above) */}
-          <div className="xl:col-span-2 xl:order-2 space-y-4 md:space-y-6 flex flex-col">
+          <div className="order-last xl:col-span-2 xl:order-2 space-y-4 md:space-y-6 flex flex-col">
             {/* Avatar / Profile Card - Desktop only */}
             <div className="hidden xl:block bg-white rounded-xl border border-gray-100 overflow-hidden relative" ref={dropdownRef}>
               {/* Cover Banner */}
@@ -1496,95 +1496,14 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
               </div>
             </div>
 
-            {/* Today's Events + Upcoming Schedule - 2-col on mobile, stacked on desktop */}
-            <div className="grid grid-cols-1 gap-3 xl:gap-0 xl:space-y-4">
-
-              {/* Today's Events - hidden for admin/developer (they have the full calendar) */}
-              {userRole !== 'admin' && userRole !== 'developer' && (
-              <div className="rounded-xl p-2.5 xl:p-4 border border-gray-100 transition-all duration-300" style={{ backgroundColor: '#FFFFFF' }}>
-                <div className="flex items-center justify-between mb-2 xl:mb-4">
-                  <div className="flex items-center space-x-2 xl:space-x-3">
-                    <div className="w-7 h-7 xl:w-10 xl:h-10 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <svg className="w-3.5 h-3.5 xl:w-5 xl:h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-black text-xs xl:text-sm">Today&apos;s Events</h3>
-                      <p className="text-[10px] xl:text-xs text-black/70">{getTodaysEvents().length} scheduled</p>
-                    </div>
-                  </div>
-                  <button onClick={() => onNavigate('schedule')} className="text-gray-400 hover:text-black transition-colors">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                </div>
-                <div className="space-y-1.5 xl:space-y-2">
-                  {getTodaysEvents().length > 0 ? (
-                    getTodaysEvents().slice(0, 2).map((schedule) => {
-                      const courseColor = getCourseColor(schedule.course_id)
-                      return (
-                        <div key={schedule.id} className="flex items-start space-x-1.5 xl:space-x-2 p-1.5 xl:p-2 bg-white rounded-lg border border-gray-200 transition-all">
-                          <div
-                            className="w-6 h-6 xl:w-8 xl:h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                            style={{ backgroundColor: courseColor?.color_hex ? `${courseColor.color_hex}20` : '#BBF7D0' }}
-                          >
-                            <div className="w-2 h-2 xl:w-2.5 xl:h-2.5 rounded-full" style={{ backgroundColor: courseColor?.color_hex || '#22C55E' }} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-[10px] xl:text-sm font-semibold text-black line-clamp-1">{schedule.title}</div>
-                            <div className="hidden xl:block text-xs text-gray-600 mt-0.5">{schedule.course?.title}</div>
-                            <div className="text-[9px] xl:text-xs text-gray-500 mt-0.5 xl:mt-1">{formatScheduleTime(schedule.start_date, schedule.end_date)}</div>
-                          </div>
-                        </div>
-                      )
-                    })
-                  ) : (
-                    <div className="text-center py-3 xl:py-6">
-                      <div className="w-8 h-8 xl:w-12 xl:h-12 rounded-xl flex items-center justify-center mx-auto mb-2 xl:mb-3" style={{ backgroundColor: '#0f4c5c' }}>
-                        <svg className="w-4 h-4 xl:w-6 xl:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                      </div>
-                      <p className="text-[10px] xl:text-sm font-medium text-black">No events today</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-              )}
-
-              {/* Upcoming Schedule */}
-              <div className="rounded-xl p-2.5 xl:p-4 border border-gray-100 transition-all duration-300" style={{ backgroundColor: '#FFFFFF' }}>
-                <div className="flex items-center justify-between mb-2 xl:mb-4">
-                  <div className="flex items-center space-x-2 xl:space-x-3">
-                    <div className="w-7 h-7 xl:w-10 xl:h-10 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <svg className="w-3.5 h-3.5 xl:w-5 xl:h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-black text-xs xl:text-sm">Upcoming Schedule</h3>
-                      <p className="text-[10px] xl:text-xs text-black/70">Next events</p>
-                    </div>
-                  </div>
-                  <button onClick={() => onNavigate('schedule')} className="text-gray-400 hover:text-black transition-colors">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                </div>
-                <UpcomingScheduleList />
-              </div>
-
-            </div>
+            {/* Today's Events + Upcoming Schedule - moved to left section */}
 
             {/* Recent Activity - Admin and Developer only */}
             {(userRole === 'admin' || userRole === 'developer') && (
             <div className="bg-white rounded-lg p-6 border border-gray-100 transition-all duration-300 flex flex-col" style={{ height: '815px' }}>
 
               <div className="flex items-center justify-between mb-6">
-                <h3 className="font-bold text-gray-800">Recent Activity</h3>
+                <h3 className="text-sm font-bold text-gray-800">Recent Activity</h3>
                 <button 
                   onClick={() => onNavigate('system-tracker')}
                   className="text-gray-400 hover:text-gray-600"
@@ -1603,14 +1522,14 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
           </div>
 
           {/* Left Section - Main Content - Shows second on mobile, first on desktop */}
-          <div className="xl:col-span-5 xl:order-1 space-y-6 md:space-y-8">
+          <div className="order-first xl:col-span-5 xl:order-1 space-y-6 md:space-y-8">
             
             {/* Welcome Card - Desktop only */}
             <div className="hidden xl:block px-2 py-3 overflow-visible relative">
               <div className="flex items-center gap-4">
                 {/* Left: greeting */}
                 <div className="flex-1">
-                  <h2 className="text-xl font-bold text-gray-900 leading-tight">
+                  <h2 className="text-3xl font-bold text-gray-900 leading-tight">
                     Hello, {displayUser.profile?.first_name || displayUser?.email?.split('@')[0] || 'User'}!
                   </h2>
 
@@ -1636,10 +1555,10 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             </div>
 
             {/* Top Section - Action Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 xl:gap-6">
               {/* Tasks Card - Only for Admin and Developer */}
               {(userRole === 'admin' || userRole === 'developer') && (
-                <div className="rounded-xl p-4 border border-gray-100 transition-all duration-300 md:col-span-2 xl:col-span-2" style={{ backgroundColor: '#FFFFFF' }}>
+                <div className="rounded-xl p-4 border border-gray-100 transition-all duration-300 xl:col-span-2" style={{ backgroundColor: '#FFFFFF' }}>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-3">
                       <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center">
@@ -1648,7 +1567,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                         </svg>
                       </div>
                       <div>
-                        <h3 className="font-bold text-black">Tasks</h3>
+                        <h3 className="text-sm font-bold text-black">Tasks</h3>
                         <p className="text-xs text-black/70">Pending items</p>
                       </div>
                     </div>
@@ -1661,7 +1580,15 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                       </svg>
                     </button>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {/* Mobile: compact total count only */}
+                  <div className="flex sm:hidden items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer" onClick={() => onNavigate('tasks')}>
+                    <span className="text-sm text-gray-600">Total pending items</span>
+                    <span className="inline-flex items-center justify-center w-7 h-7 text-sm font-bold text-white bg-black rounded-full">
+                      {pendingTasks.pendingFeatureRequests + pendingTasks.ongoingFeatureRequests + pendingTasks.unenrolledtrainees + pendingTasks.bugReports + pendingTasks.passwordResets + pendingTasks.unassignedtrainees + pendingTasks.guestUsers}
+                    </span>
+                  </div>
+                  {/* Desktop: full items grid */}
+                  <div className="hidden sm:grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <>
                         {/* Row 1, Col 1: Pending Requests */}
                         {userRole === 'developer' && pendingTasks.pendingFeatureRequests > 0 && (
@@ -1900,7 +1827,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                         </svg>
                       </div>
                       <div>
-                        <h3 className="font-bold text-black">Today&apos;s Events</h3>
+                        <h3 className="text-sm font-bold text-black">Today&apos;s Events</h3>
                         <p className="text-xs text-black/70">{getTodaysEvents().length} scheduled</p>
                       </div>
                     </div>
@@ -1944,9 +1871,92 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             </div>
 
         {/* Main Section - Courses */}
+
+            {/* Today's Events + Upcoming Schedule - 2-col on mobile, stacked on desktop */}
+            <div className="grid grid-cols-2 xl:grid-cols-1 gap-3 xl:gap-4">
+
+              {/* Today's Events - hidden for admin/developer */}
+              {userRole !== 'admin' && userRole !== 'developer' && (
+              <div className="rounded-xl p-2.5 xl:p-4 border border-gray-100 transition-all duration-300" style={{ backgroundColor: '#FFFFFF' }}>
+                <div className="flex items-center justify-between mb-2 xl:mb-4">
+                  <div className="flex items-center space-x-2 xl:space-x-3">
+                    <div className="w-7 h-7 xl:w-10 xl:h-10 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <svg className="w-3.5 h-3.5 xl:w-5 xl:h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-black">Today&apos;s Events</h3>
+                      <p className="text-[10px] xl:text-xs text-black/70">{getTodaysEvents().length} scheduled</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="xl:hidden inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-white bg-black rounded-full">{getTodaysEvents().length}</span>
+                    <button onClick={() => onNavigate('schedule')} className="text-gray-400 hover:text-black transition-colors">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <div className="space-y-1.5 xl:space-y-2 hidden xl:block">
+                  {getTodaysEvents().length > 0 ? (
+                    getTodaysEvents().slice(0, 2).map((schedule) => {
+                      const courseColor = getCourseColor(schedule.course_id)
+                      return (
+                        <div key={schedule.id} className="flex items-start space-x-1.5 xl:space-x-2 p-1.5 xl:p-2 bg-white rounded-lg border border-gray-200 transition-all">
+                          <div className="w-6 h-6 xl:w-8 xl:h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: courseColor?.color_hex ? `${courseColor.color_hex}20` : '#BBF7D0' }}>
+                            <div className="w-2 h-2 xl:w-2.5 xl:h-2.5 rounded-full" style={{ backgroundColor: courseColor?.color_hex || '#22C55E' }} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[10px] xl:text-sm font-semibold text-black line-clamp-1">{schedule.title}</div>
+                            <div className="hidden xl:block text-xs text-gray-600 mt-0.5">{schedule.course?.title}</div>
+                            <div className="text-[9px] xl:text-xs text-gray-500 mt-0.5 xl:mt-1">{formatScheduleTime(schedule.start_date, schedule.end_date)}</div>
+                          </div>
+                        </div>
+                      )
+                    })
+                  ) : (
+                    <div className="text-center py-3 xl:py-6">
+                      <div className="w-8 h-8 xl:w-12 xl:h-12 rounded-xl flex items-center justify-center mx-auto mb-2 xl:mb-3" style={{ backgroundColor: '#0f4c5c' }}>
+                        <svg className="w-4 h-4 xl:w-6 xl:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <p className="text-[10px] xl:text-sm font-medium text-black">No events today</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              )}
+
+              {/* Upcoming Schedule */}
+              <div className="rounded-xl p-2.5 xl:p-4 border border-gray-100 transition-all duration-300" style={{ backgroundColor: '#FFFFFF' }}>
+                <div className="flex items-center justify-between mb-2 xl:mb-4">
+                  <div className="flex items-center space-x-2 xl:space-x-3">
+                    <div className="w-7 h-7 xl:w-10 xl:h-10 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <svg className="w-3.5 h-3.5 xl:w-5 xl:h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-black">Upcoming Schedule</h3>
+                      <p className="text-[10px] xl:text-xs text-black/70">Next events</p>
+                    </div>
+                  </div>
+                  <button onClick={() => onNavigate('schedule')} className="text-gray-400 hover:text-black transition-colors">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+                <div className="hidden xl:block"><UpcomingScheduleList /></div>
+              </div>
+
+            </div>
         <div>
           <div className="flex items-center justify-between mb-4 md:mb-6">
-            <h2 className="text-lg md:text-xl font-bold text-black">
+            <h2 className="text-sm font-bold text-black">
               {((userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student')) ? (
                 <>
                   My Courses
@@ -2135,7 +2145,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             {(userRole === 'admin' || userRole === 'developer') && (
             <div>
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">System Overview</h2>
+                <h2 className="text-sm font-bold text-gray-900">System Overview</h2>
                 <div className="flex items-center space-x-2 text-sm text-gray-500">
                   <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                   <span>Live Data</span>
@@ -2155,7 +2165,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                         </svg>
                       </div>
                       <div>
-                        <h3 className="text-xl font-bold text-gray-900">Courses</h3>
+                        <h3 className="text-sm font-bold text-gray-900">Courses</h3>
                         <p className="text-sm font-semibold" style={{ color: '#1f7a8c' }}>{stats.totalModules} total content</p>
                       </div>
                     </div>
@@ -2263,7 +2273,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                         </svg>
                       </div>
                       <div>
-                        <h3 className="text-xl font-bold text-gray-900">Users</h3>
+                        <h3 className="text-sm font-bold text-gray-900">Users</h3>
                         <p className="text-sm font-semibold" style={{ color: '#1f7a8c' }}>{stats.totalUsers} total</p>
                       </div>
                     </div>
@@ -2321,7 +2331,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             {(((userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student')) || userRole === 'scholar') && (
             <div>
               <div className="flex items-center justify-between mb-4 md:mb-6">
-                <h2 className="text-lg md:text-xl font-bold text-black">My Learning Progress</h2>
+                <h2 className="text-sm font-bold text-black">My Learning Progress</h2>
               </div>
 
               <div className="grid grid-cols-3 gap-3 md:gap-4">
@@ -2391,7 +2401,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             {userRole === 'instructor' && (
             <div>
               <div className="flex items-center justify-between mb-4 md:mb-6">
-                <h2 className="text-lg md:text-xl font-bold text-black">My Teaching Overview</h2>
+                <h2 className="text-sm font-bold text-black">My Teaching Overview</h2>
               </div>
 
               <div className="grid grid-cols-3 gap-3 md:gap-4">
