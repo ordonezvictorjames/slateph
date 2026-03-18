@@ -1,4 +1,4 @@
-'use client'
+ï»¿'use client'
 
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -132,7 +132,7 @@ function UpcomingScheduleList() {
       tomorrow.setDate(tomorrow.getDate() + 1)
       const tomorrowStr = tomorrow.toISOString().split('T')[0]
       
-      // Fetch upcoming schedules with course info (exclude Today&apos;s Events)
+      // Fetch upcoming schedules with course info (exclude today's events)
       const { data: schedulesData, error: schedulesError } = await supabase
         .from('course_schedules')
         .select('*, course:courses(title, course_type)')
@@ -681,7 +681,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
     return currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })
   }
 
-  // Get Today&apos;s Events from course schedules
+  // Get today's events from course schedules
   const getTodaysEvents = () => {
     const today = new Date()
     const todayString = today.toISOString().split('T')[0]
@@ -1147,6 +1147,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
               <h2 className="text-base font-bold text-gray-900 leading-tight">
                 Hello, {displayUser.profile?.first_name || displayUser?.email?.split('@')[0] || 'User'}!
               </h2>
+              <p className="text-xs text-gray-500 mt-0.5">Let's learn something new today!</p>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               <div className="relative">
@@ -1377,10 +1378,10 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
               </div>
             </div>
 
-            {/* Today&apos;s Events + Upcoming Schedule - 2-col grid on mobile, stacked on desktop */}
+            {/* Today's Events + Upcoming Schedule - 2-col grid on mobile, stacked on desktop */}
             <div className="grid grid-cols-1 xl:grid-cols-1 gap-3 xl:gap-0 xl:space-y-4">
 
-              {/* Today&apos;s Events */}
+              {/* Today's Events */}
               <div className="rounded-xl p-4 border border-gray-100 transition-all duration-300" style={{ backgroundColor: '#FFFFFF' }}>
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-3">
@@ -1390,7 +1391,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                       </svg>
                     </div>
                     <div>
-                      <h3 className="font-bold text-black">Today&apos;s Events</h3>
+                      <h3 className="font-bold text-black">Today's Events</h3>
                       <p className="text-xs text-black/70">{getTodaysEvents().length} scheduled</p>
                     </div>
                   </div>
@@ -1492,7 +1493,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                   <h2 className="text-xl font-bold text-gray-900 leading-tight">
                     Hello, {displayUser.profile?.first_name || displayUser?.email?.split('@')[0] || 'User'}!
                   </h2>
-                </div>
+                  <p className="text-sm text-gray-500 mt-0.5">Let's learn something new today!</p>
                 </div>
 
                 {/* Right: search + bell */}
@@ -1768,7 +1769,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 </div>
               )}
 
-              {/* Today&apos;s Events - Admin and Developer only (others see it in the right column) */}
+              {/* Today's Events - Admin and Developer only (others see it in the right column) */}
               {(userRole === 'admin' || userRole === 'developer') && (
               <div className="rounded-xl p-4 border border-gray-100 transition-all duration-300" style={{ backgroundColor: '#FFFFFF' }}>
                 <div className="flex items-center justify-between mb-4">
@@ -1779,7 +1780,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                       </svg>
                     </div>
                     <div>
-                      <h3 className="font-bold text-black">Today&apos;s Events</h3>
+                      <h3 className="font-bold text-black">Today's Events</h3>
                       <p className="text-xs text-black/70">{getTodaysEvents().length} scheduled</p>
                     </div>
                   </div>
@@ -1905,7 +1906,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                             </div>
                           )}
 
-                          {/* Decorative Top Strip — 40% */}
+                          {/* Decorative Top Strip â€” 40% */}
                           <div className="relative overflow-hidden flex-[2]">
                             {course.thumbnail_url ? (
                               <img
@@ -1921,7 +1922,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
                           </div>
 
-                          {/* Bottom 60% — header + content */}
+                          {/* Bottom 60% â€” header + content */}
                           <div className="flex-[3] flex flex-col overflow-hidden">
 
                           {/* Course Header */}
@@ -2348,5 +2349,3 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
     </div>
   )
 }
-
-
