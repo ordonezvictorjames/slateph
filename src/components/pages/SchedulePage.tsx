@@ -118,17 +118,54 @@ export default function SchedulePage() {
   }
 
   const fetchSchedules = async () => {
-    const { data, error } = await supabase
-      .from('course_schedules')
-      .select('*, course:courses(title, course_type)')
-      .order('start_date', { ascending: true })
+    const role = user?.profile?.role
+    const isAdminOrDev = role === 'admin' || role === 'developer'
 
-    if (error) {
-      console.error('Error fetching schedules:', error)
-      return
+    if (isAdminOrDev) {
+      // Admins and developers see all schedules
+      const { data, error } = await supabase
+        .from('course_schedules')
+        .select('*, course:courses(title, course_type)')
+        .order('start_date', { ascending: true })
+
+      if (error) {
+        console.error('Error fetching schedules:', error.message, error.code, error.details)
+        return
+      }
+      setSchedules(data || [])
+    } else {
+      // Students and instructors: get their enrolled schedule IDs first
+      const { data: enrollments, error: enrollError } = await supabase
+        .from('schedule_enrollments')
+        .select('schedule_id')
+        .eq('user_id', user?.id)
+
+      if (enrollError) {
+        console.error('Error fetching enrollments:', enrollError.message, enrollError.code)
+        // Table may not exist yet — show empty
+        setSchedules([])
+        return
+      }
+
+      const scheduleIds = (enrollments || []).map((e: { schedule_id: string }) => e.schedule_id)
+
+      if (scheduleIds.length === 0) {
+        setSchedules([])
+        return
+      }
+
+      const { data, error } = await supabase
+        .from('course_schedules')
+        .select('*, course:courses(title, course_type)')
+        .in('id', scheduleIds)
+        .order('start_date', { ascending: true })
+
+      if (error) {
+        console.error('Error fetching schedules:', error.message, error.code, error.details)
+        return
+      }
+      setSchedules(data || [])
     }
-
-    setSchedules(data || [])
   }
 
   const fetchCourses = async () => {
@@ -471,23 +508,29 @@ export default function SchedulePage() {
               <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent">
                 Course Schedule
               </h1>
-              <p className="text-gray-500 mt-1 text-sm">Manage and organize your course schedules</p>
+              <p className="text-gray-500 mt-1 text-sm">
+                {(user?.profile?.role === 'admin' || user?.profile?.role === 'developer')
+                  ? 'Manage and organize your course schedules'
+                  : 'Your assigned class schedules'}
+              </p>
             </div>
             
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setShowAddModal(true)}
-                className="px-5 py-2.5 text-white rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2 font-medium"
-                style={{ backgroundColor: '#1f7a8c' }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#155f6e'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#1f7a8c'}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                <span>New Schedule</span>
-              </button>
-            </div>
+            {(user?.profile?.role === 'admin' || user?.profile?.role === 'developer') && (
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="px-5 py-2.5 text-white rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2 font-medium"
+                  style={{ backgroundColor: '#1f7a8c' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#155f6e'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#1f7a8c'}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span>New Schedule</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -880,6 +923,7 @@ export default function SchedulePage() {
                               </div>
                               <div className="flex flex-col items-end gap-1 flex-shrink-0">
                                 <span className="text-xs font-semibold" style={{ color }}>Batch {s.batch_number}</span>
+                                {(user?.profile?.role === 'admin' || user?.profile?.role === 'developer') && (
                                 <div className="hidden group-hover:flex items-center gap-1 mt-1">
                                   <button
                                     onClick={(e) => { e.stopPropagation(); handleEditSchedule(s) }}
@@ -900,6 +944,7 @@ export default function SchedulePage() {
                                     </svg>
                                   </button>
                                 </div>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -1498,6 +1543,7 @@ export default function SchedulePage() {
                       </div>
 
                       <div className="flex gap-2 mt-4">
+                        {(user?.profile?.role === 'admin' || user?.profile?.role === 'developer') && (<>
                         <button
                           onClick={() => {
                             setShowDateModal(false)
@@ -1516,6 +1562,7 @@ export default function SchedulePage() {
                         >
                           Delete
                         </button>
+                        </>)}
                       </div>
                     </div>
                   )
