@@ -68,6 +68,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   avatar_url: profile.avatar_url,
                   banner_url: profile.banner_url,
                   spotify_url: profile.spotify_url,
+                  grade: profile.grade,
+                  section: profile.section,
+                  strand: profile.strand,
+                  cluster: profile.cluster,
+                  batch_number: profile.batch_number,
                   created_at: profile.created_at,
                   updated_at: profile.updated_at
                 }
@@ -296,6 +301,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             avatar_url: profile.avatar_url,
             banner_url: profile.banner_url,
             spotify_url: profile.spotify_url,
+            grade: profile.grade,
+            section: profile.section,
+            strand: profile.strand,
+            cluster: profile.cluster,
+            batch_number: profile.batch_number,
             created_at: profile.created_at,
             updated_at: profile.updated_at
           }

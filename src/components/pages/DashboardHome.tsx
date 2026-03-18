@@ -558,6 +558,21 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
   // Helper function to get button background color
   const getButtonBg = () => '#1f7a8c' // Primary teal color
+
+  // Format role for display — preserves acronyms like JHS, SHS
+  const formatRole = (role: string) => {
+    const labels: Record<string, string> = {
+      jhs_student: 'JHS Student',
+      shs_student: 'SHS Student',
+      college_student: 'College Student',
+      scholar: 'TESDA Scholar',
+      instructor: 'Instructor',
+      admin: 'Admin',
+      developer: 'Developer',
+      guest: 'Guest',
+    }
+    return labels[role] ?? role.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+  }
   
   // Helper function to get button hover color (slightly darker)
   const getButtonHoverBg = () => '#1a6b7a' // Darker teal color
@@ -1295,9 +1310,26 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
               <p className="text-xs font-bold text-gray-900 truncate">
                 {user?.profile?.first_name} {user?.profile?.last_name}
               </p>
-              <p className="text-[10px] text-gray-500 truncate capitalize">
-                {(user?.profile?.role as string)?.replace(/_/g, ' ')}
+              <p className="text-[10px] text-gray-500 truncate">
+                {formatRole(user?.profile?.role as string)}
               </p>
+              {/* Student class info */}
+              {(user?.profile?.role === 'jhs_student' || user?.profile?.role === 'shs_student' || user?.profile?.role === 'college_student' || user?.profile?.role === 'scholar') && (
+                <div className="mt-1.5 flex flex-wrap justify-center gap-1">
+                  {user?.profile?.grade != null && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-teal-50 text-teal-700 font-medium">Grade {user.profile.grade}</span>
+                  )}
+                  {user?.profile?.section != null && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-teal-50 text-teal-700 font-medium">Sec {user.profile.section}</span>
+                  )}
+                  {user?.profile?.strand && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 font-medium truncate max-w-[80px]">{user.profile.strand}</span>
+                  )}
+                  {user?.profile?.batch_number != null && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-purple-50 text-purple-700 font-medium">Batch {user.profile.batch_number}</span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1349,6 +1381,30 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 <p className="text-xs text-gray-400 mt-0.5 text-center">
                   {user?.email || displayUser?.email || ''}
                 </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {formatRole(user?.profile?.role as string)}
+                </p>
+
+                {/* Student class info */}
+                {(user?.profile?.role === 'jhs_student' || user?.profile?.role === 'shs_student' || user?.profile?.role === 'college_student' || user?.profile?.role === 'scholar') && (
+                  <div className="mt-2 flex flex-wrap justify-center gap-1.5">
+                    {user?.profile?.grade != null && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 font-medium">Grade {user.profile.grade}</span>
+                    )}
+                    {user?.profile?.section != null && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 font-medium">Section {user.profile.section}</span>
+                    )}
+                    {user?.profile?.cluster && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-medium capitalize">{(user.profile.cluster as string).replace(/_/g, ' ')}</span>
+                    )}
+                    {user?.profile?.strand && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 font-medium text-center">{user.profile.strand}</span>
+                    )}
+                    {user?.profile?.batch_number != null && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 font-medium">Batch {user.profile.batch_number}</span>
+                    )}
+                  </div>
+                )}
 
                 {/* Badges placeholder */}
                 <div className="flex items-center gap-1.5 mt-3 flex-wrap justify-center">

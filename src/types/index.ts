@@ -13,6 +13,12 @@ export interface Profile {
   account_tier?: AccountTier
   account_duration_days?: number | null
   account_expires_at?: string | null
+  // Student class info
+  grade?: number | string | null
+  section?: number | string | null
+  strand?: string | null
+  cluster?: string | null
+  batch_number?: number | string | null
   created_at: string
   updated_at: string
 }
