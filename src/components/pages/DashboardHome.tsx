@@ -1226,7 +1226,74 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
           </div>
         </div>
 
-        {/* Mobile Today's Events + Profile 2-column grid - shown only on mobile */}
+        {/* Mobile Clock + Profile 2-column grid - shown only on mobile */}
+        <div className="xl:hidden grid grid-cols-2 gap-3 mb-4 items-stretch">
+          {/* Clock Card */}
+          <div className="rounded-xl border border-gray-100 bg-white h-full">
+            <div className="px-3 py-3 flex flex-col items-center justify-center w-full h-full min-h-[100px]">
+              <div className="flex items-end justify-center space-x-1 mb-1 w-full">
+                <span className="font-bold tabular-nums leading-none" style={{ fontSize: '28px', color: '#0f4c5c' }}>
+                  {String(currentTime.getHours() % 12 || 12).padStart(2, '0')}
+                </span>
+                <div className="flex flex-col space-y-1 mb-2">
+                  <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#0f4c5c' }} />
+                  <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#0f4c5c' }} />
+                </div>
+                <span className="font-bold tabular-nums leading-none" style={{ fontSize: '28px', color: '#0f4c5c' }}>
+                  {String(currentTime.getMinutes()).padStart(2, '0')}
+                </span>
+                <div className="flex flex-col items-center mb-1.5 ml-0.5">
+                  <span className="text-xs font-bold" style={{ color: '#0f4c5c' }}>
+                    {currentTime.getHours() >= 12 ? 'PM' : 'AM'}
+                  </span>
+                  <span className="text-xs font-bold tabular-nums" style={{ color: '#0f4c5c' }}>
+                    {String(currentTime.getSeconds()).padStart(2, '0')}
+                  </span>
+                </div>
+              </div>
+              <p className="text-xs font-semibold mt-1 text-center w-full" style={{ color: '#0f4c5c' }}>
+                {currentTime.toLocaleDateString('en-US', { month: 'short', weekday: 'short', day: 'numeric' })}
+              </p>
+            </div>
+          </div>
+
+          {/* Profile Card (mobile) */}
+          <div className="bg-white rounded-xl border border-gray-100 overflow-hidden relative">
+            <div className="relative h-16">
+              {(user?.profile as any)?.banner_url ? (
+                <img src={(user?.profile as any).banner_url} alt="Cover" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full" style={{ background: 'linear-gradient(135deg, #1f7a8c 0%, #0f4c5c 100%)' }} />
+              )}
+              <button
+                onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                className="absolute left-1/2 -translate-x-1/2 -bottom-5 w-10 h-10 rounded-full border-2 border-white bg-gray-200 overflow-hidden flex items-center justify-center"
+              >
+                {(user?.profile as any)?.avatar_url ? (
+                  (user?.profile as any).avatar_url.startsWith('data:') ? (
+                    <img src={(user?.profile as any).avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (user?.profile as any).avatar_url.length <= 2 ? (
+                    <span className="text-lg">{(user?.profile as any).avatar_url}</span>
+                  ) : (
+                    <img src={(user?.profile as any).avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                  )
+                ) : (
+                  <span className="text-sm font-bold text-gray-600">
+                    {(user?.profile?.first_name?.[0] || '') + (user?.profile?.last_name?.[0] || '')}
+                  </span>
+                )}
+              </button>
+            </div>
+            <div className="pt-7 pb-3 px-2 text-center">
+              <p className="text-xs font-bold text-gray-900 truncate">
+                {user?.profile?.first_name} {user?.profile?.last_name}
+              </p>
+              <p className="text-[10px] text-gray-500 truncate capitalize">
+                {(user?.profile?.role as string)?.replace(/_/g, ' ')}
+              </p>
+            </div>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-7 gap-4 md:gap-6">
           
@@ -1367,7 +1434,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             </div>
 
             {/* Today's Events + Upcoming Schedule - 2-col on mobile, stacked on desktop */}
-            <div className="grid grid-cols-2 xl:grid-cols-1 gap-3 xl:gap-0 xl:space-y-4">
+            <div className="grid grid-cols-1 gap-3 xl:gap-0 xl:space-y-4">
 
               {/* Today's Events */}
               <div className="rounded-xl p-2.5 xl:p-4 border border-gray-100 transition-all duration-300" style={{ backgroundColor: '#FFFFFF' }}>
