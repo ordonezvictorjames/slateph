@@ -5,6 +5,36 @@ import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { Loading, ButtonLoading } from '@/components/ui/loading'
 
+// ── Class info constants (mirrors UserModals.tsx) ──────────────────────────
+const SHS_ACADEMIC_STRANDS = [
+  'Arts, Social Sciences, and Humanities',
+  'Business and Entrepreneurship',
+  'Science, Technology, Engineering, and Mathematics (STEM)',
+  'Sports, Health, and Wellness',
+  'Field Experience',
+]
+const SHS_TECHNICAL_STRANDS = [
+  'Aesthetic, Wellness, and Human Care',
+  'Agri-Fishery Business and Food Innovation',
+  'Artisanry and Creative Enterprise',
+  'Automotive and Small Engine Technologies',
+  'Construction and Building Technologies',
+  'Creative Arts and Design Technologies',
+  'Hospitality and Tourism',
+  'ICT Support and Computer Programming Technologies',
+  'Industrial Technologies',
+  'Maritime Transport',
+]
+const GRADE_JHS = [7, 8, 9, 10].map(g => `Grade ${g}`)
+const GRADE_SHS = ['Grade 11', 'Grade 12']
+const SECTIONS = Array.from({ length: 10 }, (_, i) => `Section ${i + 1}`)
+const BATCHES = Array.from({ length: 10 }, (_, i) => `Batch ${i + 1}`)
+const CLUSTERS = [
+  { value: 'academic', label: 'Academic Cluster' },
+  { value: 'technical', label: 'Technical Professional Cluster' },
+]
+// ──────────────────────────────────────────────────────────────────────────
+
 interface CourseSchedule {
   id: string
   course_id: string
@@ -13,7 +43,12 @@ interface CourseSchedule {
   batch_number: number
   start_date: string
   end_date: string
-  enrollment_type: 'trainee' | 'tesda_scholar' | 'both'
+  enrollment_type: 'jhs_student' | 'shs_student' | 'college_student' | 'tesda_scholar' | 'trainee' | 'both'
+  grade: string | null
+  section: string | null
+  cluster: string | null
+  strand: string | null
+  batch: string | null
   sections: string[] | null
   grade_levels: number[] | null
   strands: string[] | null
@@ -57,8 +92,14 @@ export default function SchedulePage() {
     end_date: '',
     start_time: '',
     end_time: '',
-    enrollment_type: 'trainee' as 'trainee' | 'tesda_scholar' | 'both',
+    enrollment_type: 'jhs_student' as 'jhs_student' | 'shs_student' | 'college_student' | 'tesda_scholar',
+    grade: '',
+    section: '',
+    cluster: '',
+    strand: '',
+    batch: '',
   })
+  const [shsCluster, setShsCluster] = useState<'academic' | 'technical' | ''>('')
 
   useEffect(() => {
     fetchData()
@@ -110,33 +151,37 @@ export default function SchedulePage() {
     setSubmitting(true)
 
     try {
-      // Get next batch number for this course
-      const { data: existingSchedules } = await supabase
-        .from('course_schedules')
-        .select('batch_number')
-        .eq('course_id', newSchedule.course_id)
-        .order('batch_number', { ascending: false })
-        .limit(1)
-
-      const nextBatchNumber = existingSchedules && existingSchedules.length > 0 
-        ? existingSchedules[0].batch_number + 1 
-        : 1
-
-      // Generate title based on enrollment type and batch number
-      const generatedTitle = `Batch ${nextBatchNumber}`
-
       // Combine date and time into ISO timestamp
       const startDateTime = `${newSchedule.start_date}T${newSchedule.start_time}:00`
       const endDateTime = `${newSchedule.end_date}T${newSchedule.end_time}:00`
 
+      const selectedCourse = courses.find(c => c.id === newSchedule.course_id)
+
+      // Build title from class info
+      let classTitle = ''
+      if (newSchedule.enrollment_type === 'jhs_student') {
+        classTitle = [newSchedule.grade, newSchedule.section].filter(Boolean).join(' - ')
+      } else if (newSchedule.enrollment_type === 'shs_student') {
+        const clusterLabel = CLUSTERS.find(c => c.value === shsCluster)?.label || ''
+        classTitle = [clusterLabel, newSchedule.strand, newSchedule.grade, newSchedule.section].filter(Boolean).join(' - ')
+      } else if (newSchedule.enrollment_type === 'college_student') {
+        classTitle = newSchedule.section
+      } else if (newSchedule.enrollment_type === 'tesda_scholar') {
+        classTitle = newSchedule.batch || ''
+      }
+
       const scheduleData = {
         course_id: newSchedule.course_id,
-        title: generatedTitle,
+        title: classTitle || selectedCourse?.title || '',
         description: newSchedule.description || null,
-        batch_number: nextBatchNumber,
         start_date: startDateTime,
         end_date: endDateTime,
         enrollment_type: newSchedule.enrollment_type,
+        grade: newSchedule.grade || null,
+        section: newSchedule.section || null,
+        cluster: shsCluster || null,
+        strand: newSchedule.strand || null,
+        batch: newSchedule.batch || null,
         status: 'scheduled',
         created_by: user?.id
       }
@@ -160,8 +205,14 @@ export default function SchedulePage() {
         end_date: '',
         start_time: '',
         end_time: '',
-        enrollment_type: 'trainee',
+        enrollment_type: 'jhs_student',
+        grade: '',
+        section: '',
+        cluster: '',
+        strand: '',
+        batch: '',
       })
+      setShsCluster('')
       setShowAddModal(false)
       // Navigate calendar to the new schedule's start date so it's immediately visible
       setSelectedDate(new Date(startDateTime))
@@ -204,7 +255,12 @@ export default function SchedulePage() {
       end_date: endDateStr,
       start_time: startTimeStr,
       end_time: endTimeStr,
-      enrollment_type: schedule.enrollment_type,
+      enrollment_type: schedule.enrollment_type as any,
+      grade: '',
+      section: '',
+      cluster: '',
+      strand: '',
+      batch: '',
     })
     setScheduleToEdit(schedule)
     setShowEditModal(true)
@@ -217,9 +273,18 @@ export default function SchedulePage() {
     setSubmitting(true)
 
     try {
-      // Generate title based on enrollment type
-      // Use the existing title from the form
-      const generatedTitle = newSchedule.title
+      // Build title from class info
+      let classTitle = ''
+      if (newSchedule.enrollment_type === 'jhs_student') {
+        classTitle = [newSchedule.grade, newSchedule.section].filter(Boolean).join(' - ')
+      } else if (newSchedule.enrollment_type === 'shs_student') {
+        const clusterLabel = CLUSTERS.find(c => c.value === shsCluster)?.label || ''
+        classTitle = [clusterLabel, newSchedule.strand, newSchedule.grade, newSchedule.section].filter(Boolean).join(' - ')
+      } else if (newSchedule.enrollment_type === 'college_student') {
+        classTitle = newSchedule.section
+      } else if (newSchedule.enrollment_type === 'tesda_scholar') {
+        classTitle = newSchedule.batch || ''
+      }
 
       // Combine date and time into ISO timestamp
       const startDateTime = `${newSchedule.start_date}T${newSchedule.start_time}:00`
@@ -227,11 +292,16 @@ export default function SchedulePage() {
 
       const scheduleData = {
         course_id: newSchedule.course_id,
-        title: generatedTitle,
+        title: classTitle || newSchedule.title,
         description: newSchedule.description || null,
         start_date: startDateTime,
         end_date: endDateTime,
         enrollment_type: newSchedule.enrollment_type,
+        grade: newSchedule.grade || null,
+        section: newSchedule.section || null,
+        cluster: shsCluster || null,
+        strand: newSchedule.strand || null,
+        batch: newSchedule.batch || null,
       }
 
       const { error } = await supabase
@@ -957,18 +1027,89 @@ export default function SchedulePage() {
                   <select
                     required
                     value={newSchedule.enrollment_type}
-                    onChange={(e) => setNewSchedule(prev => ({ ...prev, enrollment_type: e.target.value as any }))}
+                    onChange={(e) => setNewSchedule(prev => ({ ...prev, enrollment_type: e.target.value as any, grade: '', section: '', cluster: '', strand: '', batch: '' }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                   >
-                    <option value="trainee">Student</option>
-                    <option value="tesda_scholar">Scholar</option>
-                    <option value="both">Both</option>
+                    <option value="jhs_student">JHS Student</option>
+                    <option value="shs_student">SHS Student</option>
+                    <option value="college_student">College Student</option>
+                    <option value="tesda_scholar">TESDA Scholar</option>
                   </select>
                 </div>
 
-                {newSchedule.enrollment_type === 'trainee' && (<></>)}
+                {/* JHS: Grade + Section */}
+                {newSchedule.enrollment_type === 'jhs_student' && (<>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Grade Level</label>
+                    <select required value={newSchedule.grade} onChange={(e) => setNewSchedule(prev => ({ ...prev, grade: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+                      <option value="">Select grade</option>
+                      {GRADE_JHS.map(g => <option key={g} value={g}>{g}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Section</label>
+                    <select required value={newSchedule.section} onChange={(e) => setNewSchedule(prev => ({ ...prev, section: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+                      <option value="">Select section</option>
+                      {SECTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                </>)}
 
-                {newSchedule.enrollment_type === 'tesda_scholar' && (<></>)}
+                {/* SHS: Cluster + Strand + Grade + Section */}
+                {newSchedule.enrollment_type === 'shs_student' && (<>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Grade Level</label>
+                    <select required value={newSchedule.grade} onChange={(e) => setNewSchedule(prev => ({ ...prev, grade: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+                      <option value="">Select grade</option>
+                      {GRADE_SHS.map(g => <option key={g} value={g}>{g}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Section</label>
+                    <select required value={newSchedule.section} onChange={(e) => setNewSchedule(prev => ({ ...prev, section: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+                      <option value="">Select section</option>
+                      {SECTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Cluster</label>
+                    <select required value={shsCluster} onChange={(e) => { setShsCluster(e.target.value as any); setNewSchedule(prev => ({ ...prev, strand: '' })) }} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+                      <option value="">Select cluster</option>
+                      {CLUSTERS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                    </select>
+                  </div>
+                  {shsCluster && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Strand</label>
+                      <select required value={newSchedule.strand} onChange={(e) => setNewSchedule(prev => ({ ...prev, strand: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+                        <option value="">Select strand</option>
+                        {(shsCluster === 'academic' ? SHS_ACADEMIC_STRANDS : SHS_TECHNICAL_STRANDS).map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+                  )}
+                </>)}
+
+                {/* College: Section */}
+                {newSchedule.enrollment_type === 'college_student' && (
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Section</label>
+                    <select required value={newSchedule.section} onChange={(e) => setNewSchedule(prev => ({ ...prev, section: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+                      <option value="">Select section</option>
+                      {SECTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                )}
+
+                {/* TESDA Scholar: Batch */}
+                {newSchedule.enrollment_type === 'tesda_scholar' && (
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Batch</label>
+                    <select required value={newSchedule.batch} onChange={(e) => setNewSchedule(prev => ({ ...prev, batch: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+                      <option value="">Select batch</option>
+                      {BATCHES.map(b => <option key={b} value={b}>{b}</option>)}
+                    </select>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end space-x-4 mt-8">
@@ -1111,18 +1252,85 @@ export default function SchedulePage() {
                   <select
                     required
                     value={newSchedule.enrollment_type}
-                    onChange={(e) => setNewSchedule(prev => ({ ...prev, enrollment_type: e.target.value as any }))}
+                    onChange={(e) => setNewSchedule(prev => ({ ...prev, enrollment_type: e.target.value as any, grade: '', section: '', cluster: '', strand: '', batch: '' }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
                   >
-                    <option value="trainee">Student</option>
-                    <option value="tesda_scholar">Scholar</option>
-                    <option value="both">Both</option>
+                    <option value="jhs_student">JHS Student</option>
+                    <option value="shs_student">SHS Student</option>
+                    <option value="college_student">College Student</option>
+                    <option value="tesda_scholar">TESDA Scholar</option>
                   </select>
                 </div>
 
-                {newSchedule.enrollment_type === 'trainee' && (<></>)}
+                {newSchedule.enrollment_type === 'jhs_student' && (<>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Grade Level</label>
+                    <select required value={newSchedule.grade} onChange={(e) => setNewSchedule(prev => ({ ...prev, grade: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+                      <option value="">Select grade</option>
+                      {GRADE_JHS.map(g => <option key={g} value={g}>{g}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Section</label>
+                    <select required value={newSchedule.section} onChange={(e) => setNewSchedule(prev => ({ ...prev, section: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+                      <option value="">Select section</option>
+                      {SECTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                </>)}
 
-                {newSchedule.enrollment_type === 'tesda_scholar' && (<></>)}
+                {newSchedule.enrollment_type === 'shs_student' && (<>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Grade Level</label>
+                    <select required value={newSchedule.grade} onChange={(e) => setNewSchedule(prev => ({ ...prev, grade: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+                      <option value="">Select grade</option>
+                      {GRADE_SHS.map(g => <option key={g} value={g}>{g}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Section</label>
+                    <select required value={newSchedule.section} onChange={(e) => setNewSchedule(prev => ({ ...prev, section: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+                      <option value="">Select section</option>
+                      {SECTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Cluster</label>
+                    <select required value={shsCluster} onChange={(e) => { setShsCluster(e.target.value as any); setNewSchedule(prev => ({ ...prev, strand: '' })) }} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+                      <option value="">Select cluster</option>
+                      {CLUSTERS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                    </select>
+                  </div>
+                  {shsCluster && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Strand</label>
+                      <select required value={newSchedule.strand} onChange={(e) => setNewSchedule(prev => ({ ...prev, strand: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+                        <option value="">Select strand</option>
+                        {(shsCluster === 'academic' ? SHS_ACADEMIC_STRANDS : SHS_TECHNICAL_STRANDS).map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+                  )}
+                </>)}
+
+                {newSchedule.enrollment_type === 'college_student' && (
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Section</label>
+                    <select required value={newSchedule.section} onChange={(e) => setNewSchedule(prev => ({ ...prev, section: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+                      <option value="">Select section</option>
+                      {SECTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                )}
+
+                {newSchedule.enrollment_type === 'tesda_scholar' && (
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Batch</label>
+                    <select required value={newSchedule.batch} onChange={(e) => setNewSchedule(prev => ({ ...prev, batch: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+                      <option value="">Select batch</option>
+                      {BATCHES.map(b => <option key={b} value={b}>{b}</option>)}
+                    </select>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end space-x-4 mt-8">
