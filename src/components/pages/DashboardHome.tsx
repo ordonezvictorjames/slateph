@@ -5,8 +5,8 @@ import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
 import { getRecentActivities } from '@/lib/activityLogger'
 import { Loading } from '@/components/ui/loading'
-import NotificationBell from '@/components/NotificationBell'
 import type { PageType } from '@/components/Dashboard'
+import OnlineUsers from '@/components/OnlineUsers'
 
 interface Course {
   id: string
@@ -523,7 +523,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [currentTime, setCurrentTime] = useState(new Date())
   const [showProfileDropdown, setShowProfileDropdown] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
+
   const [userStats, setUserStats] = useState<UserStats>({
     totalStudents: 0,
     totalSHSStudents: 0,
@@ -1093,11 +1093,11 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
       // Fetch pending tasks for admin and developer
       if (userRole === 'admin' || userRole === 'developer') {
-        // Get trainees not enrolled in any course
+        // Get students not enrolled in any course (JHS, SHS, College, Scholar, Trainee)
         const { data: alltrainees } = await supabase
           .from('profiles')
           .select('id')
-          .in('role', ['shs_student', 'jhs_student', 'college_student'])
+          .in('role', ['shs_student', 'jhs_student', 'college_student', 'tesda_scholar'])
 
         const { data: enrolledtrainees } = await supabase
           .from('course_enrollments')
@@ -1224,34 +1224,11 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
     <div className="min-h-screen" style={{ backgroundColor: '#f3f4f6', paddingTop: '24px', paddingBottom: '48px' }} >
       <div className="px-4 xl:pl-[50px] xl:pr-[25px]">
 
-        {/* Mobile Welcome Banner - full width, shown only on mobile */}
-        <div className="xl:hidden px-2 py-3 mb-2">
-          {/* Row 1: greeting + notification bell */}
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-3xl font-bold text-gray-900 leading-tight">
-              Hello, {displayUser.profile?.first_name || displayUser?.email?.split('@')[0] || 'User'}!
-            </h2>
-            <NotificationBell />
-          </div>
-          {/* Row 2: search box full width */}
-          <div className="relative">
-            <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search.."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-3 py-2 text-xs bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-gray-300 text-gray-700 placeholder-gray-400"
-            />
-          </div>
-        </div>
 
         {/* Mobile Clock + Profile 2-column grid - shown only on mobile */}
         <div className="xl:hidden grid grid-cols-2 gap-3 mb-4 items-stretch">
           {/* Clock Card */}
-          <div className="rounded-xl border border-gray-100 bg-white h-full">
+          <div className="rounded-xl border border-gray-200 bg-white h-full shadow-sm">
             <div className="px-3 py-3 flex flex-col items-center justify-center w-full h-full min-h-[100px]">
               <div className="flex items-end justify-center space-x-1 mb-1 w-full">
                 <span className="font-bold tabular-nums leading-none" style={{ fontSize: '28px', color: '#0f4c5c' }}>
@@ -1280,7 +1257,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
           </div>
 
           {/* Profile Card (mobile) */}
-          <div className="bg-white rounded-xl border border-gray-100 overflow-hidden relative">
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden relative shadow-sm">
             <div className="relative h-16">
               {(user?.profile as any)?.banner_url ? (
                 <img src={(user?.profile as any).banner_url} alt="Cover" className="w-full h-full object-cover" />
@@ -1334,12 +1311,29 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
           </div>
         </div>
 
+        {/* Mobile Upcoming Schedule - shown only on mobile, below clock/profile */}
+        <div className="xl:hidden mb-4">
+          <div className="rounded-xl p-3 border border-gray-200 bg-white cursor-pointer" onClick={() => onNavigate('schedule')}>
+            <div className="flex items-center space-x-2 mb-2">
+              <div className="w-7 h-7 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
+                <svg className="w-3.5 h-3.5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-xs font-bold text-black leading-tight">Upcoming Schedule</h3>
+                <p className="text-[10px] text-black/70">Next events</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 xl:grid-cols-7 gap-4 md:gap-6">
           
           {/* Profile Card - Shows on desktop only (mobile version is above) */}
           <div className="order-last xl:col-span-2 xl:order-2 space-y-4 md:space-y-6 flex flex-col">
             {/* Avatar / Profile Card - Desktop only */}
-            <div className="hidden xl:block bg-white rounded-xl border border-gray-100 overflow-hidden relative" ref={dropdownRef}>
+            <div className="hidden xl:block bg-white rounded-xl border border-gray-200 overflow-hidden relative shadow-sm" ref={dropdownRef}>
               {/* Cover Banner */}
               {/* Cover + overlapping avatar */}
               <div className="relative h-24">
@@ -1420,7 +1414,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
               {/* Dropdown Menu */}
               {showProfileDropdown && (
-                <div className="absolute mt-2 w-56 bg-white rounded-xl border border-gray-100 py-2 z-50" style={{ top: 'auto', right: '1rem' }}>
+                <div className="absolute mt-2 w-56 bg-white rounded-xl border border-gray-200 py-2 z-50" style={{ top: 'auto', right: '1rem' }}>
                   <div className="px-4 py-3 border-b border-gray-100">
                     <p className="text-sm font-medium text-gray-900">
                       {user?.profile?.first_name && user?.profile?.last_name
@@ -1468,7 +1462,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             </div>
 
             {/* Digital Clock - Desktop only (mobile clock is in the 2-col grid above) */}
-            <div className="hidden xl:block rounded-xl border border-gray-100 transition-all duration-300 bg-white">
+            <div className="hidden xl:block rounded-xl border border-gray-200 transition-all duration-300 bg-white shadow-sm">
               <div className="px-4 py-3 flex flex-col items-center justify-center">
                 <div className="flex items-end space-x-2 mb-1">
                   <span className="font-bold tabular-nums leading-none" style={{ fontSize: '36px', color: '#0f4c5c' }}>
@@ -1496,11 +1490,19 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
               </div>
             </div>
 
-            {/* Today's Events + Upcoming Schedule - moved to left section */}
+
+            {/* All Users Card - Desktop only, Admin/Developer */}
+            {(userRole === 'admin' || userRole === 'developer') && (
+            <div className="hidden xl:block bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="overflow-y-auto scrollbar-autohide" style={{ maxHeight: '380px' }}>
+                <OnlineUsers />
+              </div>
+            </div>
+            )}
 
             {/* Recent Activity - Admin and Developer only */}
             {(userRole === 'admin' || userRole === 'developer') && (
-            <div className="bg-white rounded-lg p-6 border border-gray-100 transition-all duration-300 flex flex-col" style={{ height: '815px' }}>
+            <div className="bg-white rounded-lg p-6 border border-gray-200 transition-all duration-300 flex flex-col" style={{ height: '710px' }}>
 
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-sm font-bold text-gray-800">Recent Activity</h3>
@@ -1514,7 +1516,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto">
+              <div className="flex-1 overflow-y-auto scrollbar-autohide">
                 <RecentActivityList />
               </div>
             </div>
@@ -1524,51 +1526,178 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
           {/* Left Section - Main Content - Shows second on mobile, first on desktop */}
           <div className="order-first xl:col-span-5 xl:order-1 space-y-6 md:space-y-8">
             
-            {/* Welcome Card - Desktop only */}
-            <div className="hidden xl:block px-2 py-3 overflow-visible relative">
-              <div className="flex items-center gap-4">
-                {/* Left: greeting */}
-                <div className="flex-1">
-                  <h2 className="text-3xl font-bold text-gray-900 leading-tight">
-                    Hello, {displayUser.profile?.first_name || displayUser?.email?.split('@')[0] || 'User'}!
-                  </h2>
-
-                </div>
-
-                {/* Right: search + bell */}
-                <div className="flex items-center gap-3 flex-shrink-0">
-                  <div className="relative">
-                    <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    <input
-                      type="text"
-                      placeholder="Search anything here.."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-72 pl-9 pr-4 py-2.5 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-gray-300 text-gray-700 placeholder-gray-400"
-                    />
-                  </div>
-                  <NotificationBell />
-                </div>
+            {/* Available Courses */}
+            <div className="rounded-xl p-4 border border-gray-200 bg-white">
+              <div className="flex items-center justify-between mb-4 md:mb-6">
+                <h2 className="text-base font-bold text-black">
+                  {((userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student')) ? (
+                    <>
+                      My Courses
+                      {courses.filter(c => c.is_user_enrolled).length > 0 && (
+                        <span className="ml-2 text-sm font-normal text-gray-500">
+                          ({courses.filter(c => c.is_user_enrolled).length} enrolled)
+                        </span>
+                      )}
+                    </>
+                  ) : 'Available Courses'}
+                </h2>
+                {(userRole === 'admin' || userRole === 'developer') && (
+                  <button className="text-sm text-gray-500 hover:text-gray-700">See All</button>
+                )}
+              </div>
+              <div className="xl:grid xl:grid-cols-3 xl:gap-4 overflow-x-auto flex gap-4 pb-2 xl:pb-0 snap-x snap-mandatory" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                {courses.length > 0 ? (
+                  <>
+                    {courses.slice(0, 3).map((course) => {
+                      const courseColor = getCourseColor(course.id)
+                      const enrollmentTypeBadges = getEnrollmentTypeDisplay(course.enrollment_type)
+                      const isStudentOrStudent = ((userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student'))
+                      const isLocked = isStudentOrStudent && !course.is_user_enrolled
+                      const handleCardClick = () => {
+                        if (isLocked) return
+                        if (userRole === 'admin' || userRole === 'developer') {
+                          onNavigate('course-management')
+                        } else {
+                          onNavigate('my-courses')
+                        }
+                      }
+                      return (
+                        <div
+                          key={course.id}
+                          onClick={handleCardClick}
+                          className={`group relative bg-white rounded-2xl shadow-sm border border-gray-200 transition-all duration-300 overflow-hidden flex flex-col flex-shrink-0 xl:flex-shrink snap-start ${isLocked ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:shadow-xl'}`}
+                          style={{ width: '75vw', maxWidth: '300px', height: '280px' }}
+                        >
+                          {isLocked && (
+                            <div className="absolute top-2 left-2 z-10">
+                              <div className="bg-gray-900/80 backdrop-blur-sm text-white px-3 py-1.5 rounded-full flex items-center space-x-2">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                                <span className="text-xs font-semibold">Locked</span>
+                              </div>
+                            </div>
+                          )}
+                          {isStudentOrStudent && course.is_user_enrolled && (
+                            <div className="absolute top-2 left-2 z-10">
+                              <div className="bg-green-500/90 backdrop-blur-sm text-white px-3 py-1.5 rounded-full flex items-center space-x-2">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span className="text-xs font-semibold">Enrolled</span>
+                              </div>
+                            </div>
+                          )}
+                          <div className="relative overflow-hidden flex-[2]">
+                            {course.thumbnail_url ? (
+                              <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full" style={{
+                                background: courseColor?.color_hex ? `linear-gradient(135deg, ${courseColor.color_hex}20 0%, ${courseColor.color_hex}10 100%)` : 'linear-gradient(135deg, #1f7a8c20 0%, #1f7a8c10 100%)'
+                              }} />
+                            )}
+                          </div>
+                          <div className="flex-[3] flex flex-col overflow-hidden">
+                            <div className="relative bg-white border-b border-gray-200 p-4">
+                              <h3 className="text-lg font-semibold text-black line-clamp-2">{course.title}</h3>
+                            </div>
+                            <div className="p-4 flex flex-col flex-1 overflow-hidden">
+                              {!(((userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student')) || userRole === 'scholar') && (
+                                <div className="flex flex-wrap gap-2 mb-4">
+                                  <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${
+                                    course.status === 'active' ? 'bg-green-100 text-green-800' :
+                                    course.status === 'inactive' ? 'bg-red-100 text-red-800' :
+                                    'bg-yellow-100 text-yellow-800'
+                                  }`}>
+                                    <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+                                      course.status === 'active' ? 'bg-green-600' :
+                                      course.status === 'inactive' ? 'bg-red-600' :
+                                      'bg-yellow-600'
+                                    }`} />
+                                    {course.status.charAt(0).toUpperCase() + course.status.slice(1)}
+                                  </span>
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    {course.course_type === 'academic' ? 'Academic' : course.course_type === 'tesda' ? 'TESDA' : 'UpSkill'}
+                                  </span>
+                                  {enrollmentTypeBadges.map((badge, index) => (
+                                    <span key={index} className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${badge.color}`}>
+                                      {badge.text}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                    {(userRole === 'admin' || userRole === 'developer') && Array.from({ length: Math.max(0, 3 - Math.min(courses.length, 3)) }).map((_, index) => (
+                      <button
+                        key={`placeholder-${index}`}
+                        onClick={() => onNavigate('course-management')}
+                        className="relative bg-white rounded-2xl shadow-sm border-2 border-dashed border-gray-300 overflow-hidden flex flex-col hover:border-gray-400 hover:bg-gray-50 transition-all cursor-pointer flex-shrink-0 xl:flex-shrink snap-start"
+                        style={{ width: '75vw', maxWidth: '300px', minHeight: '200px' }}
+                      >
+                        <div className="relative overflow-hidden" style={{ height: '100px' }}>
+                          <div className="w-full h-full bg-gray-100" />
+                          <div className="absolute left-0 top-0 w-1 h-full bg-gray-300" />
+                        </div>
+                        <div className="p-6 flex flex-col flex-1 items-center justify-center">
+                          <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mb-4">
+                            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                          </div>
+                          <h3 className="text-sm font-semibold text-gray-400 mb-1">Add New Course</h3>
+                          <p className="text-xs text-gray-400 text-center">Create a new course to expand your curriculum</p>
+                        </div>
+                      </button>
+                    ))}
+                  </>
+                ) : (
+                  <>
+                    {(userRole === 'admin' || userRole === 'developer') && Array.from({ length: 3 }).map((_, index) => (
+                      <button
+                        key={`placeholder-${index}`}
+                        onClick={() => onNavigate('course-management')}
+                        className="relative bg-white rounded-2xl shadow-sm border-2 border-dashed border-gray-300 overflow-hidden flex flex-col hover:border-gray-400 hover:bg-gray-50 transition-all cursor-pointer flex-shrink-0 xl:flex-shrink snap-start"
+                        style={{ width: '75vw', maxWidth: '300px', minHeight: '200px' }}
+                      >
+                        <div className="relative overflow-hidden" style={{ height: '100px' }}>
+                          <div className="w-full h-full bg-gray-100" />
+                          <div className="absolute left-0 top-0 w-1 h-full bg-gray-300" />
+                        </div>
+                        <div className="p-6 flex flex-col flex-1 items-center justify-center">
+                          <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mb-4">
+                            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                          </div>
+                          <h3 className="text-sm font-semibold text-gray-400 mb-1">Add New Course</h3>
+                          <p className="text-xs text-gray-400 text-center">Create a new course to expand your curriculum</p>
+                        </div>
+                      </button>
+                    ))}
+                  </>
+                )}
               </div>
             </div>
 
-            {/* Top Section - Action Cards */}
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 xl:gap-6">
-              {/* Tasks Card - Only for Admin and Developer */}
-              {(userRole === 'admin' || userRole === 'developer') && (
-                <div className="rounded-xl p-4 border border-gray-100 transition-all duration-300 xl:col-span-2" style={{ backgroundColor: '#FFFFFF' }}>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center">
-                        <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                        </svg>
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-bold text-black">Tasks</h3>
-                        <p className="text-xs text-black/70">Pending items</p>
+            {/* Schedule Group - Tasks, Today's Events, Upcoming Schedule */}
+            {(userRole === 'admin' || userRole === 'developer') && (
+              <div className="rounded-xl p-4 border border-gray-200 bg-white space-y-4">
+                <h2 className="text-base font-bold text-black">Schedule</h2>
+              <div className="rounded-xl p-4 border border-gray-200 transition-all duration-300 shadow-sm" style={{ backgroundColor: '#FFFFFF' }}>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center">
+                      <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-black">Tasks</h3>
+                      <p className="text-xs text-black/70">Pending items</p>
                       </div>
                     </div>
                     <button 
@@ -1648,8 +1777,8 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                               </svg>
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="text-sm font-semibold text-black">{pendingTasks.unenrolledtrainees} Unenrolled trainee{pendingTasks.unenrolledtrainees > 1 ? 's' : ''}</div>
-                              <div className="text-xs text-gray-500 mt-0.5">Not enrolled in any course</div>
+                              <div className="text-sm font-semibold text-black">{pendingTasks.unenrolledtrainees} Unenrolled Student{pendingTasks.unenrolledtrainees > 1 ? 's' : ''}</div>
+                              <div className="text-xs text-gray-500 mt-0.5">JHS, SHS, College, TESDA Scholar</div>
                             </div>
                             <div className="flex-shrink-0">
                               <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-orange-600 bg-orange-100 rounded-full">
@@ -1760,8 +1889,8 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                               </svg>
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="text-sm font-semibold text-gray-400">Unenrolled Trainees</div>
-                              <div className="text-xs text-gray-400 mt-0.5">All trainees enrolled</div>
+                              <div className="text-sm font-semibold text-gray-400">Unenrolled Students</div>
+                              <div className="text-xs text-gray-400 mt-0.5">All students enrolled</div>
                             </div>
                             <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-gray-400 bg-gray-100 rounded-full">0</span>
                           </div>
@@ -1813,12 +1942,13 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                         )}
                       </>
                   </div>
-                </div>
-              )}
+              </div>
 
-              {/* Today's Events - Admin/Developer, sits beside the Tasks card */}
+            {/* Today's Events + Upcoming Schedule - 2-col grid */}
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 xl:gap-6">
+              {/* Today's Events - Admin/Developer */}
               {(userRole === 'admin' || userRole === 'developer') && (
-                <div className="rounded-xl p-4 border border-gray-100 transition-all duration-300 xl:col-span-1" style={{ backgroundColor: '#FFFFFF' }}>
+                <div className="rounded-xl p-4 border border-gray-200 transition-all duration-300 xl:col-span-1 shadow-sm" style={{ backgroundColor: '#FFFFFF' }}>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-3">
                       <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center">
@@ -1868,257 +1998,40 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 </div>
               )}
 
-            </div>
-
-        {/* Main Section - Courses */}
-
-            {/* Today's Events + Upcoming Schedule - 2-col on mobile, stacked on desktop */}
-            <div className="xl:space-y-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
-
-              {/* Today's Events - hidden for admin/developer */}
-              {userRole !== 'admin' && userRole !== 'developer' && (
-              <div className="rounded-xl p-2.5 xl:p-4 border border-gray-100 cursor-pointer" style={{ backgroundColor: '#FFFFFF' }} onClick={() => onNavigate('schedule')}>
-                <div className="flex items-center space-x-2 mb-1">
-                  <div className="w-7 h-7 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <svg className="w-3.5 h-3.5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-xs font-bold text-black leading-tight">Today&apos;s Events</h3>
-                    <p className="text-[10px] text-black/70">{getTodaysEvents().length} scheduled</p>
-                  </div>
-                  <span className="inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold text-white bg-black rounded-full flex-shrink-0">{getTodaysEvents().length}</span>
-                </div>
-                {/* Full list - desktop only */}
-                <div className="hidden xl:block space-y-1.5 mt-2">
-                  {getTodaysEvents().length > 0 ? getTodaysEvents().slice(0, 2).map((schedule) => {
-                    const courseColor = getCourseColor(schedule.course_id)
-                    return (
-                      <div key={schedule.id} className="flex items-start space-x-2 p-2 bg-white rounded-lg border border-gray-200">
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: courseColor?.color_hex ? `${courseColor.color_hex}20` : '#BBF7D0' }}>
-                          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: courseColor?.color_hex || '#22C55E' }} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-semibold text-black line-clamp-1">{schedule.title}</div>
-                          <div className="text-xs text-gray-500 mt-0.5">{formatScheduleTime(schedule.start_date, schedule.end_date)}</div>
-                        </div>
+              {/* Upcoming Schedule - Admin/Developer, 3rd column */}
+              {(userRole === 'admin' || userRole === 'developer') && (
+                <div className="rounded-xl p-4 border border-gray-200 transition-all duration-300 xl:col-span-1 cursor-pointer shadow-sm" style={{ backgroundColor: '#FFFFFF' }} onClick={() => onNavigate('schedule')}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center">
+                        <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
                       </div>
-                    )
-                  }) : <p className="text-sm text-center text-gray-400 py-4">No events today</p>}
+                      <div>
+                        <h3 className="text-sm font-bold text-black">Upcoming Schedule</h3>
+                        <p className="text-xs text-black/70">Next events</p>
+                      </div>
+                    </div>
+                    <button onClick={() => onNavigate('schedule')} className="text-gray-400 hover:text-black transition-colors">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
+                  <UpcomingScheduleList />
                 </div>
-              </div>
               )}
 
-              {/* Upcoming Schedule */}
-              <div className="rounded-xl p-2.5 xl:p-4 border border-gray-100 cursor-pointer" style={{ backgroundColor: '#FFFFFF' }} onClick={() => onNavigate('schedule')}>
-                <div className="flex items-center space-x-2 mb-1">
-                  <div className="w-7 h-7 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <svg className="w-3.5 h-3.5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-xs font-bold text-black leading-tight">Upcoming Schedule</h3>
-                    <p className="text-[10px] text-black/70">Next events</p>
-                  </div>
-                </div>
-                <div className="hidden xl:block mt-2"><UpcomingScheduleList /></div>
-              </div>
-
             </div>
-        <div>
-          <div className="flex items-center justify-between mb-4 md:mb-6">
-            <h2 className="text-sm font-bold text-black">
-              {((userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student')) ? (
-                <>
-                  My Courses
-                  {courses.filter(c => c.is_user_enrolled).length > 0 && (
-                    <span className="ml-2 text-sm font-normal text-gray-500">
-                      ({courses.filter(c => c.is_user_enrolled).length} enrolled)
-                    </span>
-                  )}
-                </>
-              ) : 'Available Courses'}
-            </h2>
-            {(userRole === 'admin' || userRole === 'developer') && (
-              <button className="text-sm text-gray-500 hover:text-gray-700">See All</button>
-            )}
-          </div>
-              
-              <div className="xl:flex xl:flex-wrap xl:gap-[25px] overflow-x-auto flex gap-4 pb-2 xl:pb-0 snap-x snap-mandatory" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                {courses.length > 0 ? (
-                  <>
-                    {courses.slice(0, 3).map((course) => {
-                      const courseColor = getCourseColor(course.id)
-                      const enrollmentTypeBadges = getEnrollmentTypeDisplay(course.enrollment_type)
-                      
-                      const isStudentOrStudent = ((userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student'))
-                      const isLocked = isStudentOrStudent && !course.is_user_enrolled
-                      
-                      // Determine card click destination
-                      const handleCardClick = () => {
-                        if (isLocked) return
-                        if (userRole === 'admin' || userRole === 'developer') {
-                          onNavigate('course-management')
-                        } else {
-                          onNavigate('my-courses')
-                        }
-                      }
-
-                      return (
-                        <div 
-                          key={course.id} 
-                          onClick={handleCardClick}
-                          className={`group relative bg-white rounded-2xl transition-all duration-300 overflow-hidden flex flex-col flex-shrink-0 snap-start ${isLocked ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:shadow-xl'}`}
-                          style={{ width: '75vw', maxWidth: '300px', height: '280px' }}
-                        >
-                          {/* Locked Badge for trainees who are NOT enrolled */}
-                          {isLocked && (
-                            <div className="absolute top-2 left-2 z-10">
-                              <div className="bg-gray-900/80 backdrop-blur-sm text-white px-3 py-1.5 rounded-full flex items-center space-x-2">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                </svg>
-                                <span className="text-xs font-semibold">Locked</span>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Enrolled Badge for students who ARE enrolled */}
-                          {isStudentOrStudent && course.is_user_enrolled && (
-                            <div className="absolute top-2 left-2 z-10">
-                              <div className="bg-green-500/90 backdrop-blur-sm text-white px-3 py-1.5 rounded-full flex items-center space-x-2">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <span className="text-xs font-semibold">Enrolled</span>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Decorative Top Strip — 40% */}
-                          <div className="relative overflow-hidden flex-[2]">
-                            {course.thumbnail_url ? (
-                              <img
-                                src={course.thumbnail_url}
-                                alt={course.title}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full" style={{ 
-                                background: courseColor?.color_hex ? `linear-gradient(135deg, ${courseColor.color_hex}20 0%, ${courseColor.color_hex}10 100%)` : 'linear-gradient(135deg, #1f7a8c20 0%, #1f7a8c10 100%)'
-                              }} />
-                            )}
-
-                          </div>
-
-                          {/* Bottom 60% — header + content */}
-                          <div className="flex-[3] flex flex-col overflow-hidden">
-
-                          {/* Course Header */}
-                          <div className="relative bg-white border-b border-gray-200 p-4">
-                            <h3 className="text-lg font-semibold text-black line-clamp-2">
-                              {course.title}
-                            </h3>
-                          </div>
-                          
-                          {/* Card Content */}
-                          <div className="p-4 flex flex-col flex-1 overflow-hidden">
-                            {/* Badges Row: Status, Course Type, Enrollment Type */}
-                            {!(((userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student')) || userRole === 'scholar') && (
-                            <div className="flex flex-wrap gap-2 mb-4">
-                              <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${
-                                course.status === 'active' ? 'bg-green-100 text-green-800' :
-                                course.status === 'inactive' ? 'bg-red-100 text-red-800' :
-                                'bg-yellow-100 text-yellow-800'
-                              }`}>
-                                <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
-                                  course.status === 'active' ? 'bg-green-600' :
-                                  course.status === 'inactive' ? 'bg-red-600' :
-                                  'bg-yellow-600'
-                                }`} />
-                                {course.status.charAt(0).toUpperCase() + course.status.slice(1)}
-                              </span>
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                {course.course_type === 'academic' ? 'Academic' : course.course_type === 'tesda' ? 'TESDA' : 'UpSkill'}
-                              </span>
-                              {enrollmentTypeBadges.map((badge, index) => (
-                                <span key={index} className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${badge.color}`}>
-                                  {badge.text}
-                                </span>
-                              ))}
-                            </div>
-                            )}
-                          </div>
-                          </div>{/* end bottom 60% wrapper */}
-                        </div>
-                      )
-                    })}
-                
-                {/* Placeholder Cards - Only for Admin/Developer */}
-                {(userRole === 'admin' || userRole === 'developer') && Array.from({ length: Math.max(0, 3 - Math.min(courses.length, 3)) }).map((_, index) => (
-                  <button
-                    key={`placeholder-${index}`}
-                    onClick={() => onNavigate('course-management')}
-                    className="relative bg-white rounded-2xl border-2 border-dashed border-gray-300 overflow-hidden flex flex-col hover:border-gray-400 hover:bg-gray-50 transition-all cursor-pointer flex-shrink-0 snap-start"
-                    style={{ width: '75vw', maxWidth: '300px' }}
-                  >
-                    {/* Decorative Top Strip */}
-                    <div className="relative overflow-hidden" style={{ height: '100px' }}>
-                      <div className="w-full h-full bg-gray-100" />
-                      <div className="absolute left-0 top-0 w-1 h-full bg-gray-300" />
-                    </div>
-
-                    <div className="p-6 flex flex-col flex-1 items-center justify-center">
-                      <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mb-4">
-                        <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                      </div>
-                      <h3 className="text-sm font-semibold text-gray-400 mb-1">Add New Course</h3>
-                      <p className="text-xs text-gray-400 text-center">Create a new course to expand your curriculum</p>
-                    </div>
-                  </button>
-                ))}
-              </>
-            ) : (
-              <>
-                {/* Show 3 placeholder cards when no courses exist - Only for Admin/Developer */}
-                {(userRole === 'admin' || userRole === 'developer') && Array.from({ length: 3 }).map((_, index) => (
-                  <button
-                    key={`placeholder-${index}`}
-                    onClick={() => onNavigate('course-management')}
-                    className="relative bg-white rounded-2xl border-2 border-dashed border-gray-300 overflow-hidden flex flex-col hover:border-gray-400 hover:bg-gray-50 transition-all cursor-pointer flex-shrink-0 snap-start"
-                    style={{ width: '75vw', maxWidth: '300px' }}
-                  >
-                    {/* Decorative Top Strip */}
-                    <div className="relative overflow-hidden" style={{ height: '100px' }}>
-                      <div className="w-full h-full bg-gray-100" />
-                      <div className="absolute left-0 top-0 w-1 h-full bg-gray-300" />
-                    </div>
-
-                    <div className="p-6 flex flex-col flex-1 items-center justify-center">
-                      <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mb-4">
-                        <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                      </div>
-                      <h3 className="text-sm font-semibold text-gray-400 mb-1">Add New Course</h3>
-                      <p className="text-xs text-gray-400 text-center">Create a new course to expand your curriculum</p>
-                    </div>
-                  </button>
-                ))}
-              </>
-            )}
               </div>
-            </div>
+            )}
 
             {/* System Overview - Only for Admin/Developer */}
             {(userRole === 'admin' || userRole === 'developer') && (
-            <div>
+            <div className="rounded-xl p-4 border border-gray-200 bg-white">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-sm font-bold text-gray-900">System Overview</h2>
+                <h2 className="text-base font-bold text-gray-900">System Overview</h2>
                 <div className="flex items-center space-x-2 text-sm text-gray-500">
                   <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                   <span>Live Data</span>
@@ -2127,7 +2040,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
               
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Courses Card - Redesigned */}
-                <div className="group relative bg-white rounded-2xl p-8 border border-gray-100 transition-all duration-300 overflow-hidden">
+                <div className="group relative bg-white rounded-2xl p-8 border border-gray-200 transition-all duration-300 overflow-hidden">
                   
                   {/* Header */}
                   <div className="flex items-center justify-between mb-8">
@@ -2235,7 +2148,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 </div>
 
                 {/* Users Card - Redesigned */}
-                <div className="group relative bg-white rounded-2xl p-8 border border-gray-100 transition-all duration-300 overflow-hidden">
+                <div className="group relative bg-white rounded-2xl p-8 border border-gray-200 transition-all duration-300 overflow-hidden">
 
                   {/* Header */}
                   <div className="flex items-center justify-between mb-6">
@@ -2309,7 +2222,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
               <div className="grid grid-cols-3 gap-3 md:gap-4">
                 {/* Enrolled Courses */}
-                <div className="bg-white rounded-xl border border-gray-100 transition-all duration-300 flex flex-col">
+                <div className="bg-white rounded-xl border border-gray-200 transition-all duration-300 flex flex-col shadow-sm">
                   <div className="p-2.5 md:p-4 flex flex-col flex-1">
                     <div className="flex items-center justify-between mb-2 md:mb-3">
                       <span className="text-[10px] md:text-xs font-semibold text-gray-400 uppercase tracking-wide">Enrolled</span>
@@ -2327,7 +2240,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 </div>
 
                 {/* Completed Lessons */}
-                <div className="bg-white rounded-xl border border-gray-100 transition-all duration-300 flex flex-col">
+                <div className="bg-white rounded-xl border border-gray-200 transition-all duration-300 flex flex-col shadow-sm">
                   <div className="p-2.5 md:p-4 flex flex-col flex-1">
                     <div className="flex items-center justify-between mb-2 md:mb-3">
                       <span className="text-[10px] md:text-xs font-semibold text-gray-400 uppercase tracking-wide">Completed</span>
@@ -2345,7 +2258,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 </div>
 
                 {/* Overall Progress */}
-                <div className="bg-white rounded-xl border border-gray-100 transition-all duration-300 flex flex-col">
+                <div className="bg-white rounded-xl border border-gray-200 transition-all duration-300 flex flex-col shadow-sm">
                   <div className="p-2.5 md:p-4 flex flex-col flex-1">
                     <div className="flex items-center justify-between mb-2 md:mb-3">
                       <span className="text-[10px] md:text-xs font-semibold text-gray-400 uppercase tracking-wide">Progress</span>
@@ -2379,7 +2292,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
               <div className="grid grid-cols-3 gap-3 md:gap-4">
                 {/* My Courses */}
-                <div className="bg-white rounded-xl border border-gray-100 transition-all duration-300 flex flex-col">
+                <div className="bg-white rounded-xl border border-gray-200 transition-all duration-300 flex flex-col shadow-sm">
                   <div className="p-2.5 md:p-4 flex flex-col flex-1">
                     <div className="flex items-center justify-between mb-2 md:mb-3">
                       <span className="text-[10px] md:text-xs font-semibold text-gray-400 uppercase tracking-wide">Courses</span>
@@ -2397,7 +2310,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 </div>
 
                 {/* Total Students */}
-                <div className="bg-white rounded-xl border border-gray-100 transition-all duration-300 flex flex-col">
+                <div className="bg-white rounded-xl border border-gray-200 transition-all duration-300 flex flex-col shadow-sm">
                   <div className="p-2.5 md:p-4 flex flex-col flex-1">
                     <div className="flex items-center justify-between mb-2 md:mb-3">
                       <span className="text-[10px] md:text-xs font-semibold text-gray-400 uppercase tracking-wide">Students</span>
@@ -2415,7 +2328,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 </div>
 
                 {/* Active Subjects */}
-                <div className="bg-white rounded-xl border border-gray-100 transition-all duration-300 flex flex-col">
+                <div className="bg-white rounded-xl border border-gray-200 transition-all duration-300 flex flex-col shadow-sm">
                   <div className="p-2.5 md:p-4 flex flex-col flex-1">
                     <div className="flex items-center justify-between mb-2 md:mb-3">
                       <span className="text-[10px] md:text-xs font-semibold text-gray-400 uppercase tracking-wide">Subjects</span>

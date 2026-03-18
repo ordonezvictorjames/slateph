@@ -222,3 +222,26 @@ body {
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg, #9ca3af 0%, #6b7280 100%);
 }
+
+/* Auto-hide scrollbar - visible only on hover */
+.scrollbar-autohide {
+  scrollbar-width: none;
+}
+.scrollbar-autohide::-webkit-scrollbar {
+  width: 6px;
+}
+.scrollbar-autohide::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 3px;
+  transition: background 0.2s;
+}
+.scrollbar-autohide:hover {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+.scrollbar-autohide:hover::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+.scrollbar-autohide:hover::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

@@ -278,7 +278,7 @@ export default function OnlineUsers({ onNavigateToProfile }: OnlineUsersProps = 
         </div>
       </div>
       
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto scrollbar-autohide">
         {totalUsers === 0 ? (
           <div className="p-4 text-center text-gray-500 text-sm">
             No users found
