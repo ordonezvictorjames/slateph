@@ -1873,84 +1873,57 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
         {/* Main Section - Courses */}
 
             {/* Today's Events + Upcoming Schedule - 2-col on mobile, stacked on desktop */}
-            <div className="grid grid-cols-2 xl:grid-cols-1 gap-3 xl:gap-4">
+            <div className="xl:space-y-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
 
               {/* Today's Events - hidden for admin/developer */}
               {userRole !== 'admin' && userRole !== 'developer' && (
-              <div className="rounded-xl p-2.5 xl:p-4 border border-gray-100 transition-all duration-300" style={{ backgroundColor: '#FFFFFF' }}>
-                <div className="flex items-center justify-between mb-2 xl:mb-4">
-                  <div className="flex items-center space-x-2 xl:space-x-3">
-                    <div className="w-7 h-7 xl:w-10 xl:h-10 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <svg className="w-3.5 h-3.5 xl:w-5 xl:h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-black">Today&apos;s Events</h3>
-                      <p className="text-[10px] xl:text-xs text-black/70">{getTodaysEvents().length} scheduled</p>
-                    </div>
+              <div className="rounded-xl p-2.5 xl:p-4 border border-gray-100 cursor-pointer" style={{ backgroundColor: '#FFFFFF' }} onClick={() => onNavigate('schedule')}>
+                <div className="flex items-center space-x-2 mb-1">
+                  <div className="w-7 h-7 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <svg className="w-3.5 h-3.5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="xl:hidden inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-white bg-black rounded-full">{getTodaysEvents().length}</span>
-                    <button onClick={() => onNavigate('schedule')} className="text-gray-400 hover:text-black transition-colors">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-xs font-bold text-black leading-tight">Today&apos;s Events</h3>
+                    <p className="text-[10px] text-black/70">{getTodaysEvents().length} scheduled</p>
                   </div>
+                  <span className="inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold text-white bg-black rounded-full flex-shrink-0">{getTodaysEvents().length}</span>
                 </div>
-                <div className="space-y-1.5 xl:space-y-2 hidden xl:block">
-                  {getTodaysEvents().length > 0 ? (
-                    getTodaysEvents().slice(0, 2).map((schedule) => {
-                      const courseColor = getCourseColor(schedule.course_id)
-                      return (
-                        <div key={schedule.id} className="flex items-start space-x-1.5 xl:space-x-2 p-1.5 xl:p-2 bg-white rounded-lg border border-gray-200 transition-all">
-                          <div className="w-6 h-6 xl:w-8 xl:h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: courseColor?.color_hex ? `${courseColor.color_hex}20` : '#BBF7D0' }}>
-                            <div className="w-2 h-2 xl:w-2.5 xl:h-2.5 rounded-full" style={{ backgroundColor: courseColor?.color_hex || '#22C55E' }} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-[10px] xl:text-sm font-semibold text-black line-clamp-1">{schedule.title}</div>
-                            <div className="hidden xl:block text-xs text-gray-600 mt-0.5">{schedule.course?.title}</div>
-                            <div className="text-[9px] xl:text-xs text-gray-500 mt-0.5 xl:mt-1">{formatScheduleTime(schedule.start_date, schedule.end_date)}</div>
-                          </div>
+                {/* Full list - desktop only */}
+                <div className="hidden xl:block space-y-1.5 mt-2">
+                  {getTodaysEvents().length > 0 ? getTodaysEvents().slice(0, 2).map((schedule) => {
+                    const courseColor = getCourseColor(schedule.course_id)
+                    return (
+                      <div key={schedule.id} className="flex items-start space-x-2 p-2 bg-white rounded-lg border border-gray-200">
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: courseColor?.color_hex ? `${courseColor.color_hex}20` : '#BBF7D0' }}>
+                          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: courseColor?.color_hex || '#22C55E' }} />
                         </div>
-                      )
-                    })
-                  ) : (
-                    <div className="text-center py-3 xl:py-6">
-                      <div className="w-8 h-8 xl:w-12 xl:h-12 rounded-xl flex items-center justify-center mx-auto mb-2 xl:mb-3" style={{ backgroundColor: '#0f4c5c' }}>
-                        <svg className="w-4 h-4 xl:w-6 xl:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-semibold text-black line-clamp-1">{schedule.title}</div>
+                          <div className="text-xs text-gray-500 mt-0.5">{formatScheduleTime(schedule.start_date, schedule.end_date)}</div>
+                        </div>
                       </div>
-                      <p className="text-[10px] xl:text-sm font-medium text-black">No events today</p>
-                    </div>
-                  )}
+                    )
+                  }) : <p className="text-sm text-center text-gray-400 py-4">No events today</p>}
                 </div>
               </div>
               )}
 
               {/* Upcoming Schedule */}
-              <div className="rounded-xl p-2.5 xl:p-4 border border-gray-100 transition-all duration-300" style={{ backgroundColor: '#FFFFFF' }}>
-                <div className="flex items-center justify-between mb-2 xl:mb-4">
-                  <div className="flex items-center space-x-2 xl:space-x-3">
-                    <div className="w-7 h-7 xl:w-10 xl:h-10 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <svg className="w-3.5 h-3.5 xl:w-5 xl:h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-black">Upcoming Schedule</h3>
-                      <p className="text-[10px] xl:text-xs text-black/70">Next events</p>
-                    </div>
-                  </div>
-                  <button onClick={() => onNavigate('schedule')} className="text-gray-400 hover:text-black transition-colors">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              <div className="rounded-xl p-2.5 xl:p-4 border border-gray-100 cursor-pointer" style={{ backgroundColor: '#FFFFFF' }} onClick={() => onNavigate('schedule')}>
+                <div className="flex items-center space-x-2 mb-1">
+                  <div className="w-7 h-7 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <svg className="w-3.5 h-3.5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                  </button>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-xs font-bold text-black leading-tight">Upcoming Schedule</h3>
+                    <p className="text-[10px] text-black/70">Next events</p>
+                  </div>
                 </div>
-                <div className="hidden xl:block"><UpcomingScheduleList /></div>
+                <div className="hidden xl:block mt-2"><UpcomingScheduleList /></div>
               </div>
 
             </div>
