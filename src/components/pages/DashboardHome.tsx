@@ -1147,7 +1147,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
               <h2 className="text-base font-bold text-gray-900 leading-tight">
                 Hello, {displayUser.profile?.first_name || displayUser?.email?.split('@')[0] || 'User'}!
               </h2>
-              <p className="text-xs text-gray-500 mt-0.5">Let's learn something new today!</p>
+
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               <div className="relative">
@@ -1493,7 +1493,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                   <h2 className="text-xl font-bold text-gray-900 leading-tight">
                     Hello, {displayUser.profile?.first_name || displayUser?.email?.split('@')[0] || 'User'}!
                   </h2>
-                  <p className="text-sm text-gray-500 mt-0.5">Let's learn something new today!</p>
+
                 </div>
 
                 {/* Right: search + bell */}
