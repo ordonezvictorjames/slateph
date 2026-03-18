@@ -1379,76 +1379,77 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             </div>
 
             {/* Today's Events + Upcoming Schedule - 2-col grid on mobile, stacked on desktop */}
-            <div className="grid grid-cols-2 xl:grid-cols-1 gap-3 xl:gap-0 xl:space-y-4">
+            <div className="grid grid-cols-1 xl:grid-cols-1 gap-3 xl:gap-0 xl:space-y-4">
 
-              {/* Today's Events - left on mobile (all roles see it here on mobile) */}
-              <div className="rounded-xl p-3 xl:p-4 border border-gray-100 transition-all duration-300" style={{ backgroundColor: '#FFFFFF' }}>
-                <div className="flex items-center justify-between mb-3 xl:mb-4">
-                  <div className="flex items-center space-x-2 xl:space-x-3">
-                    <div className="w-8 h-8 xl:w-10 xl:h-10 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <svg className="w-4 h-4 xl:w-5 xl:h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {/* Today's Events */}
+              <div className="rounded-xl p-4 border border-gray-100 transition-all duration-300" style={{ backgroundColor: '#FFFFFF' }}>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
                     </div>
-                    <div className="min-w-0">
-                      <h3 className="font-bold text-black text-xs xl:text-sm leading-tight">Today's Events</h3>
+                    <div>
+                      <h3 className="font-bold text-black">Today's Events</h3>
                       <p className="text-xs text-black/70">{getTodaysEvents().length} scheduled</p>
                     </div>
                   </div>
-                  <button onClick={() => onNavigate('schedule')} className="text-gray-400 hover:text-black transition-colors flex-shrink-0">
-                    <svg className="w-4 h-4 xl:w-5 xl:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <button onClick={() => onNavigate('schedule')} className="text-gray-400 hover:text-black transition-colors">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
                 </div>
-                <div className="space-y-1.5 xl:space-y-2">
+                <div className="space-y-2">
                   {getTodaysEvents().length > 0 ? (
                     getTodaysEvents().slice(0, 2).map((schedule) => {
                       const courseColor = getCourseColor(schedule.course_id)
                       return (
-                        <div key={schedule.id} className="flex items-start space-x-1.5 xl:space-x-2 p-1.5 xl:p-2 bg-white rounded-lg border border-gray-200 transition-all">
+                        <div key={schedule.id} className="flex items-start space-x-2 p-2 bg-white rounded-lg border border-gray-200 transition-all">
                           <div
-                            className="w-6 h-6 xl:w-8 xl:h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                            className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
                             style={{ backgroundColor: courseColor?.color_hex ? `${courseColor.color_hex}20` : '#BBF7D0' }}
                           >
-                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: courseColor?.color_hex || '#22C55E' }} />
+                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: courseColor?.color_hex || '#22C55E' }} />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="text-xs font-semibold text-black line-clamp-1">{schedule.title}</div>
-                            <div className="text-xs text-gray-500 mt-0.5 line-clamp-1">{formatScheduleTime(schedule.start_date, schedule.end_date)}</div>
+                            <div className="text-sm font-semibold text-black line-clamp-1">{schedule.title}</div>
+                            <div className="text-xs text-gray-600 mt-0.5">{schedule.course?.title}</div>
+                            <div className="text-xs text-gray-500 mt-1">{formatScheduleTime(schedule.start_date, schedule.end_date)}</div>
                           </div>
                         </div>
                       )
                     })
                   ) : (
-                    <div className="text-center py-4 xl:py-6">
-                      <div className="w-8 h-8 xl:w-12 xl:h-12 bg-gray-200 rounded-xl flex items-center justify-center mx-auto mb-2 xl:mb-3">
-                        <svg className="w-4 h-4 xl:w-6 xl:h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="text-center py-6">
+                      <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center mx-auto mb-3">
+                        <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                       </div>
-                      <p className="text-xs font-medium text-black">No events today</p>
+                      <p className="text-sm font-medium text-black">No events today</p>
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Upcoming Schedule - right on mobile */}
-              <div className="rounded-xl p-3 xl:p-4 border border-gray-100 transition-all duration-300" style={{ backgroundColor: '#FFFFFF' }}>
-                <div className="flex items-center justify-between mb-3 xl:mb-4">
-                  <div className="flex items-center space-x-2 xl:space-x-3">
-                    <div className="w-8 h-8 xl:w-10 xl:h-10 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <svg className="w-4 h-4 xl:w-5 xl:h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {/* Upcoming Schedule */}
+              <div className="rounded-xl p-4 border border-gray-100 transition-all duration-300" style={{ backgroundColor: '#FFFFFF' }}>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
-                    <div className="min-w-0">
-                      <h3 className="font-bold text-black text-xs xl:text-sm leading-tight">Upcoming Schedule</h3>
+                    <div>
+                      <h3 className="font-bold text-black">Upcoming Schedule</h3>
                       <p className="text-xs text-black/70">Next events</p>
                     </div>
                   </div>
-                  <button onClick={() => onNavigate('schedule')} className="text-gray-400 hover:text-black transition-colors flex-shrink-0">
-                    <svg className="w-4 h-4 xl:w-5 xl:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <button onClick={() => onNavigate('schedule')} className="text-gray-400 hover:text-black transition-colors">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
