@@ -1137,14 +1137,115 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
   const userRole = user?.profile?.role || 'trainee'
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#f3f4f6', paddingLeft: '50px', paddingRight: '25px', paddingTop: '24px', paddingBottom: '48px' }}>
-      <div>
+    <div className="min-h-screen" style={{ backgroundColor: '#f3f4f6', paddingTop: '24px', paddingBottom: '48px' }} >
+      <div className="px-4 xl:pl-[50px] xl:pr-[25px]">
+
+        {/* Mobile Welcome Banner - full width, shown only on mobile */}
+        <div className="xl:hidden px-2 py-3 mb-2">
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <h2 className="text-base font-bold text-gray-900 leading-tight">
+                Hello, {displayUser.profile?.first_name || displayUser?.email?.split('@')[0] || 'User'}!
+              </h2>
+              <p className="text-xs text-gray-500 mt-0.5">Let's learn something new today!</p>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="relative">
+                <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Search.."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-40 pl-8 pr-3 py-2 text-xs bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-gray-300 text-gray-700 placeholder-gray-400"
+                />
+              </div>
+              <NotificationBell />
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Clock + Profile 2-column grid - shown only on mobile */}
+        <div className="xl:hidden grid grid-cols-2 gap-3 mb-4">
+          {/* Clock Card */}
+          <div className="rounded-xl border border-gray-100 bg-white">
+            <div className="px-3 py-3 flex flex-col items-center justify-center">
+              <div className="flex items-end space-x-1 mb-1">
+                <span className="font-bold tabular-nums leading-none" style={{ fontSize: '28px', color: '#0f4c5c' }}>
+                  {String(currentTime.getHours() % 12 || 12).padStart(2, '0')}
+                </span>
+                <div className="flex flex-col space-y-1 mb-2">
+                  <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#0f4c5c' }} />
+                  <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#0f4c5c' }} />
+                </div>
+                <span className="font-bold tabular-nums leading-none" style={{ fontSize: '28px', color: '#0f4c5c' }}>
+                  {String(currentTime.getMinutes()).padStart(2, '0')}
+                </span>
+                <div className="flex flex-col items-center mb-1.5 ml-0.5">
+                  <span className="text-xs font-bold" style={{ color: '#0f4c5c' }}>
+                    {currentTime.getHours() >= 12 ? 'PM' : 'AM'}
+                  </span>
+                  <span className="text-xs font-bold tabular-nums" style={{ color: '#0f4c5c' }}>
+                    {String(currentTime.getSeconds()).padStart(2, '0')}
+                  </span>
+                </div>
+              </div>
+              <p className="text-xs font-semibold mt-1 text-center" style={{ color: '#0f4c5c' }}>
+                {currentTime.toLocaleDateString('en-US', { month: 'short', weekday: 'short', day: 'numeric' })}
+              </p>
+            </div>
+          </div>
+
+          {/* Profile Card (mobile) */}
+          <div className="bg-white rounded-xl border border-gray-100 overflow-hidden relative" ref={dropdownRef}>
+            <div className="relative h-16">
+              {(user?.profile as any)?.banner_url ? (
+                <img src={(user?.profile as any).banner_url} alt="Cover" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full" style={{ background: 'linear-gradient(135deg, #1f7a8c 0%, #0f4c5c 100%)' }} />
+              )}
+              <button
+                onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                className="absolute left-1/2 -translate-x-1/2 -bottom-5 w-10 h-10 rounded-full border-2 border-white bg-gray-200 overflow-hidden flex items-center justify-center"
+              >
+                {(user?.profile as any)?.avatar_url ? (
+                  (user?.profile as any).avatar_url.startsWith('data:') ? (
+                    <img src={(user?.profile as any).avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (user?.profile as any).avatar_url.length <= 2 ? (
+                    <span className="text-lg">{(user?.profile as any).avatar_url}</span>
+                  ) : (
+                    <img src={(user?.profile as any).avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                  )
+                ) : (
+                  <span className="text-gray-600 font-medium text-xs">
+                    {user?.profile?.first_name && user?.profile?.last_name
+                      ? `${user.profile.first_name.charAt(0).toUpperCase()}${user.profile.last_name.charAt(0).toUpperCase()}`
+                      : displayUser?.email ? displayUser.email.charAt(0).toUpperCase() : 'U'}
+                  </span>
+                )}
+              </button>
+            </div>
+            <div className="px-2 pb-3 pt-7 flex flex-col items-center">
+              <p className="font-bold text-xs text-gray-900 text-center leading-tight">
+                {user?.profile?.first_name && user?.profile?.last_name
+                  ? `${user.profile.first_name} ${user.profile.last_name}`
+                  : 'User'}
+              </p>
+              <p className="text-xs text-gray-400 mt-0.5 text-center truncate w-full px-1">
+                {user?.email || displayUser?.email || ''}
+              </p>
+            </div>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 xl:grid-cols-7 gap-4 md:gap-6">
           
-          {/* Profile Card - Shows first on mobile, last on desktop */}
+          {/* Profile Card - Shows on desktop only (mobile version is above) */}
           <div className="xl:col-span-2 xl:order-2 space-y-4 md:space-y-6 flex flex-col">
-            {/* Avatar / Profile Card */}
-            <div className="bg-white rounded-xl border border-gray-100 overflow-hidden relative" ref={dropdownRef}>
+            {/* Avatar / Profile Card - Desktop only */}
+            <div className="hidden xl:block bg-white rounded-xl border border-gray-100 overflow-hidden relative" ref={dropdownRef}>
               {/* Cover Banner */}
               {/* Cover + overlapping avatar */}
               <div className="relative h-24">
@@ -1248,38 +1349,8 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
               )}
             </div>
 
-            {/* Welcome Card - Mobile only */}
-            <div className="xl:hidden px-2 py-3 overflow-visible relative">
-              <div className="flex items-center gap-3">
-                {/* Left: greeting */}
-                <div className="flex-1">
-                  <h2 className="text-base font-bold text-gray-900 leading-tight">
-                    Hello, {displayUser.profile?.first_name || displayUser?.email?.split('@')[0] || 'User'}!
-                  </h2>
-                  <p className="text-xs text-gray-500 mt-0.5">Let's learn something new today!</p>
-                </div>
-
-                {/* Right: search + bell */}
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <div className="relative">
-                    <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    <input
-                      type="text"
-                      placeholder="Search.."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-48 pl-8 pr-3 py-2 text-xs bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-gray-300 text-gray-700 placeholder-gray-400"
-                    />
-                  </div>
-                  <NotificationBell />
-                </div>
-              </div>
-            </div>
-
-            {/* Digital Clock */}
-            <div className="rounded-xl border border-gray-100 transition-all duration-300 bg-white">
+            {/* Digital Clock - Desktop only (mobile clock is in the 2-col grid above) */}
+            <div className="hidden xl:block rounded-xl border border-gray-100 transition-all duration-300 bg-white">
               <div className="px-4 py-3 flex flex-col items-center justify-center">
                 <div className="flex items-end space-x-2 mb-1">
                   <span className="font-bold tabular-nums leading-none" style={{ fontSize: '36px', color: '#0f4c5c' }}>
@@ -1307,90 +1378,85 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
               </div>
             </div>
 
-            {/* Upcoming Schedule */}
-            <div className="rounded-xl p-4 border border-gray-100 transition-all duration-300" style={{ backgroundColor: '#FFFFFF' }}>
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center">
-                    <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-black">Upcoming Schedule</h3>
-                    <p className="text-xs text-black/70">Next events</p>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => onNavigate('schedule')}
-                  className="text-gray-400 hover:text-black transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              </div>
+            {/* Today's Events + Upcoming Schedule - 2-col grid on mobile, stacked on desktop */}
+            <div className="grid grid-cols-2 xl:grid-cols-1 gap-3 xl:gap-0 xl:space-y-4">
 
-              <UpcomingScheduleList />
-            </div>
-
-            {/* Today's Events - Student, Scholar, Instructor only (moved below calendar) */}
-            {(((userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student')) || userRole === 'scholar' || userRole === 'instructor') && (
-              <div className="rounded-xl p-4 border border-gray-100 transition-all duration-300" style={{ backgroundColor: '#FFFFFF' }}>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center">
-                      <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {/* Today's Events - left on mobile (all roles see it here on mobile) */}
+              <div className="rounded-xl p-3 xl:p-4 border border-gray-100 transition-all duration-300" style={{ backgroundColor: '#FFFFFF' }}>
+                <div className="flex items-center justify-between mb-3 xl:mb-4">
+                  <div className="flex items-center space-x-2 xl:space-x-3">
+                    <div className="w-8 h-8 xl:w-10 xl:h-10 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <svg className="w-4 h-4 xl:w-5 xl:h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
                     </div>
-                    <div>
-                      <h3 className="font-bold text-black">Today's Events</h3>
+                    <div className="min-w-0">
+                      <h3 className="font-bold text-black text-xs xl:text-sm leading-tight">Today's Events</h3>
                       <p className="text-xs text-black/70">{getTodaysEvents().length} scheduled</p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => onNavigate('schedule')}
-                    className="text-gray-400 hover:text-black transition-colors"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <button onClick={() => onNavigate('schedule')} className="text-gray-400 hover:text-black transition-colors flex-shrink-0">
+                    <svg className="w-4 h-4 xl:w-5 xl:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-1.5 xl:space-y-2">
                   {getTodaysEvents().length > 0 ? (
                     getTodaysEvents().slice(0, 2).map((schedule) => {
                       const courseColor = getCourseColor(schedule.course_id)
                       return (
-                        <div key={schedule.id} className="flex items-start space-x-2 p-2 bg-white rounded-lg border border-gray-200 transition-all">
-                          <div 
-                            className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                        <div key={schedule.id} className="flex items-start space-x-1.5 xl:space-x-2 p-1.5 xl:p-2 bg-white rounded-lg border border-gray-200 transition-all">
+                          <div
+                            className="w-6 h-6 xl:w-8 xl:h-8 rounded-lg flex items-center justify-center flex-shrink-0"
                             style={{ backgroundColor: courseColor?.color_hex ? `${courseColor.color_hex}20` : '#BBF7D0' }}
                           >
-                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: courseColor?.color_hex || '#22C55E' }} />
+                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: courseColor?.color_hex || '#22C55E' }} />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="text-sm font-semibold text-black line-clamp-1">{schedule.title}</div>
-                            <div className="text-xs text-gray-600 mt-0.5">{schedule.course?.title}</div>
-                            <div className="text-xs text-gray-500 mt-1">{formatScheduleTime(schedule.start_date, schedule.end_date)}</div>
+                            <div className="text-xs font-semibold text-black line-clamp-1">{schedule.title}</div>
+                            <div className="text-xs text-gray-500 mt-0.5 line-clamp-1">{formatScheduleTime(schedule.start_date, schedule.end_date)}</div>
                           </div>
                         </div>
                       )
                     })
                   ) : (
-                    <div className="text-center py-6">
-                      <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center mx-auto mb-3">
-                        <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="text-center py-4 xl:py-6">
+                      <div className="w-8 h-8 xl:w-12 xl:h-12 bg-gray-200 rounded-xl flex items-center justify-center mx-auto mb-2 xl:mb-3">
+                        <svg className="w-4 h-4 xl:w-6 xl:h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                       </div>
-                      <p className="text-sm font-medium text-black">No events today</p>
+                      <p className="text-xs font-medium text-black">No events today</p>
                     </div>
                   )}
                 </div>
               </div>
-            )}
+
+              {/* Upcoming Schedule - right on mobile */}
+              <div className="rounded-xl p-3 xl:p-4 border border-gray-100 transition-all duration-300" style={{ backgroundColor: '#FFFFFF' }}>
+                <div className="flex items-center justify-between mb-3 xl:mb-4">
+                  <div className="flex items-center space-x-2 xl:space-x-3">
+                    <div className="w-8 h-8 xl:w-10 xl:h-10 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <svg className="w-4 h-4 xl:w-5 xl:h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="font-bold text-black text-xs xl:text-sm leading-tight">Upcoming Schedule</h3>
+                      <p className="text-xs text-black/70">Next events</p>
+                    </div>
+                  </div>
+                  <button onClick={() => onNavigate('schedule')} className="text-gray-400 hover:text-black transition-colors flex-shrink-0">
+                    <svg className="w-4 h-4 xl:w-5 xl:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+                <UpcomingScheduleList />
+              </div>
+
+            </div>
 
             {/* Recent Activity - Admin and Developer only */}
             {(userRole === 'admin' || userRole === 'developer') && (
@@ -1788,7 +1854,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             )}
           </div>
               
-              <div className="flex flex-wrap" style={{ gap: '25px' }}>
+              <div className="xl:flex xl:flex-wrap xl:gap-[25px] overflow-x-auto flex gap-4 pb-2 xl:pb-0 snap-x snap-mandatory" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                 {courses.length > 0 ? (
                   <>
                     {courses.slice(0, 3).map((course) => {
@@ -1812,8 +1878,8 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                         <div 
                           key={course.id} 
                           onClick={handleCardClick}
-                          className={`group relative bg-white rounded-2xl transition-all duration-300 overflow-hidden flex flex-col ${isLocked ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:shadow-xl'}`}
-                          style={{ width: '300px', height: '280px' }}
+                          className={`group relative bg-white rounded-2xl transition-all duration-300 overflow-hidden flex flex-col flex-shrink-0 snap-start ${isLocked ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:shadow-xl'}`}
+                          style={{ width: '75vw', maxWidth: '300px', height: '280px' }}
                         >
                           {/* Locked Badge for trainees who are NOT enrolled */}
                           {isLocked && (
@@ -1903,8 +1969,8 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                   <button
                     key={`placeholder-${index}`}
                     onClick={() => onNavigate('course-management')}
-                    className="relative bg-white rounded-2xl border-2 border-dashed border-gray-300 overflow-hidden flex flex-col hover:border-gray-400 hover:bg-gray-50 transition-all cursor-pointer"
-                    style={{ width: '300px' }}
+                    className="relative bg-white rounded-2xl border-2 border-dashed border-gray-300 overflow-hidden flex flex-col hover:border-gray-400 hover:bg-gray-50 transition-all cursor-pointer flex-shrink-0 snap-start"
+                    style={{ width: '75vw', maxWidth: '300px' }}
                   >
                     {/* Decorative Top Strip */}
                     <div className="relative overflow-hidden" style={{ height: '100px' }}>
@@ -1931,8 +1997,8 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                   <button
                     key={`placeholder-${index}`}
                     onClick={() => onNavigate('course-management')}
-                    className="relative bg-white rounded-2xl border-2 border-dashed border-gray-300 overflow-hidden flex flex-col hover:border-gray-400 hover:bg-gray-50 transition-all cursor-pointer"
-                    style={{ width: '300px' }}
+                    className="relative bg-white rounded-2xl border-2 border-dashed border-gray-300 overflow-hidden flex flex-col hover:border-gray-400 hover:bg-gray-50 transition-all cursor-pointer flex-shrink-0 snap-start"
+                    style={{ width: '75vw', maxWidth: '300px' }}
                   >
                     {/* Decorative Top Strip */}
                     <div className="relative overflow-hidden" style={{ height: '100px' }}>
@@ -2149,57 +2215,57 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 <h2 className="text-lg md:text-xl font-bold text-black">My Learning Progress</h2>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-3 gap-3 md:gap-4">
                 {/* Enrolled Courses */}
-                <div className="bg-white rounded-xl border border-gray-100 transition-all duration-300 min-h-[120px] flex flex-col">
-                  <div className="p-4 flex flex-col flex-1">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Enrolled</span>
-                      <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#1f7a8c20' }}>
-                        <svg className="w-5 h-5" style={{ color: '#1f7a8c' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="bg-white rounded-xl border border-gray-100 transition-all duration-300 flex flex-col">
+                  <div className="p-2.5 md:p-4 flex flex-col flex-1">
+                    <div className="flex items-center justify-between mb-2 md:mb-3">
+                      <span className="text-[10px] md:text-xs font-semibold text-gray-400 uppercase tracking-wide">Enrolled</span>
+                      <div className="w-7 h-7 md:w-9 md:h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#1f7a8c20' }}>
+                        <svg className="w-3.5 h-3.5 md:w-5 md:h-5" style={{ color: '#1f7a8c' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                         </svg>
                       </div>
                     </div>
                     <div className="mt-auto">
-                      <div className="text-4xl font-bold text-gray-900">{stats.totalCourses}</div>
-                      <div className="text-sm text-gray-500 mt-1">Courses</div>
+                      <div className="text-2xl md:text-4xl font-bold text-gray-900">{stats.totalCourses}</div>
+                      <div className="text-xs text-gray-500 mt-0.5 md:mt-1">Courses</div>
                     </div>
                   </div>
                 </div>
 
                 {/* Completed Lessons */}
-                <div className="bg-white rounded-xl border border-gray-100 transition-all duration-300 min-h-[120px] flex flex-col">
-                  <div className="p-4 flex flex-col flex-1">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Completed</span>
-                      <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-emerald-50">
-                        <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="bg-white rounded-xl border border-gray-100 transition-all duration-300 flex flex-col">
+                  <div className="p-2.5 md:p-4 flex flex-col flex-1">
+                    <div className="flex items-center justify-between mb-2 md:mb-3">
+                      <span className="text-[10px] md:text-xs font-semibold text-gray-400 uppercase tracking-wide">Completed</span>
+                      <div className="w-7 h-7 md:w-9 md:h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-emerald-50">
+                        <svg className="w-3.5 h-3.5 md:w-5 md:h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
                     </div>
                     <div className="mt-auto">
-                      <div className="text-4xl font-bold text-gray-900">{stats.completedLessons}</div>
-                      <div className="text-sm text-gray-500 mt-1">of {stats.totalLessons} lessons</div>
+                      <div className="text-2xl md:text-4xl font-bold text-gray-900">{stats.completedLessons}</div>
+                      <div className="text-xs text-gray-500 mt-0.5 md:mt-1">of {stats.totalLessons} lessons</div>
                     </div>
                   </div>
                 </div>
 
                 {/* Overall Progress */}
-                <div className="bg-white rounded-xl border border-gray-100 transition-all duration-300 min-h-[120px] flex flex-col">
-                  <div className="p-4 flex flex-col flex-1">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Progress</span>
-                      <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-violet-50">
-                        <svg className="w-5 h-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="bg-white rounded-xl border border-gray-100 transition-all duration-300 flex flex-col">
+                  <div className="p-2.5 md:p-4 flex flex-col flex-1">
+                    <div className="flex items-center justify-between mb-2 md:mb-3">
+                      <span className="text-[10px] md:text-xs font-semibold text-gray-400 uppercase tracking-wide">Progress</span>
+                      <div className="w-7 h-7 md:w-9 md:h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-violet-50">
+                        <svg className="w-3.5 h-3.5 md:w-5 md:h-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                         </svg>
                       </div>
                     </div>
                     <div className="mt-auto">
-                      <div className="text-4xl font-bold text-gray-900">{getProgressPercentage(stats.completedLessons, stats.totalLessons)}%</div>
-                      <div className="mt-2 w-full bg-gray-100 rounded-full h-1.5">
+                      <div className="text-2xl md:text-4xl font-bold text-gray-900">{getProgressPercentage(stats.completedLessons, stats.totalLessons)}%</div>
+                      <div className="mt-1.5 w-full bg-gray-100 rounded-full h-1.5">
                         <div
                           className="h-1.5 rounded-full bg-violet-500 transition-all duration-500"
                           style={{ width: `${getProgressPercentage(stats.completedLessons, stats.totalLessons)}%` }}
@@ -2219,57 +2285,57 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 <h2 className="text-lg md:text-xl font-bold text-black">My Teaching Overview</h2>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-3 gap-3 md:gap-4">
                 {/* My Courses */}
-                <div className="bg-white rounded-xl border border-gray-100 transition-all duration-300 min-h-[120px] flex flex-col">
-                  <div className="p-4 flex flex-col flex-1">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Courses</span>
-                      <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#1f7a8c20' }}>
-                        <svg className="w-5 h-5" style={{ color: '#1f7a8c' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="bg-white rounded-xl border border-gray-100 transition-all duration-300 flex flex-col">
+                  <div className="p-2.5 md:p-4 flex flex-col flex-1">
+                    <div className="flex items-center justify-between mb-2 md:mb-3">
+                      <span className="text-[10px] md:text-xs font-semibold text-gray-400 uppercase tracking-wide">Courses</span>
+                      <div className="w-7 h-7 md:w-9 md:h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#1f7a8c20' }}>
+                        <svg className="w-3.5 h-3.5 md:w-5 md:h-5" style={{ color: '#1f7a8c' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                         </svg>
                       </div>
                     </div>
                     <div className="mt-auto">
-                      <div className="text-4xl font-bold text-gray-900">{stats.totalCourses}</div>
-                      <div className="text-sm text-gray-500 mt-1">My Courses</div>
+                      <div className="text-2xl md:text-4xl font-bold text-gray-900">{stats.totalCourses}</div>
+                      <div className="text-xs text-gray-500 mt-0.5 md:mt-1">My Courses</div>
                     </div>
                   </div>
                 </div>
 
                 {/* Total Students */}
-                <div className="bg-white rounded-xl border border-gray-100 transition-all duration-300 min-h-[120px] flex flex-col">
-                  <div className="p-4 flex flex-col flex-1">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Students</span>
-                      <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-emerald-50">
-                        <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="bg-white rounded-xl border border-gray-100 transition-all duration-300 flex flex-col">
+                  <div className="p-2.5 md:p-4 flex flex-col flex-1">
+                    <div className="flex items-center justify-between mb-2 md:mb-3">
+                      <span className="text-[10px] md:text-xs font-semibold text-gray-400 uppercase tracking-wide">Students</span>
+                      <div className="w-7 h-7 md:w-9 md:h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-emerald-50">
+                        <svg className="w-3.5 h-3.5 md:w-5 md:h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
                         </svg>
                       </div>
                     </div>
                     <div className="mt-auto">
-                      <div className="text-4xl font-bold text-gray-900">{userStats.totalStudents}</div>
-                      <div className="text-sm text-gray-500 mt-1">Total Students</div>
+                      <div className="text-2xl md:text-4xl font-bold text-gray-900">{userStats.totalStudents}</div>
+                      <div className="text-xs text-gray-500 mt-0.5 md:mt-1">Total Students</div>
                     </div>
                   </div>
                 </div>
 
                 {/* Active Subjects */}
-                <div className="bg-white rounded-xl border border-gray-100 transition-all duration-300 min-h-[120px] flex flex-col">
-                  <div className="p-4 flex flex-col flex-1">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Subjects</span>
-                      <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-violet-50">
-                        <svg className="w-5 h-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="bg-white rounded-xl border border-gray-100 transition-all duration-300 flex flex-col">
+                  <div className="p-2.5 md:p-4 flex flex-col flex-1">
+                    <div className="flex items-center justify-between mb-2 md:mb-3">
+                      <span className="text-[10px] md:text-xs font-semibold text-gray-400 uppercase tracking-wide">Subjects</span>
+                      <div className="w-7 h-7 md:w-9 md:h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-violet-50">
+                        <svg className="w-3.5 h-3.5 md:w-5 md:h-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
                       </div>
                     </div>
                     <div className="mt-auto">
-                      <div className="text-4xl font-bold text-gray-900">{stats.totalSubjects}</div>
-                      <div className="text-sm text-gray-500 mt-1">Active Subjects</div>
+                      <div className="text-2xl md:text-4xl font-bold text-gray-900">{stats.totalSubjects}</div>
+                      <div className="text-xs text-gray-500 mt-0.5 md:mt-1">Active Subjects</div>
                     </div>
                   </div>
                 </div>
