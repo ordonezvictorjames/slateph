@@ -1639,7 +1639,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
               {/* Tasks Card - Only for Admin and Developer */}
               {(userRole === 'admin' || userRole === 'developer') && (
-                <div className="rounded-xl p-4 border border-gray-100 transition-all duration-300 md:col-span-2" style={{ backgroundColor: '#FFFFFF' }}>
+                <div className="rounded-xl p-4 border border-gray-100 transition-all duration-300 md:col-span-2 xl:col-span-2" style={{ backgroundColor: '#FFFFFF' }}>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-3">
                       <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center">
@@ -1891,7 +1891,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
               {/* Today's Events - Admin/Developer, sits beside the Tasks card */}
               {(userRole === 'admin' || userRole === 'developer') && (
-                <div className="rounded-xl p-4 border border-gray-100 transition-all duration-300" style={{ backgroundColor: '#FFFFFF' }}>
+                <div className="rounded-xl p-4 border border-gray-100 transition-all duration-300 xl:col-span-1" style={{ backgroundColor: '#FFFFFF' }}>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-3">
                       <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center">
