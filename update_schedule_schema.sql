@@ -18,8 +18,12 @@ ALTER TABLE course_schedules
   ADD COLUMN IF NOT EXISTS strand  TEXT,
   ADD COLUMN IF NOT EXISTS batch   TEXT;
 
--- 4. Verify
-SELECT column_name, data_type
+-- 4. Make batch_number nullable (no longer auto-generated)
+ALTER TABLE course_schedules
+  ALTER COLUMN batch_number DROP NOT NULL;
+
+-- 5. Verify
+SELECT column_name, data_type, is_nullable
 FROM information_schema.columns
 WHERE table_name = 'course_schedules'
 ORDER BY ordinal_position;

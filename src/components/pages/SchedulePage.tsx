@@ -182,6 +182,7 @@ export default function SchedulePage() {
         cluster: shsCluster || null,
         strand: newSchedule.strand || null,
         batch: newSchedule.batch || null,
+        batch_number: 1,
         status: 'scheduled',
         created_by: user?.id
       }
@@ -191,8 +192,12 @@ export default function SchedulePage() {
         .insert([scheduleData])
 
       if (error) {
-        console.error('Error creating schedule:', error)
-        alert('Error creating course schedule')
+        console.error('Error creating schedule - message:', error.message)
+        console.error('Error creating schedule - code:', error.code)
+        console.error('Error creating schedule - details:', error.details)
+        console.error('Error creating schedule - hint:', error.hint)
+        console.error('Full error:', JSON.stringify(error))
+        alert(`Error creating course schedule: ${error.message || error.code || 'Unknown error'}`)
         return
       }
 
