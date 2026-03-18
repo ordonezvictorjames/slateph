@@ -1142,31 +1142,29 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
         {/* Mobile Welcome Banner - full width, shown only on mobile */}
         <div className="xl:hidden px-2 py-3 mb-2">
-          <div className="flex items-center gap-3">
-            <div className="flex-1">
-              <h2 className="text-base font-bold text-gray-900 leading-tight">
-                Hello, {displayUser.profile?.first_name || displayUser?.email?.split('@')[0] || 'User'}!
-              </h2>
-
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <div className="relative">
-                <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <input
-                  type="text"
-                  placeholder="Search.."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-40 pl-8 pr-3 py-2 text-xs bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-gray-300 text-gray-700 placeholder-gray-400"
-                />
-              </div>
-              <NotificationBell />
-            </div>
+          {/* Row 1: greeting + notification bell */}
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-base font-bold text-gray-900 leading-tight">
+              Hello, {displayUser.profile?.first_name || displayUser?.email?.split('@')[0] || 'User'}!
+            </h2>
+            <NotificationBell />
+          </div>
+          {/* Row 2: search box full width */}
+          <div className="relative">
+            <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search.."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-8 pr-3 py-2 text-xs bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-gray-300 text-gray-700 placeholder-gray-400"
+            />
           </div>
         </div>
 
+        {/* Mobile Today's Events + Profile 2-column grid - shown only on mobile */}
         {/* Mobile Clock + Profile 2-column grid - shown only on mobile */}
         <div className="xl:hidden grid grid-cols-2 gap-3 mb-4 items-stretch">
           {/* Clock Card */}
@@ -1378,7 +1376,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
               </div>
             </div>
 
-            {/* Today's Events + Upcoming Schedule - 2-col grid on mobile, stacked on desktop */}
+            {/* Today's Events + Upcoming Schedule - stacked on all sizes */}
             <div className="grid grid-cols-1 xl:grid-cols-1 gap-3 xl:gap-0 xl:space-y-4">
 
               {/* Today's Events */}
