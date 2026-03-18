@@ -385,23 +385,25 @@ export default function Sidebar({ currentPage, onPageChange, hideHamburger = fal
       {!hideHamburger && (
         <button
           onClick={() => setIsMobileOpen(!isMobileOpen)}
-          className="fixed top-4 left-4 z-[60] lg:hidden p-2 rounded-lg shadow-lg transition-all duration-200 hover:scale-105"
+          className="fixed left-0 z-[60] lg:hidden w-8 h-8 rounded-full shadow-lg transition-all duration-200 hover:scale-105 flex items-center justify-center"
           style={{ 
-            backgroundColor: '#3b82f6',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            backgroundColor: '#1f7a8c',
             color: '#FFFFFF'
           }}
           aria-label="Toggle sidebar"
         >
           <svg 
-            className="w-6 h-6" 
+            className="w-4 h-4" 
             fill="none" 
             stroke="currentColor" 
             viewBox="0 0 24 24"
           >
             {isMobileOpen ? (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
             ) : (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
             )}
           </svg>
         </button>
