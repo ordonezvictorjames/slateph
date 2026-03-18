@@ -1499,7 +1499,8 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             {/* Today's Events + Upcoming Schedule - 2-col on mobile, stacked on desktop */}
             <div className="grid grid-cols-1 gap-3 xl:gap-0 xl:space-y-4">
 
-              {/* Today's Events */}
+              {/* Today's Events - hidden for admin/developer (they have the full calendar) */}
+              {userRole !== 'admin' && userRole !== 'developer' && (
               <div className="rounded-xl p-2.5 xl:p-4 border border-gray-100 transition-all duration-300" style={{ backgroundColor: '#FFFFFF' }}>
                 <div className="flex items-center justify-between mb-2 xl:mb-4">
                   <div className="flex items-center space-x-2 xl:space-x-3">
@@ -1551,6 +1552,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                   )}
                 </div>
               </div>
+              )}
 
               {/* Upcoming Schedule */}
               <div className="rounded-xl p-2.5 xl:p-4 border border-gray-100 transition-all duration-300" style={{ backgroundColor: '#FFFFFF' }}>
