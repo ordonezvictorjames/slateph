@@ -1168,10 +1168,10 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
         </div>
 
         {/* Mobile Clock + Profile 2-column grid - shown only on mobile */}
-        <div className="xl:hidden grid grid-cols-2 gap-3 mb-4">
+        <div className="xl:hidden grid grid-cols-2 gap-3 mb-4 items-stretch">
           {/* Clock Card */}
-          <div className="rounded-xl border border-gray-100 bg-white">
-            <div className="px-3 py-3 flex flex-col items-center justify-center w-full">
+          <div className="rounded-xl border border-gray-100 bg-white h-full">
+            <div className="px-3 py-3 flex flex-col items-center justify-center w-full h-full min-h-[100px]">
               <div className="flex items-end justify-center space-x-1 mb-1 w-full">
                 <span className="font-bold tabular-nums leading-none" style={{ fontSize: '28px', color: '#0f4c5c' }}>
                   {String(currentTime.getHours() % 12 || 12).padStart(2, '0')}
