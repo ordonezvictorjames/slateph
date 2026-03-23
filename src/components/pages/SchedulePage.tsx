@@ -499,7 +499,7 @@ export default function SchedulePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+    <div className="min-h-screen bg-gray-100">
       <div className="p-4 sm:p-6 lg:p-8">
         {/* Modern Header */}
         <div className="mb-8">

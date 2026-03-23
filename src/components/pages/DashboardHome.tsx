@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -239,7 +239,7 @@ function UpcomingScheduleList() {
     return (
       <div className="space-y-2.5">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="animate-pulse p-3 bg-white rounded-lg border border-gray-200">
+          <div key={i} className="animate-pulse p-3 bg-white rounded-lg">
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-gray-200 rounded-lg"></div>
               <div className="flex-1">
@@ -255,13 +255,16 @@ function UpcomingScheduleList() {
 
   if (schedules.length === 0) {
     return (
-      <div className="text-center py-3 xl:py-6">
-        <div className="w-8 h-8 xl:w-12 xl:h-12 rounded-xl flex items-center justify-center mx-auto mb-2 xl:mb-3" style={{ backgroundColor: '#0f4c5c' }}>
-          <svg className="w-4 h-4 xl:w-6 xl:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-        </div>
-        <p className="text-[10px] xl:text-sm font-medium text-black">No upcoming schedules</p>
+      <div className="space-y-2">
+        {[1, 2].map((i) => (
+          <div key={i} className="flex items-center gap-3 p-2.5 rounded-lg bg-gray-50">
+            <div className="w-2 h-8 rounded-full bg-gray-200 flex-shrink-0" />
+            <div className="flex-1 space-y-1.5">
+              <div className="h-2.5 bg-gray-200 rounded w-3/4" />
+              <div className="h-2 bg-gray-100 rounded w-1/2" />
+            </div>
+          </div>
+        ))}
       </div>
     )
   }
@@ -288,7 +291,7 @@ function UpcomingScheduleList() {
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <h4 className="text-sm font-semibold text-black truncate">
+                  <h4 className="text-sm font-bold text-black truncate">
                     {schedule.title}
                   </h4>
                   <p className="text-xs text-gray-600 mt-0.5">
@@ -355,7 +358,7 @@ function RecentActivityList() {
         .from('activity_logs_with_users')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(10) // Show only 10 most recent activities
+        .limit(3) // Show only 3 most recent activities
 
       if (error) {
         console.error('Error fetching recent activities:', error)
@@ -501,6 +504,7 @@ function RecentActivityList() {
 export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
   const { user, signOut } = useAuth()
   const [courses, setCourses] = useState<Course[]>([])
+  const [allCourses, setAllCourses] = useState<Course[]>([])
   const [courseColors, setCourseColors] = useState<CourseColor[]>([])
   const [courseSchedules, setCourseSchedules] = useState<CourseSchedule[]>([])
   const [stats, setStats] = useState<DashboardStats>({
@@ -559,7 +563,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
   // Helper function to get button background color
   const getButtonBg = () => '#1f7a8c' // Primary teal color
 
-  // Format role for display — preserves acronyms like JHS, SHS
+  // Format role for display � preserves acronyms like JHS, SHS
   const formatRole = (role: string) => {
     const labels: Record<string, string> = {
       jhs_student: 'JHS Student',
@@ -863,10 +867,9 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             // Filter courses by the trainee's enrolled course IDs
             coursesQuery = coursesQuery.in('id', courseIds)
           } else {
-            // trainee has no enrolled courses - set empty array and skip query
+            // trainee has no enrolled courses - set empty array but continue to fetch allCourses
             setCourses([])
-            setLoading(false)
-            return
+            coursesQuery = coursesQuery.in('id', ['00000000-0000-0000-0000-000000000000']) // no-match sentinel
           }
         }
       }
@@ -934,6 +937,55 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
         })
         
         setCourses(sortedCourses)
+      }
+
+      // Fetch ALL courses (unfiltered) for the All Courses card
+      {
+        const { data: allCoursesData, error: allCoursesError } = await supabase
+          .from('courses')
+          .select('*, subjects(*, modules(*))')
+          .order('created_at', { ascending: false })
+
+        if (!allCoursesError && allCoursesData) {
+          // Fetch enrollment counts for all courses in one query
+          const { data: enrollmentCounts } = await supabase
+            .from('course_enrollments')
+            .select('course_id')
+            .eq('status', 'active')
+
+          const countMap: Record<string, number> = {}
+          for (const e of (enrollmentCounts || [])) {
+            countMap[e.course_id] = (countMap[e.course_id] || 0) + 1
+          }
+
+          // For students, mark enrollment status on each course
+          const isStudent = userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student' || userRole === 'scholar'
+          if (isStudent && user?.id) {
+            const { data: enrollments } = await supabase
+              .from('course_enrollments')
+              .select('course_id')
+              .eq('trainee_id', user.id)
+              .eq('status', 'active')
+            const enrolledIds = new Set((enrollments || []).map((e: { course_id: string }) => e.course_id))
+            setAllCourses(allCoursesData.map((c: Course) => ({
+              ...c,
+              is_user_enrolled: enrolledIds.has(c.id),
+              total_enrollments: countMap[c.id] || 0
+            })))
+          } else if (userRole === 'instructor' && user?.id) {
+            // Mark courses where the instructor is assigned to at least one subject
+            setAllCourses(allCoursesData.map((c: Course) => ({
+              ...c,
+              is_user_enrolled: (c.subjects || []).some((s: any) => s.instructor_id === user.id),
+              total_enrollments: countMap[c.id] || 0
+            })))
+          } else {
+            setAllCourses(allCoursesData.map((c: Course) => ({
+              ...c,
+              total_enrollments: countMap[c.id] || 0
+            })))
+          }
+        }
       }
 
       // Fetch course colors
@@ -1186,11 +1238,6 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
     }
   }
 
-  const getProgressPercentage = (completed: number, total: number) => {
-    if (total === 0) return 0
-    return Math.round((completed / total) * 100)
-  }
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active': return 'bg-green-100 text-green-700'
@@ -1225,196 +1272,99 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
       <div className="px-4 xl:pl-[50px] xl:pr-[25px]">
 
 
-        {/* Mobile Clock + Profile 2-column grid - shown only on mobile */}
-        <div className="xl:hidden grid grid-cols-2 gap-3 mb-4 items-stretch">
-          {/* Clock Card */}
-          <div className="rounded-xl border border-gray-200 bg-white h-full shadow-sm">
-            <div className="px-3 py-3 flex flex-col items-center justify-center w-full h-full min-h-[100px]">
-              <div className="flex items-end justify-center space-x-1 mb-1 w-full">
-                <span className="font-bold tabular-nums leading-none" style={{ fontSize: '28px', color: '#0f4c5c' }}>
-                  {String(currentTime.getHours() % 12 || 12).padStart(2, '0')}
-                </span>
-                <div className="flex flex-col space-y-1 mb-2">
-                  <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#0f4c5c' }} />
-                  <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#0f4c5c' }} />
-                </div>
-                <span className="font-bold tabular-nums leading-none" style={{ fontSize: '28px', color: '#0f4c5c' }}>
-                  {String(currentTime.getMinutes()).padStart(2, '0')}
-                </span>
-                <div className="flex flex-col items-center mb-1.5 ml-0.5">
-                  <span className="text-xs font-bold" style={{ color: '#0f4c5c' }}>
-                    {currentTime.getHours() >= 12 ? 'PM' : 'AM'}
-                  </span>
-                  <span className="text-xs font-bold tabular-nums" style={{ color: '#0f4c5c' }}>
-                    {String(currentTime.getSeconds()).padStart(2, '0')}
-                  </span>
-                </div>
-              </div>
-              <p className="text-xs font-semibold mt-1 text-center w-full" style={{ color: '#0f4c5c' }}>
-                {currentTime.toLocaleDateString('en-US', { month: 'short', weekday: 'short', day: 'numeric' })}
-              </p>
-            </div>
-          </div>
-
-          {/* Profile Card (mobile) */}
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden relative shadow-sm">
-            <div className="relative h-16">
-              {(user?.profile as any)?.banner_url ? (
-                <img src={(user?.profile as any).banner_url} alt="Cover" className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full" style={{ background: 'linear-gradient(135deg, #1f7a8c 0%, #0f4c5c 100%)' }} />
-              )}
-              <button
-                onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                className="absolute left-1/2 -translate-x-1/2 -bottom-5 w-10 h-10 rounded-full border-2 border-white bg-gray-200 overflow-hidden flex items-center justify-center"
-              >
-                {(user?.profile as any)?.avatar_url ? (
-                  (user?.profile as any).avatar_url.startsWith('data:') ? (
-                    <img src={(user?.profile as any).avatar_url} alt="Profile" className="w-full h-full object-cover" />
-                  ) : (user?.profile as any).avatar_url.length <= 2 ? (
-                    <span className="text-lg">{(user?.profile as any).avatar_url}</span>
-                  ) : (
-                    <img src={(user?.profile as any).avatar_url} alt="Profile" className="w-full h-full object-cover" />
-                  )
+        {/* Profile Card (mobile) */}
+        <div className="xl:hidden mb-4 flex items-center justify-end">
+            <button className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+              <svg className="w-[17px] h-[17px] text-gray-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </button>
+            <button className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+              <svg className="w-[17px] h-[17px] text-gray-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+              className="w-9 h-9 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center flex-shrink-0"
+            >
+              {(user?.profile as any)?.avatar_url ? (
+                (user?.profile as any).avatar_url.startsWith('data:') ? (
+                  <img src={(user?.profile as any).avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                ) : (user?.profile as any).avatar_url.length <= 2 ? (
+                  <span className="text-base">{(user?.profile as any).avatar_url}</span>
                 ) : (
-                  <span className="text-sm font-bold text-gray-600">
-                    {(user?.profile?.first_name?.[0] || '') + (user?.profile?.last_name?.[0] || '')}
-                  </span>
-                )}
-              </button>
-            </div>
-            <div className="pt-7 pb-3 px-2 text-center">
-              <p className="text-xs font-bold text-gray-900 truncate">
-                {user?.profile?.first_name} {user?.profile?.last_name}
-              </p>
-              <p className="text-[10px] text-gray-500 truncate">
-                {formatRole(user?.profile?.role as string)}
-              </p>
-              {/* Student class info */}
-              {(user?.profile?.role === 'jhs_student' || user?.profile?.role === 'shs_student' || user?.profile?.role === 'college_student' || user?.profile?.role === 'scholar') && (
-                <div className="mt-1.5 flex flex-wrap justify-center gap-1">
-                  {user?.profile?.grade != null && (
-                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-teal-50 text-teal-700 font-medium">Grade {user.profile.grade}</span>
-                  )}
-                  {user?.profile?.section != null && (
-                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-teal-50 text-teal-700 font-medium">Sec {user.profile.section}</span>
-                  )}
-                  {user?.profile?.strand && (
-                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 font-medium truncate max-w-[80px]">{user.profile.strand}</span>
-                  )}
-                  {user?.profile?.batch_number != null && (
-                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-purple-50 text-purple-700 font-medium">Batch {user.profile.batch_number}</span>
-                  )}
-                </div>
+                  <img src={(user?.profile as any).avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                )
+              ) : (
+                <span className="text-xs font-bold text-gray-600">
+                  {(user?.profile?.first_name?.[0] || '') + (user?.profile?.last_name?.[0] || '')}
+                </span>
               )}
-            </div>
+            </button>
           </div>
-        </div>
-
-        {/* Mobile Upcoming Schedule - shown only on mobile, below clock/profile */}
-        <div className="xl:hidden mb-4">
-          <div className="rounded-xl p-3 border border-gray-200 bg-white cursor-pointer" onClick={() => onNavigate('schedule')}>
-            <div className="flex items-center space-x-2 mb-2">
-              <div className="w-7 h-7 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
-                <svg className="w-3.5 h-3.5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-xs font-bold text-black leading-tight">Upcoming Schedule</h3>
-                <p className="text-[10px] text-black/70">Next events</p>
-              </div>
-            </div>
-          </div>
-        </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-7 gap-4 md:gap-6">
           
           {/* Profile Card - Shows on desktop only (mobile version is above) */}
           <div className="order-last xl:col-span-2 xl:order-2 space-y-4 md:space-y-6 flex flex-col">
             {/* Avatar / Profile Card - Desktop only */}
-            <div className="hidden xl:block bg-white rounded-xl border border-gray-200 overflow-hidden relative shadow-sm" ref={dropdownRef}>
-              {/* Cover Banner */}
-              {/* Cover + overlapping avatar */}
-              <div className="relative h-24">
-                {(user?.profile as any)?.banner_url ? (
-                  <img src={(user?.profile as any).banner_url} alt="Cover" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full" style={{ background: 'linear-gradient(135deg, #1f7a8c 0%, #0f4c5c 100%)' }} />
-                )}
-                {/* Avatar absolutely positioned to overlap the bottom edge */}
+            <div className="hidden xl:block relative" ref={dropdownRef}>
+              <div className="flex items-center gap-3 justify-end">
+                {/* Message icon */}
+                <button className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 hover:bg-gray-200 transition-colors">
+                  <svg className="w-[17px] h-[17px] text-gray-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                </button>
+                {/* Notification icon */}
+                <button className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 hover:bg-gray-200 transition-colors">
+                  <svg className="w-[17px] h-[17px] text-gray-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                </button>
+                {/* Avatar + name + chevron — clickable */}
                 <button
                   onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                  className="absolute left-1/2 -translate-x-1/2 -bottom-7 w-14 h-14 rounded-full border-2 border-white bg-gray-200 overflow-hidden flex items-center justify-center"
+                  className="flex items-center gap-2 hover:opacity-80 transition-opacity"
                 >
-                  {(user?.profile as any)?.avatar_url ? (
-                    (user?.profile as any).avatar_url.startsWith('data:') ? (
-                      <img src={(user?.profile as any).avatar_url} alt="Profile" className="w-full h-full object-cover" />
-                    ) : (user?.profile as any).avatar_url.length <= 2 ? (
-                      <span className="text-2xl">{(user?.profile as any).avatar_url}</span>
+                  {/* Avatar circle */}
+                  <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center flex-shrink-0">
+                    {(user?.profile as any)?.avatar_url ? (
+                      (user?.profile as any).avatar_url.startsWith('data:') ? (
+                        <img src={(user?.profile as any).avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                      ) : (user?.profile as any).avatar_url.length <= 2 ? (
+                        <span className="text-xl">{(user?.profile as any).avatar_url}</span>
+                      ) : (
+                        <img src={(user?.profile as any).avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                      )
                     ) : (
-                      <img src={(user?.profile as any).avatar_url} alt="Profile" className="w-full h-full object-cover" />
-                    )
-                  ) : (
-                    <span className="text-gray-600 font-medium text-sm">
-                      {user?.profile?.first_name && user?.profile?.last_name
-                        ? `${user.profile.first_name.charAt(0).toUpperCase()}${user.profile.last_name.charAt(0).toUpperCase()}`
-                        : displayUser?.email ? displayUser.email.charAt(0).toUpperCase() : 'U'}
-                    </span>
-                  )}
-                </button>
-              </div>
-
-              {/* Name + email + badges */}
-              <div className="px-4 pb-4 pt-10 flex flex-col items-center">
-                <p className="font-bold text-sm text-gray-900 text-center">
-                  {user?.profile?.first_name && user?.profile?.last_name
-                    ? `${user.profile.first_name} ${user.profile.last_name}`
-                    : 'User'}
-                </p>
-                <p className="text-xs text-gray-400 mt-0.5 text-center">
-                  {user?.email || displayUser?.email || ''}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {formatRole(user?.profile?.role as string)}
-                </p>
-
-                {/* Student class info */}
-                {(user?.profile?.role === 'jhs_student' || user?.profile?.role === 'shs_student' || user?.profile?.role === 'college_student' || user?.profile?.role === 'scholar') && (
-                  <div className="mt-2 flex flex-wrap justify-center gap-1.5">
-                    {user?.profile?.grade != null && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 font-medium">Grade {user.profile.grade}</span>
-                    )}
-                    {user?.profile?.section != null && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 font-medium">Section {user.profile.section}</span>
-                    )}
-                    {user?.profile?.cluster && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-medium capitalize">{(user.profile.cluster as string).replace(/_/g, ' ')}</span>
-                    )}
-                    {user?.profile?.strand && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 font-medium text-center">{user.profile.strand}</span>
-                    )}
-                    {user?.profile?.batch_number != null && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 font-medium">Batch {user.profile.batch_number}</span>
+                      <span className="text-gray-600 font-medium text-sm">
+                        {user?.profile?.first_name && user?.profile?.last_name
+                          ? `${user.profile.first_name.charAt(0).toUpperCase()}${user.profile.last_name.charAt(0).toUpperCase()}`
+                          : displayUser?.email ? displayUser.email.charAt(0).toUpperCase() : 'U'}
+                      </span>
                     )}
                   </div>
-                )}
-
-                {/* Badges placeholder */}
-                <div className="flex items-center gap-1.5 mt-3 flex-wrap justify-center">
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 text-gray-400 text-xs">
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                      <circle cx="12" cy="8" r="5" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12" />
-                    </svg>
-                    No badges yet
-                  </span>
-                </div>
+                  {/* Hello + name */}
+                  <div className="text-left">
+                    <p className="text-[11px] text-gray-400 leading-tight">Hello,</p>
+                    <p className="font-bold text-sm text-gray-900 leading-tight whitespace-nowrap">
+                      {user?.profile?.first_name && user?.profile?.last_name
+                        ? `${user.profile.first_name} ${user.profile.last_name}`
+                        : 'User'}
+                    </p>
+                  </div>
+                  {/* Chevron */}
+                  <svg className={`w-4 h-4 text-gray-400 transition-transform ${showProfileDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
               </div>
 
               {/* Dropdown Menu */}
               {showProfileDropdown && (
-                <div className="absolute mt-2 w-56 bg-white rounded-xl border border-gray-200 py-2 z-50" style={{ top: 'auto', right: '1rem' }}>
+                <div className="absolute mt-2 w-56 bg-white rounded-xl py-2 z-50" style={{ top: '100%', right: 0 }}>
                   <div className="px-4 py-3 border-b border-gray-100">
                     <p className="text-sm font-medium text-gray-900">
                       {user?.profile?.first_name && user?.profile?.last_name
@@ -1423,7 +1373,6 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                     </p>
                     <p className="text-xs text-gray-500 mt-0.5">{user?.email || displayUser?.email}</p>
                   </div>
-
                   <div className="py-1">
                     <button
                       onClick={() => { onNavigate('profile'); setShowProfileDropdown(false) }}
@@ -1445,7 +1394,6 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                       <span>Settings</span>
                     </button>
                   </div>
-
                   <div className="border-t border-gray-100 py-1">
                     <button
                       onClick={() => { signOut(); setShowProfileDropdown(false) }}
@@ -1460,50 +1408,78 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 </div>
               )}
             </div>
-
-            {/* Digital Clock - Desktop only (mobile clock is in the 2-col grid above) */}
-            <div className="hidden xl:block rounded-xl border border-gray-200 transition-all duration-300 bg-white shadow-sm">
-              <div className="px-4 py-3 flex flex-col items-center justify-center">
-                <div className="flex items-end space-x-2 mb-1">
-                  <span className="font-bold tabular-nums leading-none" style={{ fontSize: '36px', color: '#0f4c5c' }}>
-                    {String(currentTime.getHours() % 12 || 12).padStart(2, '0')}
-                  </span>
-                  <div className="flex flex-col space-y-1.5 mb-3">
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#0f4c5c' }} />
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#0f4c5c' }} />
+            {/* Today's Events + Upcoming Schedule - equal height */}
+            {/* Desktop: full cards */}
+            <div className="hidden xl:block space-y-4">
+            {/* Today's Events Card - Sidebar */}
+            <div className="bg-white rounded-xl p-4" style={{ minHeight: '160px' }}>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: '#e6f4f7' }}>
+                    <svg className="w-4 h-4" fill="none" stroke="#0f4c5c" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
                   </div>
-                  <span className="font-bold tabular-nums leading-none" style={{ fontSize: '36px', color: '#0f4c5c' }}>
-                    {String(currentTime.getMinutes()).padStart(2, '0')}
-                  </span>
-                  <div className="flex flex-col items-center mb-2 ml-1">
-                    <span className="text-sm font-bold" style={{ color: '#0f4c5c' }}>
-                      {currentTime.getHours() >= 12 ? 'PM' : 'AM'}
-                    </span>
-                    <span className="text-sm font-bold tabular-nums" style={{ color: '#0f4c5c' }}>
-                      {String(currentTime.getSeconds()).padStart(2, '0')}
-                    </span>
-                  </div>
+                  <span className="text-sm font-bold text-gray-900">Today's Events</span>
                 </div>
-                <p className="text-sm font-semibold mt-1" style={{ color: '#0f4c5c' }}>
-                  {currentTime.toLocaleDateString('en-US', { month: 'short', weekday: 'long', day: 'numeric' })}
-                </p>
+                <button onClick={() => onNavigate('schedule')} className="text-xs font-medium hover:opacity-80" style={{ color: '#0f4c5c' }}>See All</button>
               </div>
+              {getTodaysEvents().length === 0 ? (
+                <div className="space-y-2">
+                  {[1, 2].map((i) => (
+                    <div key={i} className="flex items-center gap-3 p-2.5 rounded-lg bg-gray-50">
+                      <div className="w-2 h-8 rounded-full bg-gray-200 flex-shrink-0" />
+                      <div className="flex-1 space-y-1.5">
+                        <div className="h-2.5 bg-gray-200 rounded w-3/4" />
+                        <div className="h-2 bg-gray-100 rounded w-1/2" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {getTodaysEvents().slice(0, 2).map((schedule) => {
+                    const color = getCourseColor(schedule.course_id)
+                    return (
+                      <div key={schedule.id} className="flex items-start gap-3 p-2 rounded-lg bg-gray-50">
+                        <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ background: color?.color_hex || '#0f4c5c' }} />
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-gray-900 truncate">{schedule.title}</p>
+                          <p className="text-[10px] text-gray-400 mt-0.5">{schedule.course?.title}</p>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
 
+            {/* Upcoming Schedule Card - Sidebar */}
+            <div className="bg-white rounded-xl p-4" style={{ minHeight: '160px' }}>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: '#e6f4f7' }}>
+                    <svg className="w-4 h-4" fill="none" stroke="#0f4c5c" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <span className="text-sm font-bold text-gray-900">Upcoming Schedule</span>
+                </div>
+                <button onClick={() => onNavigate('schedule')} className="text-xs font-medium hover:opacity-80" style={{ color: '#0f4c5c' }}>See All</button>
+              </div>
+              <UpcomingScheduleList />
+            </div>
+            </div>{/* end hidden xl:block */}
 
-            {/* All Users Card - Desktop only, Admin/Developer */}
-            {(userRole === 'admin' || userRole === 'developer') && (
-            <div className="hidden xl:block bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            {/* All Users Card - Desktop only, all roles */}
+            <div className="hidden xl:block bg-white rounded-xl shadow-sm overflow-hidden">
               <div className="overflow-y-auto scrollbar-autohide" style={{ maxHeight: '380px' }}>
                 <OnlineUsers />
               </div>
             </div>
-            )}
 
-            {/* Recent Activity - Admin and Developer only */}
-            {(userRole === 'admin' || userRole === 'developer') && (
-            <div className="bg-white rounded-lg p-6 border border-gray-200 transition-all duration-300 flex flex-col" style={{ height: '710px' }}>
-
+            {/* Recent Activity - Desktop only, all roles */}
+            <div className="hidden xl:block bg-white rounded-lg p-6 transition-all duration-300">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-sm font-bold text-gray-800">Recent Activity</h3>
                 <button 
@@ -1515,179 +1491,297 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                   </svg>
                 </button>
               </div>
-
-              <div className="flex-1 overflow-y-auto scrollbar-autohide">
+              <div className="overflow-y-auto scrollbar-autohide" style={{ maxHeight: '320px' }}>
                 <RecentActivityList />
               </div>
             </div>
-            )}
           </div>
 
           {/* Left Section - Main Content - Shows second on mobile, first on desktop */}
           <div className="order-first xl:col-span-5 xl:order-1 space-y-6 md:space-y-8">
-            
-            {/* Available Courses */}
-            <div className="rounded-xl p-4 border border-gray-200 bg-white">
-              <div className="flex items-center justify-between mb-4 md:mb-6">
-                <h2 className="text-base font-bold text-black">
-                  {((userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student')) ? (
-                    <>
-                      My Courses
-                      {courses.filter(c => c.is_user_enrolled).length > 0 && (
-                        <span className="ml-2 text-sm font-normal text-gray-500">
-                          ({courses.filter(c => c.is_user_enrolled).length} enrolled)
-                        </span>
-                      )}
-                    </>
-                  ) : 'Available Courses'}
+
+            {/* Welcome Card */}
+            <div className="relative rounded-2xl overflow-hidden flex items-center px-6 py-6 gap-5 bg-white shadow-sm" style={{ minHeight: '160px' }}>
+              {/* Text content */}
+              <div className="flex-1 min-w-0 z-10">
+                <h2 className="text-2xl font-bold text-gray-900 leading-tight">
+                  Welcome, {user?.profile?.first_name || 'there'}
                 </h2>
-                {(userRole === 'admin' || userRole === 'developer') && (
-                  <button className="text-sm text-gray-500 hover:text-gray-700">See All</button>
-                )}
+                <button
+                  onClick={() => onNavigate('profile')}
+                  className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-white text-xs font-semibold transition-colors hover:opacity-90"
+                  style={{ background: '#0f4c5c' }}
+                >
+                  Complete Profile
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
               </div>
-              <div className="xl:grid xl:grid-cols-3 xl:gap-4 overflow-x-auto flex gap-4 pb-2 xl:pb-0 snap-x snap-mandatory" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                {courses.length > 0 ? (
-                  <>
-                    {courses.slice(0, 3).map((course) => {
+
+              {/* book.png decorative image */}
+              <img
+                src="/book.png"
+                alt=""
+                aria-hidden="true"
+                className="absolute right-4 bottom-0 h-36 object-contain pointer-events-none select-none"
+              />
+            </div>
+
+            {/* Learning Progress Cards - hidden for admin/developer */}
+            {!(userRole === 'admin' || userRole === 'developer') && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="bg-white rounded-xl shadow-sm p-4 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#0f4c5c' }}>
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-xl font-bold text-gray-900">{courses.filter(c => c.is_user_enrolled).length || stats.totalCourses}</p>
+                  <p className="text-xs text-gray-500 font-medium">Enrolled Courses</p>
+                </div>
+              </div>
+              <div className="bg-white rounded-xl shadow-sm p-4 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#0f4c5c' }}>
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-xl font-bold text-gray-900">{stats.completedLessons}</p>
+                  <p className="text-xs text-gray-500 font-medium">Completed Lessons</p>
+                </div>
+              </div>
+              <div className="bg-white rounded-xl shadow-sm p-4 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#0f4c5c' }}>
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-xl font-bold text-gray-900">{stats.completedAssignments}</p>
+                  <p className="text-xs text-gray-500 font-medium">Completed Modules</p>
+                </div>
+              </div>
+              <div className="bg-white rounded-xl shadow-sm p-4 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#0f4c5c' }}>
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-xl font-bold text-gray-900">{stats.totalActivities}</p>
+                  <p className="text-xs text-gray-500 font-medium">Activities</p>
+                </div>
+              </div>
+            </div>
+            )}
+
+            {/* All Courses — split for students/instructors, full list for others */}
+            {(() => {
+              const isStudentOrInstructor = userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student' || userRole === 'scholar' || userRole === 'instructor'
+              const myCourses = isStudentOrInstructor ? allCourses.filter(c => c.is_user_enrolled) : []
+              const otherCourses = isStudentOrInstructor ? allCourses.filter(c => !c.is_user_enrolled) : allCourses
+              const myLabel = userRole === 'instructor' ? 'My Assigned Courses' : 'My Enrolled Courses'
+
+              const renderCarousel = (list: typeof allCourses, emptyMsg: string) => (
+                <div className="xl:hidden -mx-4 px-4">
+                  <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 scrollbar-autohide">
+                    {list.map((course) => {
                       const courseColor = getCourseColor(course.id)
-                      const enrollmentTypeBadges = getEnrollmentTypeDisplay(course.enrollment_type)
-                      const isStudentOrStudent = ((userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student'))
-                      const isLocked = isStudentOrStudent && !course.is_user_enrolled
-                      const handleCardClick = () => {
-                        if (isLocked) return
-                        if (userRole === 'admin' || userRole === 'developer') {
-                          onNavigate('course-management')
-                        } else {
-                          onNavigate('my-courses')
-                        }
-                      }
+                      const isStudent = userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student' || userRole === 'scholar'
+                      const isLocked = isStudent && !course.is_user_enrolled
+                      const handleClick = () => { if (isLocked) return; if (userRole === 'admin' || userRole === 'developer') onNavigate('course-management'); else onNavigate('my-courses') }
+                      const subjectCount = course.subjects?.length ?? 0
+                      const moduleCount = course.subjects?.reduce((acc: number, s: Subject) => acc + (s.modules?.length ?? 0), 0) ?? 0
+                      const activityCount = course.subjects?.reduce((acc: number, s: Subject) => acc + (s.modules?.filter((m: Module) => m.content_type === 'activity').length ?? 0), 0) ?? 0
                       return (
-                        <div
-                          key={course.id}
-                          onClick={handleCardClick}
-                          className={`group relative bg-white rounded-2xl shadow-sm border border-gray-200 transition-all duration-300 overflow-hidden flex flex-col flex-shrink-0 xl:flex-shrink snap-start ${isLocked ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:shadow-xl'}`}
-                          style={{ width: '75vw', maxWidth: '300px', height: '280px' }}
-                        >
-                          {isLocked && (
-                            <div className="absolute top-2 left-2 z-10">
-                              <div className="bg-gray-900/80 backdrop-blur-sm text-white px-3 py-1.5 rounded-full flex items-center space-x-2">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                </svg>
-                                <span className="text-xs font-semibold">Locked</span>
+                        <div key={course.id} onClick={handleClick} style={{ minWidth: '220px', maxWidth: '220px' }}
+                          className={`snap-start bg-white rounded-2xl overflow-hidden flex flex-col shadow-sm flex-shrink-0 transition-all duration-200 ${isLocked ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}`}>
+                          <div className="relative h-28 flex-shrink-0 rounded-xl overflow-hidden m-2">
+                            {course.thumbnail_url ? <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover" /> : (
+                              <div className="w-full h-full flex items-center justify-center" style={{ background: courseColor?.color_hex ? `linear-gradient(135deg, ${courseColor.color_hex} 0%, ${courseColor.color_hex}99 100%)` : 'linear-gradient(135deg, #0f4c5c 0%, #1f7a8c 100%)' }}>
+                                <svg className="w-10 h-10 text-white/60" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
                               </div>
-                            </div>
-                          )}
-                          {isStudentOrStudent && course.is_user_enrolled && (
-                            <div className="absolute top-2 left-2 z-10">
-                              <div className="bg-green-500/90 backdrop-blur-sm text-white px-3 py-1.5 rounded-full flex items-center space-x-2">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <span className="text-xs font-semibold">Enrolled</span>
-                              </div>
-                            </div>
-                          )}
-                          <div className="relative overflow-hidden flex-[2]">
-                            {course.thumbnail_url ? (
-                              <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="w-full h-full" style={{
-                                background: courseColor?.color_hex ? `linear-gradient(135deg, ${courseColor.color_hex}20 0%, ${courseColor.color_hex}10 100%)` : 'linear-gradient(135deg, #1f7a8c20 0%, #1f7a8c10 100%)'
-                              }} />
                             )}
+                            {isLocked && <div className="absolute top-2 left-2 bg-gray-900/75 text-white px-2 py-0.5 rounded-full flex items-center gap-1"><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg><span className="text-[10px] font-semibold">Locked</span></div>}
+                            {isStudent && course.is_user_enrolled && <div className="absolute top-2 left-2 bg-green-500/90 text-white px-2 py-0.5 rounded-full flex items-center gap-1"><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><span className="text-[10px] font-semibold">Enrolled</span></div>}
+                            {userRole === 'instructor' && course.is_user_enrolled && <div className="absolute top-2 left-2 bg-blue-500/90 text-white px-2 py-0.5 rounded-full flex items-center gap-1"><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><span className="text-[10px] font-semibold">Assigned</span></div>}
+                            <div className="absolute top-2 right-2"><span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-white/90 text-gray-700">{course.course_type === 'academic' ? 'Academic' : course.course_type === 'tesda' ? 'TESDA' : 'UpSkill'}</span></div>
                           </div>
-                          <div className="flex-[3] flex flex-col overflow-hidden">
-                            <div className="relative bg-white border-b border-gray-200 p-4">
-                              <h3 className="text-lg font-semibold text-black line-clamp-2">{course.title}</h3>
-                            </div>
-                            <div className="p-4 flex flex-col flex-1 overflow-hidden">
-                              {!(((userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student')) || userRole === 'scholar') && (
-                                <div className="flex flex-wrap gap-2 mb-4">
-                                  <span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${
-                                    course.status === 'active' ? 'bg-green-100 text-green-800' :
-                                    course.status === 'inactive' ? 'bg-red-100 text-red-800' :
-                                    'bg-yellow-100 text-yellow-800'
-                                  }`}>
-                                    <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
-                                      course.status === 'active' ? 'bg-green-600' :
-                                      course.status === 'inactive' ? 'bg-red-600' :
-                                      'bg-yellow-600'
-                                    }`} />
-                                    {course.status.charAt(0).toUpperCase() + course.status.slice(1)}
-                                  </span>
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                    {course.course_type === 'academic' ? 'Academic' : course.course_type === 'tesda' ? 'TESDA' : 'UpSkill'}
-                                  </span>
-                                  {enrollmentTypeBadges.map((badge, index) => (
-                                    <span key={index} className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${badge.color}`}>
-                                      {badge.text}
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
+                          <div className="px-3 pb-3 flex flex-col flex-1">
+                            <p className="text-sm font-bold text-gray-900 line-clamp-2 leading-snug mb-1">{course.title}</p>
+                            <p className="text-[11px] text-gray-400 mb-2">{course.total_enrollments ?? 0} enrolled</p>
+                            <div className="border-t border-gray-100 my-1.5" />
+                            <div className="flex items-center justify-between">
+                              <div className="flex flex-col items-center gap-0.5"><div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: '#fff3e0' }}><svg className="w-3.5 h-3.5" fill="none" stroke="#f97316" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg></div><span className="text-[9px] text-gray-500">{subjectCount}</span></div>
+                              <div className="flex flex-col items-center gap-0.5"><div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: '#e0f2fe' }}><svg className="w-3.5 h-3.5" fill="none" stroke="#0ea5e9" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg></div><span className="text-[9px] text-gray-500">{moduleCount}</span></div>
+                              <div className="flex flex-col items-center gap-0.5"><div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: '#ede9fe' }}><svg className="w-3.5 h-3.5" fill="none" stroke="#8b5cf6" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg></div><span className="text-[9px] text-gray-500">{activityCount}</span></div>
                             </div>
                           </div>
                         </div>
                       )
                     })}
-                    {(userRole === 'admin' || userRole === 'developer') && Array.from({ length: Math.max(0, 3 - Math.min(courses.length, 3)) }).map((_, index) => (
-                      <button
-                        key={`placeholder-${index}`}
-                        onClick={() => onNavigate('course-management')}
-                        className="relative bg-white rounded-2xl shadow-sm border-2 border-dashed border-gray-300 overflow-hidden flex flex-col hover:border-gray-400 hover:bg-gray-50 transition-all cursor-pointer flex-shrink-0 xl:flex-shrink snap-start"
-                        style={{ width: '75vw', maxWidth: '300px', minHeight: '200px' }}
-                      >
-                        <div className="relative overflow-hidden" style={{ height: '100px' }}>
-                          <div className="w-full h-full bg-gray-100" />
-                          <div className="absolute left-0 top-0 w-1 h-full bg-gray-300" />
-                        </div>
-                        <div className="p-6 flex flex-col flex-1 items-center justify-center">
-                          <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mb-4">
-                            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                            </svg>
-                          </div>
-                          <h3 className="text-sm font-semibold text-gray-400 mb-1">Add New Course</h3>
-                          <p className="text-xs text-gray-400 text-center">Create a new course to expand your curriculum</p>
-                        </div>
-                      </button>
-                    ))}
-                  </>
-                ) : (
-                  <>
-                    {(userRole === 'admin' || userRole === 'developer') && Array.from({ length: 3 }).map((_, index) => (
-                      <button
-                        key={`placeholder-${index}`}
-                        onClick={() => onNavigate('course-management')}
-                        className="relative bg-white rounded-2xl shadow-sm border-2 border-dashed border-gray-300 overflow-hidden flex flex-col hover:border-gray-400 hover:bg-gray-50 transition-all cursor-pointer flex-shrink-0 xl:flex-shrink snap-start"
-                        style={{ width: '75vw', maxWidth: '300px', minHeight: '200px' }}
-                      >
-                        <div className="relative overflow-hidden" style={{ height: '100px' }}>
-                          <div className="w-full h-full bg-gray-100" />
-                          <div className="absolute left-0 top-0 w-1 h-full bg-gray-300" />
-                        </div>
-                        <div className="p-6 flex flex-col flex-1 items-center justify-center">
-                          <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mb-4">
-                            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                            </svg>
-                          </div>
-                          <h3 className="text-sm font-semibold text-gray-400 mb-1">Add New Course</h3>
-                          <p className="text-xs text-gray-400 text-center">Create a new course to expand your curriculum</p>
-                        </div>
-                      </button>
-                    ))}
-                  </>
-                )}
-              </div>
-            </div>
+                    {list.length === 0 && <p className="text-sm text-gray-400 py-6">{emptyMsg}</p>}
+                  </div>
+                </div>
+              )
 
-            {/* Schedule Group - Tasks, Today's Events, Upcoming Schedule */}
+              const renderGrid = (list: typeof allCourses, emptyMsg: string) => (
+                <div className="hidden xl:grid xl:grid-cols-4 gap-4">
+                  {list.map((course) => {
+                    const courseColor = getCourseColor(course.id)
+                    const isStudent = userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student' || userRole === 'scholar'
+                    const isLocked = isStudent && !course.is_user_enrolled
+                    const handleClick = () => { if (isLocked) return; if (userRole === 'admin' || userRole === 'developer') onNavigate('course-management'); else onNavigate('my-courses') }
+                    const subjectCount = course.subjects?.length ?? 0
+                    const moduleCount = course.subjects?.reduce((acc: number, s: Subject) => acc + (s.modules?.length ?? 0), 0) ?? 0
+                    const activityCount = course.subjects?.reduce((acc: number, s: Subject) => acc + (s.modules?.filter((m: Module) => m.content_type === 'activity').length ?? 0), 0) ?? 0
+                    return (
+                      <div key={course.id} onClick={handleClick}
+                        className={`bg-white rounded-2xl overflow-hidden flex flex-col shadow-sm transition-all duration-200 ${isLocked ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer hover:shadow-lg'}`}>
+                        <div className="relative h-36 flex-shrink-0 rounded-xl overflow-hidden m-2">
+                          {course.thumbnail_url ? <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover" /> : (
+                            <div className="w-full h-full flex items-center justify-center" style={{ background: courseColor?.color_hex ? `linear-gradient(135deg, ${courseColor.color_hex} 0%, ${courseColor.color_hex}99 100%)` : 'linear-gradient(135deg, #0f4c5c 0%, #1f7a8c 100%)' }}>
+                              <svg className="w-12 h-12 text-white/60" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                            </div>
+                          )}
+                          {isLocked && <div className="absolute top-2 left-2 bg-gray-900/75 text-white px-2 py-1 rounded-full flex items-center gap-1"><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg><span className="text-[10px] font-semibold">Locked</span></div>}
+                          {isStudent && course.is_user_enrolled && <div className="absolute top-2 left-2 bg-green-500/90 text-white px-2 py-1 rounded-full flex items-center gap-1"><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><span className="text-[10px] font-semibold">Enrolled</span></div>}
+                          {userRole === 'instructor' && course.is_user_enrolled && <div className="absolute top-2 left-2 bg-blue-500/90 text-white px-2 py-1 rounded-full flex items-center gap-1"><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><span className="text-[10px] font-semibold">Assigned</span></div>}
+                          <div className="absolute top-2 right-2"><span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-white/90 text-gray-700">{course.course_type === 'academic' ? 'Academic' : course.course_type === 'tesda' ? 'TESDA' : 'UpSkill'}</span></div>
+                        </div>
+                        <div className="px-3 pb-3 flex flex-col flex-1">
+                          <p className="text-sm font-bold text-gray-900 line-clamp-2 leading-snug mb-1">{course.title}</p>
+                          <p className="text-[11px] text-gray-400 mb-2">{course.total_enrollments ?? 0} enrolled student{(course.total_enrollments ?? 0) !== 1 ? 's' : ''}</p>
+                          <div className="border-t border-gray-100 my-2" />
+                          <div className="flex items-center justify-between">
+                            <div className="flex flex-col items-center gap-1"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: '#fff3e0' }}><svg className="w-4 h-4" fill="none" stroke="#f97316" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg></div><span className="text-[10px] text-gray-500 font-medium">{subjectCount} Subjects</span></div>
+                            <div className="flex flex-col items-center gap-1"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: '#e0f2fe' }}><svg className="w-4 h-4" fill="none" stroke="#0ea5e9" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg></div><span className="text-[10px] text-gray-500 font-medium">{moduleCount} Modules</span></div>
+                            <div className="flex flex-col items-center gap-1"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: '#ede9fe' }}><svg className="w-4 h-4" fill="none" stroke="#8b5cf6" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg></div><span className="text-[10px] text-gray-500 font-medium">{activityCount} Activities</span></div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                  {list.length === 0 && <div className="col-span-4 py-10 text-center text-gray-400 text-sm">{emptyMsg}</div>}
+                </div>
+              )
+
+              return (
+                <>
+                  {isStudentOrInstructor && myCourses.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-bold text-gray-900 mb-3">{myLabel}</h3>
+                      {renderCarousel(myCourses, '')}
+                      {renderGrid(myCourses, '')}
+                    </div>
+                  )}
+                  <div className="bg-white rounded-xl p-4">
+                    {isStudentOrInstructor && <h3 className="text-sm font-bold text-gray-900 mb-3">Available Courses</h3>}
+                    {renderCarousel(otherCourses, 'No courses available.')}
+                    {renderGrid(otherCourses, 'No courses available.')}
+                  </div>
+                </>
+              )
+            })()}
+
+            {/* Mobile: schedule summary cards — all roles */}
+            {/* Admin/Developer: 2x2 grid with Recent Activity, Today's Events, Tasks, Upcoming */}
             {(userRole === 'admin' || userRole === 'developer') && (
-              <div className="rounded-xl p-4 border border-gray-200 bg-white space-y-4">
-                <h2 className="text-base font-bold text-black">Schedule</h2>
-              <div className="rounded-xl p-4 border border-gray-200 transition-all duration-300 shadow-sm" style={{ backgroundColor: '#FFFFFF' }}>
+              <div className="sm:hidden grid grid-cols-2 gap-3">
+                    {/* Recent Activity */}
+                    <button
+                      className="bg-white rounded-xl p-3 text-left shadow-sm"
+                      onClick={() => onNavigate('system-tracker')}
+                    >
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: '#e6f4f7' }}>
+                          <svg className="w-3 h-3" fill="none" stroke="#0f4c5c" strokeWidth={2} viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <span className="text-[10px] font-bold text-gray-900">Recent Activity</span>
+                      </div>
+                      <p className="text-[10px] text-gray-400 mt-1">Tap to view logs</p>
+                    </button>
+                    {/* Today's Events */}
+                    <button onClick={() => onNavigate('schedule')} className="bg-white rounded-xl p-3 text-left shadow-sm">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: '#e6f4f7' }}>
+                          <svg className="w-3 h-3" fill="none" stroke="#0f4c5c" strokeWidth={2} viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                        <span className="text-[10px] font-bold text-gray-900">Today's Events</span>
+                      </div>
+                      <p className="text-2xl font-bold text-gray-900">{getTodaysEvents().length}</p>
+                      <p className="text-[10px] text-gray-400">events</p>
+                    </button>
+                    {/* Tasks */}
+                    <div
+                      className="bg-white rounded-xl p-3 flex flex-col justify-between cursor-pointer shadow-sm"
+                      onClick={() => onNavigate('tasks')}
+                    >
+                      <div>
+                        <p className="text-[10px] font-bold text-gray-900 mb-1">Pending Tasks</p>
+                        <p className="text-2xl font-bold text-gray-900">
+                          {pendingTasks.pendingFeatureRequests + pendingTasks.ongoingFeatureRequests + pendingTasks.unenrolledtrainees + pendingTasks.bugReports + pendingTasks.passwordResets + pendingTasks.unassignedtrainees + pendingTasks.guestUsers}
+                        </p>
+                        <p className="text-[10px] text-gray-400">total items</p>
+                      </div>
+                    </div>
+                    {/* Upcoming Schedule */}
+                    <button onClick={() => onNavigate('schedule')} className="bg-white rounded-xl p-3 text-left shadow-sm">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: '#e6f4f7' }}>
+                          <svg className="w-3 h-3" fill="none" stroke="#0f4c5c" strokeWidth={2} viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <span className="text-[10px] font-bold text-gray-900">Upcoming</span>
+                      </div>
+                      <p className="text-2xl font-bold text-gray-900">{courseSchedules.length}</p>
+                      <p className="text-[10px] text-gray-400">scheduled</p>
+                    </button>
+              </div>
+            )}
+
+            {/* Mobile: Today's Events + Upcoming — for non-admin/developer roles */}
+            {!(userRole === 'admin' || userRole === 'developer') && (
+              <div className="sm:hidden grid grid-cols-2 gap-3">
+                <button onClick={() => onNavigate('schedule')} className="bg-white rounded-xl p-3 text-left shadow-sm">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: '#e6f4f7' }}>
+                      <svg className="w-3 h-3" fill="none" stroke="#0f4c5c" strokeWidth={2} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <span className="text-[10px] font-bold text-gray-900">Today's Events</span>
+                  </div>
+                  <p className="text-2xl font-bold text-gray-900">{getTodaysEvents().length}</p>
+                  <p className="text-[10px] text-gray-400">events</p>
+                </button>
+                <button onClick={() => onNavigate('schedule')} className="bg-white rounded-xl p-3 text-left shadow-sm">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: '#e6f4f7' }}>
+                      <svg className="w-3 h-3" fill="none" stroke="#0f4c5c" strokeWidth={2} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <span className="text-[10px] font-bold text-gray-900">Upcoming</span>
+                  </div>
+                  <p className="text-2xl font-bold text-gray-900">{courseSchedules.length}</p>
+                  <p className="text-[10px] text-gray-400">scheduled</p>
+                </button>
+              </div>
+            )}
+
+            {/* Schedule Group - Tasks (desktop only) */}
+            {(userRole === 'admin' || userRole === 'developer') && (
+              <div className="hidden sm:block rounded-xl p-4 bg-white space-y-4">
+              <div className="rounded-xl p-4 transition-all duration-300 shadow-sm" style={{ backgroundColor: '#FFFFFF' }}>
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center">
@@ -1698,24 +1792,17 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                     <div>
                       <h3 className="text-sm font-bold text-black">Tasks</h3>
                       <p className="text-xs text-black/70">Pending items</p>
-                      </div>
                     </div>
-                    <button 
-                      onClick={() => onNavigate('tasks')}
-                      className="text-gray-400 hover:text-black transition-colors"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
                   </div>
-                  {/* Mobile: compact total count only */}
-                  <div className="flex sm:hidden items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer" onClick={() => onNavigate('tasks')}>
-                    <span className="text-sm text-gray-600">Total pending items</span>
-                    <span className="inline-flex items-center justify-center w-7 h-7 text-sm font-bold text-white bg-black rounded-full">
-                      {pendingTasks.pendingFeatureRequests + pendingTasks.ongoingFeatureRequests + pendingTasks.unenrolledtrainees + pendingTasks.bugReports + pendingTasks.passwordResets + pendingTasks.unassignedtrainees + pendingTasks.guestUsers}
-                    </span>
-                  </div>
+                  <button 
+                    onClick={() => onNavigate('tasks')}
+                    className="text-gray-400 hover:text-black transition-colors"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
                   {/* Desktop: full items grid */}
                   <div className="hidden sm:grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <>
@@ -1731,7 +1818,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                               </svg>
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="text-sm font-semibold text-black">{pendingTasks.pendingFeatureRequests} Pending Request{pendingTasks.pendingFeatureRequests > 1 ? 's' : ''}</div>
+                              <div className="text-sm font-bold text-black">{pendingTasks.pendingFeatureRequests} Pending Request{pendingTasks.pendingFeatureRequests > 1 ? 's' : ''}</div>
                               <div className="text-xs text-gray-500 mt-0.5">Feature requests to review</div>
                             </div>
                             <div className="flex-shrink-0">
@@ -1754,7 +1841,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                               </svg>
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="text-sm font-semibold text-black">{pendingTasks.ongoingFeatureRequests} Ongoing Task{pendingTasks.ongoingFeatureRequests > 1 ? 's' : ''}</div>
+                              <div className="text-sm font-bold text-black">{pendingTasks.ongoingFeatureRequests} Ongoing Task{pendingTasks.ongoingFeatureRequests > 1 ? 's' : ''}</div>
                               <div className="text-xs text-gray-500 mt-0.5">In progress feature requests</div>
                             </div>
                             <div className="flex-shrink-0">
@@ -1777,7 +1864,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                               </svg>
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="text-sm font-semibold text-black">{pendingTasks.unenrolledtrainees} Unenrolled Student{pendingTasks.unenrolledtrainees > 1 ? 's' : ''}</div>
+                              <div className="text-sm font-bold text-black">{pendingTasks.unenrolledtrainees} Unenrolled Student{pendingTasks.unenrolledtrainees > 1 ? 's' : ''}</div>
                               <div className="text-xs text-gray-500 mt-0.5">JHS, SHS, College, TESDA Scholar</div>
                             </div>
                             <div className="flex-shrink-0">
@@ -1800,7 +1887,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                               </svg>
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="text-sm font-semibold text-black">{pendingTasks.bugReports} Bug Report{pendingTasks.bugReports > 1 ? 's' : ''}</div>
+                              <div className="text-sm font-bold text-black">{pendingTasks.bugReports} Bug Report{pendingTasks.bugReports > 1 ? 's' : ''}</div>
                               <div className="text-xs text-gray-500 mt-0.5">Reported bugs to fix</div>
                             </div>
                             <div className="flex-shrink-0">
@@ -1823,7 +1910,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                               </svg>
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="text-sm font-semibold text-black">{pendingTasks.passwordResets} Password Reset{pendingTasks.passwordResets > 1 ? 's' : ''}</div>
+                              <div className="text-sm font-bold text-black">{pendingTasks.passwordResets} Password Reset{pendingTasks.passwordResets > 1 ? 's' : ''}</div>
                               <div className="text-xs text-gray-500 mt-0.5">Pending password reset requests</div>
                             </div>
                             <div className="flex-shrink-0">
@@ -1846,7 +1933,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                               </svg>
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="text-sm font-semibold text-black">{pendingTasks.unassignedtrainees} Unassigned Instructor{pendingTasks.unassignedtrainees > 1 ? 's' : ''}</div>
+                              <div className="text-sm font-bold text-black">{pendingTasks.unassignedtrainees} Unassigned Instructor{pendingTasks.unassignedtrainees > 1 ? 's' : ''}</div>
                               <div className="text-xs text-gray-500 mt-0.5">Not assigned to any course</div>
                             </div>
                             <div className="flex-shrink-0">
@@ -1869,7 +1956,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                               </svg>
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="text-sm font-semibold text-black">{pendingTasks.guestUsers} Guest User{pendingTasks.guestUsers > 1 ? 's' : ''}</div>
+                              <div className="text-sm font-bold text-black">{pendingTasks.guestUsers} Guest User{pendingTasks.guestUsers > 1 ? 's' : ''}</div>
                               <div className="text-xs text-gray-500 mt-0.5">Need role assignment</div>
                             </div>
                             <div className="flex-shrink-0">
@@ -1882,14 +1969,14 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
                         {/* Placeholder items when all tasks are zero */}
                         {pendingTasks.unenrolledtrainees === 0 && (
-                          <div className="flex items-start space-x-2 p-3 bg-gray-50 rounded-lg border border-dashed border-gray-200 opacity-50">
+                          <div className="flex items-start space-x-2 p-3 bg-gray-50 rounded-lg border border-dashed border-gray-200">
                             <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-gray-100">
                               <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                               </svg>
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="text-sm font-semibold text-gray-400">Unenrolled Students</div>
+                              <div className="text-sm font-bold text-gray-400">Unenrolled Students</div>
                               <div className="text-xs text-gray-400 mt-0.5">All students enrolled</div>
                             </div>
                             <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-gray-400 bg-gray-100 rounded-full">0</span>
@@ -1897,14 +1984,14 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                         )}
 
                         {pendingTasks.unassignedtrainees === 0 && (
-                          <div className="flex items-start space-x-2 p-3 bg-gray-50 rounded-lg border border-dashed border-gray-200 opacity-50">
+                          <div className="flex items-start space-x-2 p-3 bg-gray-50 rounded-lg border border-dashed border-gray-200">
                             <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-gray-100">
                               <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                               </svg>
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="text-sm font-semibold text-gray-400">Unassigned Instructors</div>
+                              <div className="text-sm font-bold text-gray-400">Unassigned Instructors</div>
                               <div className="text-xs text-gray-400 mt-0.5">All instructors assigned</div>
                             </div>
                             <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-gray-400 bg-gray-100 rounded-full">0</span>
@@ -1912,14 +1999,14 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                         )}
 
                         {(userRole === 'admin' || userRole === 'developer') && pendingTasks.passwordResets === 0 && (
-                          <div className="flex items-start space-x-2 p-3 bg-gray-50 rounded-lg border border-dashed border-gray-200 opacity-50">
+                          <div className="flex items-start space-x-2 p-3 bg-gray-50 rounded-lg border border-dashed border-gray-200">
                             <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-gray-100">
                               <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                               </svg>
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="text-sm font-semibold text-gray-400">Password Resets</div>
+                              <div className="text-sm font-bold text-gray-400">Password Resets</div>
                               <div className="text-xs text-gray-400 mt-0.5">No pending requests</div>
                             </div>
                             <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-gray-400 bg-gray-100 rounded-full">0</span>
@@ -1927,14 +2014,14 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                         )}
 
                         {(userRole === 'admin' || userRole === 'developer') && pendingTasks.guestUsers === 0 && (
-                          <div className="flex items-start space-x-2 p-3 bg-gray-50 rounded-lg border border-dashed border-gray-200 opacity-50">
+                          <div className="flex items-start space-x-2 p-3 bg-gray-50 rounded-lg border border-dashed border-gray-200">
                             <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-gray-100">
                               <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                               </svg>
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="text-sm font-semibold text-gray-400">Guest Users</div>
+                              <div className="text-sm font-bold text-gray-400">Guest Users</div>
                               <div className="text-xs text-gray-400 mt-0.5">No guests awaiting role</div>
                             </div>
                             <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-gray-400 bg-gray-100 rounded-full">0</span>
@@ -1944,103 +2031,87 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                   </div>
               </div>
 
-            {/* Today's Events + Upcoming Schedule - 2-col grid */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 xl:gap-6">
-              {/* Today's Events - Admin/Developer */}
-              {(userRole === 'admin' || userRole === 'developer') && (
-                <div className="rounded-xl p-4 border border-gray-200 transition-all duration-300 xl:col-span-1 shadow-sm" style={{ backgroundColor: '#FFFFFF' }}>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center">
-                        <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-bold text-black">Today&apos;s Events</h3>
-                        <p className="text-xs text-black/70">{getTodaysEvents().length} scheduled</p>
-                      </div>
-                    </div>
-                    <button onClick={() => onNavigate('schedule')} className="text-gray-400 hover:text-black transition-colors">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
-                  </div>
-                  <div className="space-y-2">
-                    {getTodaysEvents().length > 0 ? (
-                      getTodaysEvents().slice(0, 3).map((schedule) => {
-                        const courseColor = getCourseColor(schedule.course_id)
-                        return (
-                          <div key={schedule.id} className="flex items-start space-x-2 p-2 bg-white rounded-lg border border-gray-200 transition-all">
-                            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: courseColor?.color_hex ? `${courseColor.color_hex}20` : '#BBF7D0' }}>
-                              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: courseColor?.color_hex || '#22C55E' }} />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="text-sm font-semibold text-black line-clamp-1">{schedule.title}</div>
-                              <div className="text-xs text-gray-600 mt-0.5">{schedule.course?.title}</div>
-                              <div className="text-xs text-gray-500 mt-1">{formatScheduleTime(schedule.start_date, schedule.end_date)}</div>
-                            </div>
-                          </div>
-                        )
-                      })
-                    ) : (
-                      <div className="text-center py-6">
-                        <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3" style={{ backgroundColor: '#0f4c5c' }}>
-                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                        </div>
-                        <p className="text-sm font-medium text-black">No events today</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Upcoming Schedule - Admin/Developer, 3rd column */}
-              {(userRole === 'admin' || userRole === 'developer') && (
-                <div className="rounded-xl p-4 border border-gray-200 transition-all duration-300 xl:col-span-1 cursor-pointer shadow-sm" style={{ backgroundColor: '#FFFFFF' }} onClick={() => onNavigate('schedule')}>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center">
-                        <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-bold text-black">Upcoming Schedule</h3>
-                        <p className="text-xs text-black/70">Next events</p>
-                      </div>
-                    </div>
-                    <button onClick={() => onNavigate('schedule')} className="text-gray-400 hover:text-black transition-colors">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
-                  </div>
-                  <UpcomingScheduleList />
-                </div>
-              )}
-
-            </div>
               </div>
             )}
 
             {/* System Overview - Only for Admin/Developer */}
             {(userRole === 'admin' || userRole === 'developer') && (
-            <div className="rounded-xl p-4 border border-gray-200 bg-white">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-base font-bold text-gray-900">System Overview</h2>
-                <div className="flex items-center space-x-2 text-sm text-gray-500">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span>Live Data</span>
-                </div>
+            <>
+              {/* Mobile: compact totals */}
+              <div className="sm:hidden grid grid-cols-2 gap-3">
+                <button
+                  className="bg-white rounded-xl shadow-sm p-4 flex items-center gap-3"
+                  onClick={() => onNavigate('course-management')}
+                >
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#0f4c5c' }}>
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                  </div>
+                  <div className="text-left">
+                    <p className="text-2xl font-bold text-gray-900">{stats.totalCourses}</p>
+                    <p className="text-xs text-gray-500 font-medium">Total Courses</p>
+                  </div>
+                </button>
+                <button
+                  className="bg-white rounded-xl shadow-sm p-4 flex items-center gap-3"
+                  onClick={() => onNavigate('user-management')}
+                >
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#0f4c5c' }}>
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </div>
+                  <div className="text-left">
+                    <p className="text-2xl font-bold text-gray-900">{stats.totalUsers}</p>
+                    <p className="text-xs text-gray-500 font-medium">Total Users</p>
+                  </div>
+                </button>
+                {/* All Users compact card */}
+                <button
+                  className="bg-white rounded-xl shadow-sm p-3 text-left"
+                  onClick={() => onNavigate('user-management')}
+                >
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: '#e6f4f7' }}>
+                      <svg className="w-3 h-3" fill="none" stroke="#0f4c5c" strokeWidth={2} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
+                    <span className="text-[10px] font-bold text-gray-900">All Users</span>
+                  </div>
+                  <p className="text-2xl font-bold text-gray-900">{stats.totalUsers}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="flex items-center gap-1 text-[10px] text-gray-400">
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
+                      {userStats.totalStudents} students
+                    </span>
+                    <span className="flex items-center gap-1 text-[10px] text-gray-400">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block" />
+                      {userStats.totalInstructors} instructors
+                    </span>
+                  </div>
+                </button>
+                {/* Recent Activity compact card */}
+                <button
+                  className="bg-white rounded-xl shadow-sm p-3 text-left"
+                  onClick={() => onNavigate('system-tracker')}
+                >
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: '#e6f4f7' }}>
+                      <svg className="w-3 h-3" fill="none" stroke="#0f4c5c" strokeWidth={2} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      </svg>
+                    </div>
+                    <span className="text-[10px] font-bold text-gray-900">Recent Activity</span>
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-1">Tap to view activity logs</p>
+                </button>
               </div>
-              
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Desktop: full cards */}
+              <div className="hidden sm:grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Courses Card - Redesigned */}
-                <div className="group relative bg-white rounded-2xl p-8 border border-gray-200 transition-all duration-300 overflow-hidden">
+                <div className="group relative bg-white rounded-2xl p-8 transition-all duration-300 overflow-hidden">
                   
                   {/* Header */}
                   <div className="flex items-center justify-between mb-8">
@@ -2148,7 +2219,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 </div>
 
                 {/* Users Card - Redesigned */}
-                <div className="group relative bg-white rounded-2xl p-8 border border-gray-200 transition-all duration-300 overflow-hidden">
+                <div className="group relative bg-white rounded-2xl p-8 transition-all duration-300 overflow-hidden">
 
                   {/* Header */}
                   <div className="flex items-center justify-between mb-6">
@@ -2210,80 +2281,8 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
                 </div>
               </div>
-            </div>
+            </>
             )}
-
-            {/* My Learning - For students and scholars */}
-            {(((userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student')) || userRole === 'scholar') && (
-            <div>
-              <div className="flex items-center justify-between mb-4 md:mb-6">
-                <h2 className="text-sm font-bold text-black">My Learning Progress</h2>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3 md:gap-4">
-                {/* Enrolled Courses */}
-                <div className="bg-white rounded-xl border border-gray-200 transition-all duration-300 flex flex-col shadow-sm">
-                  <div className="p-2.5 md:p-4 flex flex-col flex-1">
-                    <div className="flex items-center justify-between mb-2 md:mb-3">
-                      <span className="text-[10px] md:text-xs font-semibold text-gray-400 uppercase tracking-wide">Enrolled</span>
-                      <div className="w-7 h-7 md:w-9 md:h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#1f7a8c20' }}>
-                        <svg className="w-3.5 h-3.5 md:w-5 md:h-5" style={{ color: '#1f7a8c' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="mt-auto">
-                      <div className="text-2xl md:text-4xl font-bold text-gray-900">{stats.totalCourses}</div>
-                      <div className="text-xs text-gray-500 mt-0.5 md:mt-1">Courses</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Completed Lessons */}
-                <div className="bg-white rounded-xl border border-gray-200 transition-all duration-300 flex flex-col shadow-sm">
-                  <div className="p-2.5 md:p-4 flex flex-col flex-1">
-                    <div className="flex items-center justify-between mb-2 md:mb-3">
-                      <span className="text-[10px] md:text-xs font-semibold text-gray-400 uppercase tracking-wide">Completed</span>
-                      <div className="w-7 h-7 md:w-9 md:h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-emerald-50">
-                        <svg className="w-3.5 h-3.5 md:w-5 md:h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="mt-auto">
-                      <div className="text-2xl md:text-4xl font-bold text-gray-900">{stats.completedLessons}</div>
-                      <div className="text-xs text-gray-500 mt-0.5 md:mt-1">of {stats.totalLessons} lessons</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Overall Progress */}
-                <div className="bg-white rounded-xl border border-gray-200 transition-all duration-300 flex flex-col shadow-sm">
-                  <div className="p-2.5 md:p-4 flex flex-col flex-1">
-                    <div className="flex items-center justify-between mb-2 md:mb-3">
-                      <span className="text-[10px] md:text-xs font-semibold text-gray-400 uppercase tracking-wide">Progress</span>
-                      <div className="w-7 h-7 md:w-9 md:h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-violet-50">
-                        <svg className="w-3.5 h-3.5 md:w-5 md:h-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="mt-auto">
-                      <div className="text-2xl md:text-4xl font-bold text-gray-900">{getProgressPercentage(stats.completedLessons, stats.totalLessons)}%</div>
-                      <div className="mt-1.5 w-full bg-gray-100 rounded-full h-1.5">
-                        <div
-                          className="h-1.5 rounded-full bg-violet-500 transition-all duration-500"
-                          style={{ width: `${getProgressPercentage(stats.completedLessons, stats.totalLessons)}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            )}
-
-            {/* My Teaching Overview - For Instructors */}
             {userRole === 'instructor' && (
             <div>
               <div className="flex items-center justify-between mb-4 md:mb-6">
@@ -2292,7 +2291,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
               <div className="grid grid-cols-3 gap-3 md:gap-4">
                 {/* My Courses */}
-                <div className="bg-white rounded-xl border border-gray-200 transition-all duration-300 flex flex-col shadow-sm">
+                <div className="bg-white rounded-xl transition-all duration-300 flex flex-col shadow-sm">
                   <div className="p-2.5 md:p-4 flex flex-col flex-1">
                     <div className="flex items-center justify-between mb-2 md:mb-3">
                       <span className="text-[10px] md:text-xs font-semibold text-gray-400 uppercase tracking-wide">Courses</span>
@@ -2310,7 +2309,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 </div>
 
                 {/* Total Students */}
-                <div className="bg-white rounded-xl border border-gray-200 transition-all duration-300 flex flex-col shadow-sm">
+                <div className="bg-white rounded-xl transition-all duration-300 flex flex-col shadow-sm">
                   <div className="p-2.5 md:p-4 flex flex-col flex-1">
                     <div className="flex items-center justify-between mb-2 md:mb-3">
                       <span className="text-[10px] md:text-xs font-semibold text-gray-400 uppercase tracking-wide">Students</span>
@@ -2328,7 +2327,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 </div>
 
                 {/* Active Subjects */}
-                <div className="bg-white rounded-xl border border-gray-200 transition-all duration-300 flex flex-col shadow-sm">
+                <div className="bg-white rounded-xl transition-all duration-300 flex flex-col shadow-sm">
                   <div className="p-2.5 md:p-4 flex flex-col flex-1">
                     <div className="flex items-center justify-between mb-2 md:mb-3">
                       <span className="text-[10px] md:text-xs font-semibold text-gray-400 uppercase tracking-wide">Subjects</span>

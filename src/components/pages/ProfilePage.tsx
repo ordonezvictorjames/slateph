@@ -848,7 +848,7 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
   const bannerUrl = displayUser?.profile?.banner_url
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-100">
       {/* Profile Header with Banner */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto">

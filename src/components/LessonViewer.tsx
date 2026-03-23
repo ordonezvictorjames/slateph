@@ -249,7 +249,7 @@ export default function LessonViewer({ module, isOpen, onClose, inline = false }
         if (isSupabaseStorage) {
           if (module.content_type === 'slide_presentation') {
             // Use Microsoft Office Online Viewer for PowerPoint files (better slide navigation)
-            docEmbedUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(module.document_url)}`
+            docEmbedUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(module.document_url)}&action=embedview&wdAllowInteractivity=False&wdHideGridlines=True&wdHideHeaders=True&wdDownloadButton=False&wdInConfigurator=True`
           } else if (module.content_type === 'pdf_document') {
             // For PDFs, modify URL to force inline display instead of download
             // Add download parameter to control behavior
@@ -266,12 +266,14 @@ export default function LessonViewer({ module, isOpen, onClose, inline = false }
         }
 
         return (
-          <div className="w-full h-full">
+          <div className="w-full h-full relative">
             <iframe
               src={docEmbedUrl}
               className="w-full h-full border-0"
               title={module.title}
             />
+            {/* Block the bottom toolbar (download/print/fullscreen buttons) */}
+            <div className="absolute bottom-0 left-0 right-0 h-10 bg-[#1a1a1a] z-10 pointer-events-all" />
           </div>
         )
 

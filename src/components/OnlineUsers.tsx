@@ -226,7 +226,7 @@ export default function OnlineUsers({ onNavigateToProfile }: OnlineUsersProps = 
         </div>
         
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-medium text-gray-900 truncate">
+          <div className="text-sm font-bold text-gray-900 truncate">
             {u.first_name} {u.last_name}
             {u.id === user?.id && (
               <span className="ml-1 text-xs text-gray-500">(You)</span>
@@ -259,9 +259,10 @@ export default function OnlineUsers({ onNavigateToProfile }: OnlineUsersProps = 
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-3 border-b border-gray-200">
+      {/* Sticky header */}
+      <div className="sticky top-0 z-10 bg-white p-3 border-b border-gray-200">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-semibold text-gray-700">All Users</h3>
+          <h3 className="text-sm font-bold text-gray-700">All Users</h3>
           <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs font-semibold rounded-full">
             {totalUsers}
           </span>
@@ -277,42 +278,17 @@ export default function OnlineUsers({ onNavigateToProfile }: OnlineUsersProps = 
           </div>
         </div>
       </div>
-      
+
+      {/* Flat scrollable list: online first, then offline */}
       <div className="flex-1 overflow-y-auto scrollbar-autohide">
         {totalUsers === 0 ? (
-          <div className="p-4 text-center text-gray-500 text-sm">
-            No users found
-          </div>
+          <div className="p-4 text-center text-gray-500 text-sm">No users found</div>
         ) : (
-          <>
-            {/* Online Users Section */}
-            {onlineUsers.length > 0 && (
-              <div>
-                <div className="px-3 py-2 bg-green-50 border-b border-green-100">
-                  <h4 className="text-xs font-semibold text-green-800 uppercase tracking-wider">
-                    Online ({onlineUsers.length})
-                  </h4>
-                </div>
-                <div className="divide-y divide-gray-100">
-                  {onlineUsers.map((u) => renderUser(u, true))}
-                </div>
-              </div>
+          <div className="divide-y divide-gray-100">
+            {[...onlineUsers, ...offlineUsers].map((u) =>
+              renderUser(u, u.status === 'online')
             )}
-
-            {/* Offline Users Section */}
-            {offlineUsers.length > 0 && (
-              <div>
-                <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
-                  <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Offline ({offlineUsers.length})
-                  </h4>
-                </div>
-                <div className="divide-y divide-gray-100">
-                  {offlineUsers.map((u) => renderUser(u, false))}
-                </div>
-              </div>
-            )}
-          </>
+          </div>
         )}
       </div>
     </div>
