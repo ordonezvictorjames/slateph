@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -140,6 +140,8 @@ export default function CourseManagementPage() {
   const [trainees, settrainees] = useState<Array<{id: string, first_name: string, last_name: string, email: string, role: string}>>([])
   const [instructors, setInstructors] = useState<Array<{id: string, first_name: string, last_name: string, email: string}>>([])
   const [enrolledtrainees, setEnrolledtrainees] = useState<Array<{id: string, first_name: string, last_name: string, email: string, enrollment_id: string, enrolled_at: string, status: string}>>([])
+  const [courseEnrolledCount, setCourseEnrolledCount] = useState<number>(0)
+  const [courseInstructors, setCourseInstructors] = useState<Array<{id: string, first_name: string, last_name: string}>>([])
   const [availabletrainees, setAvailabletrainees] = useState<Array<{id: string, first_name: string, last_name: string, email: string, role: string}>>([])
   const [selectedtrainees, setSelectedtrainees] = useState<string[]>([])
   const [traineeRoleFilter, setTraineeRoleFilter] = useState<string>('all')
@@ -207,6 +209,9 @@ export default function CourseManagementPage() {
   
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const [expandedSubjects, setExpandedSubjects] = useState<Set<string>>(new Set())
+  const [subjectModules, setSubjectModules] = useState<Record<string, CourseModule[]>>({})
+  const [subjectModulesLoading, setSubjectModulesLoading] = useState<Set<string>>(new Set())
   const [uploadingFile, setUploadingFile] = useState(false)
   
   // Statistics state
@@ -470,6 +475,55 @@ export default function CourseManagementPage() {
     }
   }
 
+  const fetchCourseOverview = async (courseId: string) => {
+    try {
+      // Enrolled count
+      const { count } = await supabase
+        .from('course_enrollments')
+        .select('*', { count: 'exact', head: true })
+        .eq('course_id', courseId)
+      setCourseEnrolledCount(count || 0)
+
+      // Get unique instructor_ids from subjects
+      const { data: subjectData } = await supabase
+        .from('subjects')
+        .select('instructor_id')
+        .eq('course_id', courseId)
+        .not('instructor_id', 'is', null)
+
+      const uniqueIds = Array.from(new Set((subjectData || []).map((s: { instructor_id: string }) => s.instructor_id).filter(Boolean)))
+
+      setCourseInstructors(uniqueIds.map((id: unknown) => ({ id: id as string, first_name: '', last_name: '' })))
+    } catch (e) {
+      console.error('Error fetching course overview:', e)
+    }
+  }
+
+  const fetchAllModulesForCourse = async (courseId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('modules')
+        .select('*, subjects!inner(course_id)')
+        .eq('subjects.course_id', courseId)
+        .order('order_index', { ascending: true })
+
+      if (error) {
+        console.error('Error fetching all modules:', error)
+        return
+      }
+
+      // Group by subject_id and populate the accordion cache
+      const grouped: Record<string, CourseModule[]> = {}
+      for (const mod of (data || [])) {
+        if (!grouped[mod.subject_id]) grouped[mod.subject_id] = []
+        grouped[mod.subject_id].push(mod)
+      }
+      setSubjectModules(grouped)
+    } catch (error) {
+      console.error('Error fetching all modules:', error)
+    }
+  }
+
   const fetchModules = async (subjectId: string) => {
     try {
       const { data, error } = await supabase
@@ -484,6 +538,8 @@ export default function CourseManagementPage() {
       }
 
       setModules(data || [])
+      // Also keep the accordion cache in sync
+      setSubjectModules(prev => ({ ...prev, [subjectId]: data || [] }))
     } catch (error) {
       console.error('Error fetching modules:', error)
     }
@@ -824,14 +880,45 @@ export default function CourseManagementPage() {
   const handleCourseSelect = (course: Course) => {
     setSelectedCourse(course)
     setCurrentView('subjects')
+    setExpandedSubjects(new Set())
+    setSubjectModules({})
+    setCourseEnrolledCount(0)
+    setCourseInstructors([])
     fetchSubjects(course.id)
+    fetchAllModulesForCourse(course.id)
+    fetchCourseOverview(course.id)
   }
 
   const handleSubjectSelect = (subject: Subject) => {
     setSelectedSubject(subject)
-    setCurrentView('modules')
-    fetchModules(subject.id)
-    fetchResources(subject.id)
+    // No longer navigates to modules view — modules are shown inline in the accordion
+    // This is kept for setting context when opening add/edit module modals
+  }
+
+  const toggleSubjectExpand = async (subject: Subject) => {
+    const newExpanded = new Set(expandedSubjects)
+    if (newExpanded.has(subject.id)) {
+      newExpanded.delete(subject.id)
+    } else {
+      newExpanded.add(subject.id)
+      // Fetch modules for this subject if not already loaded
+      if (!subjectModules[subject.id]) {
+        setSubjectModulesLoading(prev => new Set(prev).add(subject.id))
+        try {
+          const { data, error } = await supabase
+            .from('modules')
+            .select('*')
+            .eq('subject_id', subject.id)
+            .order('order_index', { ascending: true })
+          if (!error) {
+            setSubjectModules(prev => ({ ...prev, [subject.id]: data || [] }))
+          }
+        } finally {
+          setSubjectModulesLoading(prev => { const s = new Set(prev); s.delete(subject.id); return s })
+        }
+      }
+    }
+    setExpandedSubjects(newExpanded)
   }
 
   const handleBackToCourses = () => {
@@ -1721,7 +1808,7 @@ export default function CourseManagementPage() {
   }
 
   const handleBackToModules = () => {
-    setCurrentView('modules')
+    setCurrentView('subjects')
     setSelectedModule(null)
   }
 
@@ -1989,14 +2076,14 @@ export default function CourseManagementPage() {
           </button>
         </>
       )}
-      {selectedSubject && (
+      {selectedSubject && currentView === 'lesson' && (
         <>
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
           <button
-            onClick={currentView === 'lesson' ? handleBackToModules : undefined}
-            className={`hover:text-gray-700 ${currentView === 'modules' ? 'text-black font-medium' : ''}`}
+            onClick={handleBackToModules}
+            className="hover:text-gray-700"
           >
             {selectedSubject.title}
           </button>
@@ -2215,120 +2302,29 @@ export default function CourseManagementPage() {
 
       {/* Subjects View */}
       {currentView === 'subjects' && selectedCourse && (
-        <div className="space-y-6">
-          {/* Welcome Banner */}
-          <div className="overflow-visible relative mb-6">
-            <div className="flex items-center justify-between">
-              <div className="z-10">
-                <h2 className="text-xl font-bold text-gray-900">
-                  {selectedCourse.title}
-                </h2>
-                <p className="text-sm text-gray-500 mt-0.5">
-                  Manage subjects and assign trainees
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* 70/30 layout: subjects list left, stats right */}
-          <div className="flex gap-4 items-stretch">
-
-            {/* Subjects List � 70% */}
-            <div className="flex-[7] min-w-0 flex flex-col">
-              {subjects.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                    <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No subjects yet</h3>
-                  <p className="text-gray-600 mb-4">Start building your course by adding subjects</p>
-                  <button
-                    onClick={() => setShowAddSubjectModal(true)}
-                    className="px-4 py-2 text-white rounded-lg transition-colors"
-                    style={{ backgroundColor: getButtonBg() }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
-                  >
-                    Add Subject
-                  </button>
-                </div>
+        <div className="space-y-4">
+          {/* Course Banner */}
+          <div className="rounded-2xl overflow-hidden border border-gray-200 shadow-sm">
+            <div className="relative h-52 w-full">
+              {selectedCourse.thumbnail_url ? (
+                <img src={selectedCourse.thumbnail_url} alt={selectedCourse.title} className="w-full h-full object-cover" />
               ) : (
-                <div className="p-3 h-full">
-                  <div className="space-y-2 overflow-y-auto" style={{ maxHeight: '480px' }}>
-                  {subjects.map((subject) => (
-                    <div key={subject.id} onClick={() => handleSubjectSelect(subject)} className="flex items-center gap-4 px-4 py-4 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors min-h-[120px] cursor-pointer">
-                      {/* Order number */}
-                      <span className="flex-shrink-0 text-xs font-bold text-gray-400 w-5 text-center">{subject.order_index}</span>
-                      {/* Image placeholder */}
-                      <div className="flex-shrink-0 w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center border border-gray-200 overflow-hidden">
-                        {subject.thumbnail_url ? (
-                          <img src={subject.thumbnail_url} alt={subject.title} className="w-full h-full object-cover" />
-                        ) : (
-                          <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                          </svg>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-base font-semibold text-gray-900 truncate">{subject.title}</p>
-                        <div className="flex items-center gap-1 mt-0.5">
-                          <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                          </svg>
-                          <span className={`text-sm ${subject.trainee_name === 'Unassigned' ? 'text-gray-400 italic' : 'text-gray-500'}`}>
-                            {subject.trainee_name}
-                          </span>
-                          {subject.online_class_link && (
-                            <>
-                              <span className="text-gray-300 mx-1">�</span>
-                              <a href={subject.online_class_link} target="_blank" rel="noopener noreferrer"
-                                className="text-xs text-blue-500 hover:underline" onClick={(e) => e.stopPropagation()}>
-                                Join class
-                              </a>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                      <span className={`flex-shrink-0 inline-flex items-center px-2.5 py-1 text-sm font-semibold rounded-full ${
-                        subject.status === 'active' ? 'bg-green-100 text-green-700' :
-                        subject.status === 'inactive' ? 'bg-red-100 text-red-700' :
-                        'bg-yellow-100 text-yellow-700'
-                      }`}>
-                        {subject.status.charAt(0).toUpperCase() + subject.status.slice(1)}
-                      </span>
-                      <div className="flex items-center gap-1.5 flex-shrink-0">
-                        <button onClick={(e) => { e.stopPropagation(); handleEditSubject(subject) }}
-                          className="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-colors" title="Edit">
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </button>
-                        <button onClick={(e) => { e.stopPropagation(); handleDeleteSubject(subject) }}
-                          className="p-1.5 bg-red-50 hover:bg-red-100 text-red-500 rounded-lg transition-colors" title="Delete">
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                  </div>
-                </div>
+                <div className="w-full h-full" style={{
+                  background: (() => { const c = getCourseColor(selectedCourse.id); return c?.color_hex ? `linear-gradient(135deg, ${c.color_hex}40 0%, ${c.color_hex}20 100%)` : 'linear-gradient(135deg, #1f7a8c30 0%, #1f7a8c10 100%)' })()
+                }} />
               )}
-            </div>
-
-            {/* Statistics Card � 30% */}
-            <div className="flex-[3] min-w-0 bg-white border border-gray-200 rounded-xl p-4 self-stretch">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-gray-700">Statistics</h3>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 p-4 flex items-end justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-white leading-tight">{selectedCourse.title}</h2>
+                  <p className="text-xs text-white/70 mt-0.5">{subjects.length} subject{subjects.length !== 1 ? 's' : ''}</p>
+                </div>
                 <button
                   onClick={() => setShowAddSubjectModal(true)}
-                  className="px-3 py-1.5 text-white rounded-lg transition-colors flex items-center gap-1.5 text-xs"
-                  style={{ backgroundColor: getButtonBg() }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
+                  className="px-3 py-1.5 text-white rounded-lg transition-colors flex items-center gap-1.5 text-xs font-medium"
+                  style={{ backgroundColor: '#1f7a8c' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1a6b7a'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#1f7a8c'}
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -2336,363 +2332,373 @@ export default function CourseManagementPage() {
                   Add Subject
                 </button>
               </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <div className="flex items-center gap-2">
-                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                    <span className="text-xs text-gray-600">Total</span>
-                  </div>
-                  <span className="text-lg font-bold text-gray-900">{subjects.length}</span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-green-200">
-                  <div className="flex items-center gap-2">
-                    <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span className="text-xs text-gray-600">Active</span>
-                  </div>
-                  <span className="text-lg font-bold text-green-700">{subjects.filter(s => s.status === 'active').length}</span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-yellow-200">
-                  <div className="flex items-center gap-2">
-                    <svg className="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span className="text-xs text-gray-600">Draft</span>
-                  </div>
-                  <span className="text-lg font-bold text-yellow-700">{subjects.filter(s => s.status === 'draft').length}</span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-red-200">
-                  <div className="flex items-center gap-2">
-                    <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span className="text-xs text-gray-600">Inactive</span>
-                  </div>
-                  <span className="text-lg font-bold text-red-700">{subjects.filter(s => s.status === 'inactive').length}</span>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      )}
-
-      {/* Modules View */}
-      {currentView === 'modules' && selectedSubject && (
-        <div className="space-y-6">
-          {/* Welcome Banner */}
-          <div className="overflow-visible relative mb-6">
-            <div className="flex items-center justify-between">
-              <div className="z-10">
-                <h2 className="text-xl font-bold text-gray-900">
-                  {selectedSubject.title}
-                </h2>
-                <p className="text-sm text-gray-500 mt-0.5">
-                  Create and organize learning modules
-                </p>
-              </div>
             </div>
           </div>
 
-          {/* Grid Layout: Module Cards + Sidebar */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Module Cards Container */}
-            <div className="lg:col-span-2">
-              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                {/* Statistics and Add Button - At the top */}
-                <div className="p-6 border-b border-gray-200 bg-gray-50">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">Module Statistics</h3>
-                    <button
-                      onClick={() => setShowAddModuleModal(true)}
-                      className="px-4 py-2 text-white rounded-lg transition-colors flex items-center gap-2"
-                      style={{ backgroundColor: getButtonBg() }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
+          <div className="flex flex-col lg:flex-row gap-4 lg:items-stretch">
+            {/* Left: Subjects list (70%) */}
+            <div className="w-full lg:flex-[7] lg:min-w-0 lg:flex lg:flex-col">
+              <div className="overflow-y-auto border border-gray-200 rounded-xl bg-white p-3 lg:flex-1">
+          {subjects.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="w-14 h-14 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+              </div>
+              <h3 className="text-base font-semibold text-gray-900 mb-1">No subjects yet</h3>
+              <p className="text-sm text-gray-500 mb-4">Start building your course by adding subjects</p>
+              <button
+                onClick={() => setShowAddSubjectModal(true)}
+                className="px-4 py-2 text-white rounded-lg text-sm transition-colors"
+                style={{ backgroundColor: '#1f7a8c' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1a6b7a'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#1f7a8c'}
+              >
+                Add Subject
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {subjects.map((subject, subjectIdx) => {
+                const isExpanded = expandedSubjects.has(subject.id)
+                const mods = subjectModules[subject.id] || []
+                const isLoadingMods = subjectModulesLoading.has(subject.id)
+                return (
+                  <div key={subject.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                    {/* Subject row */}
+                    <div
+                      className="flex items-center gap-2 px-3 py-2.5 cursor-pointer hover:bg-gray-50 transition-colors"
+                      onClick={() => toggleSubjectExpand(subject)}
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      <svg
+                        className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
+                        fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
-                      <span>Add Module</span>
-                    </button>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
-                      <div className="flex items-center gap-2">
-                        <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        <span className="text-xs text-gray-600">Total</span>
-                      </div>
-                      <span className="text-xl font-bold text-gray-900">{modules.length}</span>
-                    </div>
-
-                    <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-green-200">
-                      <div className="flex items-center gap-2">
-                        <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span className="text-xs text-gray-600">Active</span>
-                      </div>
-                      <span className="text-xl font-bold text-green-700">
-                        {modules.filter(m => 'status' in m && m.status === 'active').length}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-yellow-200">
-                      <div className="flex items-center gap-2">
-                        <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span className="text-xs text-gray-600">Draft</span>
-                      </div>
-                      <span className="text-xl font-bold text-yellow-700">
-                        {modules.filter(m => 'status' in m && m.status === 'draft').length}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-red-200">
-                      <div className="flex items-center gap-2">
-                        <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span className="text-xs text-gray-600">Inactive</span>
-                      </div>
-                      <span className="text-xl font-bold text-red-700">
-                        {modules.filter(m => 'status' in m && m.status === 'inactive').length}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Module Cards */}
-          <div className="p-4 sm:p-6">
-            {modules.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                  <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-medium text-black mb-2">No modules yet</h3>
-                <p className="text-gray-500 mb-4">Add modules to build your subject content</p>
-                <button 
-                  onClick={() => setShowAddModuleModal(true)}
-                  className="px-4 py-2 text-white rounded-lg transition-colors"
-                  style={{ backgroundColor: getButtonBg() }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = getButtonHoverBg()}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = getButtonBg()}
-                >
-                  Add Module
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-2 overflow-y-auto" style={{ maxHeight: '480px' }}>
-                {modules.map((module, index) => (
-                  <div
-                    key={module.id}
-                    onClick={() => handleStartLesson(module)}
-                    className="flex items-center gap-4 px-4 py-4 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors min-h-[88px] cursor-pointer"
-                  >
-                    {/* Order number */}
-                    <span className="flex-shrink-0 text-xs font-bold text-gray-400 w-5 text-center">{index + 1}</span>
-                    {/* Image placeholder */}
-                    <div className="flex-shrink-0 w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center border border-gray-200 overflow-hidden">
-                      {module.thumbnail_url ? (
-                        <img src={module.thumbnail_url} alt={module.title} className="w-full h-full object-cover" />
-                      ) : (
-                        getContentTypeIcon(module.content_type)
-                      )}
-                    </div>
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-900 truncate">{module.title}</p>
-                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                        {module.duration_minutes && (
-                          <div className="flex items-center gap-1 text-xs text-gray-500">
-                            <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <span className="flex-shrink-0 text-xs font-bold text-gray-400 w-4 text-center">{subject.order_index}</span>
+                      <div className="flex-shrink-0 w-8 h-8 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                        {subject.thumbnail_url ? (
+                          <img src={subject.thumbnail_url} alt={subject.title} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                             </svg>
-                            <span>{module.duration_minutes} min</span>
                           </div>
                         )}
-                        {'status' in module && module.status && (
-                          <span className={`inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full ${
-                            module.status === 'active' ? 'bg-green-100 text-green-700' :
-                            module.status === 'inactive' ? 'bg-red-100 text-red-700' :
-                            'bg-yellow-100 text-yellow-700'
-                          }`}>
-                            {module.status.charAt(0).toUpperCase() + module.status.slice(1)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 truncate">{subject.title}</p>
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <svg className="w-3 h-3 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                          <span className={`text-xs truncate ${subject.trainee_name === 'Unassigned' ? 'text-gray-400 italic' : 'text-gray-500'}`}>
+                            {subject.trainee_name}
                           </span>
-                        )}
-                      </div>
-                    </div>
-                    {/* Actions */}
-                    <div className="flex items-center gap-1.5 flex-shrink-0">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleEditModule(module) }}
-                        className="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-colors" title="Edit"
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleDeleteModule(module) }}
-                        className="p-1.5 bg-red-50 hover:bg-red-100 text-red-500 rounded-lg transition-colors" title="Delete"
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          </div>
-            </div>
-
-            {/* Sidebar Container */}
-            <div className="lg:col-span-1">
-              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden h-full">
-                <div className="p-6">
-                  {/* Resources Section */}
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-900 mb-3">Resources</h4>
-                    
-                    {/* Resources List - Show first */}
-                    <div className="space-y-2 mb-4">
-                      {resources.length === 0 ? (
-                        <p className="text-xs text-gray-500 italic">No resources added yet</p>
-                      ) : (
-                        resources.map((resource) => (
-                          <div
-                            key={resource.id}
-                            className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg group"
-                          >
-                            <a
-                              href={resource.resource_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-2 flex-1 min-w-0"
-                            >
-                              <svg className="w-4 h-4 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                              </svg>
-                              <div className="flex-1 min-w-0">
-                                <span className="text-sm text-blue-700 font-medium block truncate">{resource.title}</span>
-                                {resource.description && (
-                                  <span className="text-xs text-blue-600 block truncate">{resource.description}</span>
-                                )}
-                              </div>
-                              <svg className="w-3.5 h-3.5 text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                              </svg>
-                            </a>
-                            <button
-                              onClick={() => handleEditResource(resource)}
-                              className="p-1.5 text-gray-600 hover:bg-gray-100 rounded transition-colors flex-shrink-0"
-                              title="Edit resource"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                              </svg>
-                            </button>
-                            <button
-                              onClick={() => handleDeleteResource(resource.id)}
-                              className="p-1.5 text-red-600 hover:bg-red-100 rounded transition-colors flex-shrink-0"
-                              title="Delete resource"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            </button>
-                          </div>
-                        ))
-                      )}
-                    </div>
-
-                    {/* Add/Edit Resource Form - Show below resources */}
-                    <form onSubmit={editingResourceId ? handleUpdateResource : handleAddResource} className="space-y-3">
-                      <div className="text-xs font-semibold text-gray-700 mb-2">
-                        {editingResourceId ? 'Edit Resource' : 'Add New Resource'}
-                      </div>
-                      <div>
-                        <input
-                          type="text"
-                          placeholder="Resource title"
-                          value={newResourceTitle}
-                          onChange={(e) => setNewResourceTitle(e.target.value)}
-                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[primary-500] focus:border-[primary-500]"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <input
-                          type="url"
-                          placeholder="Resource URL"
-                          value={newResourceUrl}
-                          onChange={(e) => setNewResourceUrl(e.target.value)}
-                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[primary-500] focus:border-[primary-500]"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <input
-                          type="text"
-                          placeholder="Description (optional)"
-                          value={newResourceDescription}
-                          onChange={(e) => setNewResourceDescription(e.target.value)}
-                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[primary-500] focus:border-[primary-500]"
-                        />
-                      </div>
-                      <div className="flex gap-2">
-                        {editingResourceId && (
-                          <button
-                            type="button"
-                            onClick={handleCancelEdit}
-                            className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg transition-colors hover:bg-gray-300"
-                          >
-                            Cancel
-                          </button>
-                        )}
-                        <button
-                          type="submit"
-                          disabled={uploadingResource}
-                          className="flex-1 px-4 py-2 text-white rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                          style={{ backgroundColor: getButtonBg() }}
-                          onMouseEnter={(e) => !uploadingResource && (e.currentTarget.style.backgroundColor = getButtonHoverBg())}
-                          onMouseLeave={(e) => !uploadingResource && (e.currentTarget.style.backgroundColor = getButtonBg())}
-                        >
-                          {editingResourceId ? (
+                          {subject.online_class_link && (
                             <>
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                              <span>{uploadingResource ? 'Updating...' : 'Update Resource'}</span>
-                            </>
-                          ) : (
-                            <>
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                              </svg>
-                              <span>{uploadingResource ? 'Adding...' : 'Add Resource'}</span>
+                              <span className="text-gray-300 mx-1 hidden sm:inline">·</span>
+                              <a href={subject.online_class_link} target="_blank" rel="noopener noreferrer"
+                                className="text-xs text-blue-500 hover:underline hidden sm:inline" onClick={(e) => e.stopPropagation()}>
+                                Join class
+                              </a>
                             </>
                           )}
+                        </div>
+                      </div>
+                      <span className="hidden sm:inline-flex flex-shrink-0 text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                        {isExpanded ? `${mods.length} modules` : '...'}
+                      </span>
+                      <span className={`hidden sm:inline-flex flex-shrink-0 items-center px-2 py-0.5 text-xs font-semibold rounded-full ${
+                        subject.status === 'active' ? 'bg-green-100 text-green-700' :
+                        subject.status === 'inactive' ? 'bg-red-100 text-red-700' :
+                        'bg-yellow-100 text-yellow-700'
+                      }`}>
+                        {subject.status.charAt(0).toUpperCase() + subject.status.slice(1)}
+                      </span>
+                      <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                        <button onClick={() => handleEditSubject(subject)}
+                          className="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-colors" title="Edit">
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                        <button onClick={() => handleDeleteSubject(subject)}
+                          className="p-1.5 bg-red-50 hover:bg-red-100 text-red-500 rounded-lg transition-colors" title="Delete">
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
                         </button>
                       </div>
-                    </form>
+                    </div>
+
+                    {/* Expanded modules */}
+                    {isExpanded && (
+                      <div className="border-t border-gray-100 bg-gray-50 px-4 py-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Modules</span>
+                          <button
+                            onClick={() => { setSelectedSubject(subject); fetchResources(subject.id); setShowAddModuleModal(true) }}
+                            className="px-2.5 py-1 text-white rounded-lg text-xs flex items-center gap-1 transition-colors"
+                            style={{ backgroundColor: '#1f7a8c' }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1a6b7a'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#1f7a8c'}
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                            Add Module
+                          </button>
+                        </div>
+                        {isLoadingMods ? (
+                          <div className="py-4 flex justify-center">
+                            <svg className="w-5 h-5 text-gray-400 animate-spin" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                            </svg>
+                          </div>
+                        ) : mods.length === 0 ? (
+                          <p className="text-xs text-gray-400 italic py-2 text-center">No modules yet.</p>
+                        ) : (
+                          <div className="space-y-1.5">
+                            {mods.map((mod, idx) => (
+                              <div
+                                key={mod.id}
+                                className="flex items-center gap-3 px-3 py-2.5 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                                onClick={() => { setSelectedSubject(subject); handleStartLesson(mod) }}
+                              >
+                                <span className="text-xs font-bold text-gray-400 w-4 text-center flex-shrink-0">{String.fromCharCode(97 + idx)}</span>
+                                <div className="flex-shrink-0 w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center border border-gray-200 overflow-hidden">
+                                  {mod.thumbnail_url ? (
+                                    <img src={mod.thumbnail_url} alt={mod.title} className="w-full h-full object-cover" />
+                                  ) : (
+                                    <span className="text-gray-400">{getContentTypeIcon(mod.content_type)}</span>
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-semibold text-gray-900 truncate">{mod.title}</p>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    <span className="text-[10px] text-gray-400 capitalize">{mod.content_type.replace(/_/g, ' ')}</span>
+                                    {mod.duration_minutes ? <span className="text-[10px] text-gray-400">{mod.duration_minutes} min</span> : null}
+                                  </div>
+                                </div>
+                                {'status' in mod && mod.status && (
+                                  <span className={`flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                                    mod.status === 'active' ? 'bg-green-100 text-green-700' :
+                                    mod.status === 'inactive' ? 'bg-red-100 text-red-700' :
+                                    'bg-yellow-100 text-yellow-700'
+                                  }`}>
+                                    {mod.status.charAt(0).toUpperCase() + mod.status.slice(1)}
+                                  </span>
+                                )}
+                                <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                                  <button onClick={() => handleEditModule(mod)}
+                                    className="p-1 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded transition-colors" title="Edit">
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                  </button>
+                                  <button onClick={() => handleDeleteModule(mod)}
+                                    className="p-1 bg-red-50 hover:bg-red-100 text-red-500 rounded transition-colors" title="Delete">
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+              </div>{/* end scrollable container */}
+            </div>{/* end left 70% */}
+
+            {/* Right: Stats sidebar (30%) */}
+            <div className="w-full lg:flex-[3] lg:min-w-0">
+              {/* Enrolled Users & Instructors Card */}
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-4">
+                <div className="px-4 py-3 border-b border-gray-100">
+                  <span className="text-sm font-semibold text-gray-900">People</span>
+                </div>
+                <div className="divide-y divide-gray-100">
+                  {/* Enrolled users */}
+                  <div className="flex items-center gap-3 px-4 py-3">
+                    <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
+                      <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-gray-500">Enrolled Users</p>
+                      <p className="text-sm font-bold text-gray-900">{courseEnrolledCount}</p>
+                    </div>
+                  </div>
+                  {/* Instructors */}
+                  <div className="flex items-center gap-3 px-4 py-3">
+                    <div className="w-8 h-8 rounded-full bg-teal-50 flex items-center justify-center flex-shrink-0">
+                      <svg className="w-4 h-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-gray-500">Assigned Instructors</p>
+                      <p className="text-sm font-bold text-gray-900">{courseInstructors.length}</p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-100">
+                  <span className="text-sm font-semibold text-gray-900">Statistics</span>
+                </div>
+                <div className="divide-y divide-gray-100">
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <span className="text-sm text-gray-500">Total</span>
+                    <span className="text-sm font-bold text-gray-900">{subjects.length}</span>
+                  </div>
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <span className="text-sm text-green-600">Active</span>
+                    <span className="text-sm font-bold text-green-700">{subjects.filter(s => s.status === 'active').length}</span>
+                  </div>
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <span className="text-sm text-yellow-600">Draft</span>
+                    <span className="text-sm font-bold text-yellow-700">{subjects.filter(s => s.status === 'draft').length}</span>
+                  </div>
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <span className="text-sm text-red-500">Inactive</span>
+                    <span className="text-sm font-bold text-red-600">{subjects.filter(s => s.status === 'inactive').length}</span>
+                  </div>
+                </div>
+              </div>
+              {/* Course Info Card */}
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mt-4">
+                <div className="px-4 py-3 border-b border-gray-100">
+                  <span className="text-sm font-semibold text-gray-900">This course includes</span>
+                </div>
+                <div className="px-4 py-3 space-y-3">
+                  {/* Subjects count */}
+                  <div className="flex items-center gap-3">
+                    <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                    <span className="text-sm text-gray-600">{subjects.length} subject{subjects.length !== 1 ? 's' : ''}</span>
+                  </div>
+                  {/* Total modules loaded */}
+                  {(() => {
+                    const allMods = Object.values(subjectModules).flat()
+                    const totalMods = allMods.length
+                    const videoMods = allMods.filter(m => m.content_type === 'video').length
+                    const articleMods = allMods.filter(m => m.content_type === 'text').length
+                    const pdfMods = allMods.filter(m => m.content_type === 'pdf_document').length
+                    const slideMods = allMods.filter(m => m.content_type === 'slide_presentation' || m.content_type === 'canva_presentation').length
+                    const confMods = allMods.filter(m => m.content_type === 'online_conference').length
+                    const totalDuration = allMods.reduce((sum, m) => sum + (m.duration_minutes || 0), 0)
+                    return (
+                      <>
+                        {totalMods > 0 && (
+                          <div className="flex items-center gap-3">
+                            <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                            <span className="text-sm text-gray-600">{totalMods} module{totalMods !== 1 ? 's' : ''}</span>
+                          </div>
+                        )}
+                        {videoMods > 0 && (
+                          <div className="flex items-center gap-3">
+                            <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
+                            </svg>
+                            <span className="text-sm text-gray-600">{videoMods} video lesson{videoMods !== 1 ? 's' : ''}</span>
+                          </div>
+                        )}
+                        {articleMods > 0 && (
+                          <div className="flex items-center gap-3">
+                            <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <span className="text-sm text-gray-600">{articleMods} article{articleMods !== 1 ? 's' : ''}</span>
+                          </div>
+                        )}
+                        {pdfMods > 0 && (
+                          <div className="flex items-center gap-3">
+                            <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                            </svg>
+                            <span className="text-sm text-gray-600">{pdfMods} PDF document{pdfMods !== 1 ? 's' : ''}</span>
+                          </div>
+                        )}
+                        {slideMods > 0 && (
+                          <div className="flex items-center gap-3">
+                            <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                            </svg>
+                            <span className="text-sm text-gray-600">{slideMods} presentation{slideMods !== 1 ? 's' : ''}</span>
+                          </div>
+                        )}
+                        {confMods > 0 && (
+                          <div className="flex items-center gap-3">
+                            <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
+                            </svg>
+                            <span className="text-sm text-gray-600">{confMods} online session{confMods !== 1 ? 's' : ''}</span>
+                          </div>
+                        )}
+                        {totalDuration > 0 && (
+                          <div className="flex items-center gap-3">
+                            <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span className="text-sm text-gray-600">
+                              {totalDuration >= 60
+                                ? `${Math.floor(totalDuration / 60)}h ${totalDuration % 60 > 0 ? `${totalDuration % 60}m` : ''} total duration`.trim()
+                                : `${totalDuration} min total duration`}
+                            </span>
+                          </div>
+                        )}
+                      </>
+                    )
+                  })()}
+                  {/* Course type */}
+                  <div className="flex items-center gap-3">
+                    <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    <span className="text-sm text-gray-600 capitalize">{selectedCourse?.course_type?.replace(/_/g, ' ')} course</span>
+                  </div>
+                  {/* Enrollment type */}
+                  <div className="flex items-center gap-3">
+                    <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span className="text-sm text-gray-600 capitalize">{selectedCourse?.enrollment_type?.replace(/_/g, ' ')} enrollment</span>
+                  </div>
+                  {/* Activities — coming soon */}
+                  <div className="flex items-center gap-3 opacity-40">
+                    <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                    </svg>
+                    <span className="text-sm text-gray-400">Activities <span className="text-xs italic">(coming soon)</span></span>
+                  </div>
+                  {/* Badges — coming soon */}
+                  <div className="flex items-center gap-3 opacity-40">
+                    <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                    </svg>
+                    <span className="text-sm text-gray-400">Badges <span className="text-xs italic">(coming soon)</span></span>
+                  </div>
+                </div>
+              </div>
+            </div>{/* end right 30% */}
+          </div>{/* end flex container */}
         </div>
       )}
 

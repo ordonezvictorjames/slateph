@@ -458,8 +458,8 @@ export default function Sidebar({ currentPage, onPageChange, hideHamburger = fal
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-2 overflow-y-hidden flex flex-col justify-between">
-        <div className="space-y-1">
+      <nav className="flex-1 px-2 overflow-y-auto flex flex-col justify-between">
+        <div className="space-y-0.5">
           {visibleMenuGroups.map((group, groupIndex) => {
             const isCollapsed = collapsedGroups[group.title] || false
             
@@ -467,7 +467,7 @@ export default function Sidebar({ currentPage, onPageChange, hideHamburger = fal
               <div key={group.title}>
                 {/* Group Header */}
                 {(isHovered || isMobileOpen) && (
-                  <div className="w-full px-3 py-2 mb-1">
+                  <div className="w-full px-3 py-1 mb-0.5">
                     <h3 className="text-[8px] font-semibold text-black uppercase tracking-wider">
                       {group.title}
                     </h3>
@@ -475,7 +475,7 @@ export default function Sidebar({ currentPage, onPageChange, hideHamburger = fal
                 )}
                 
                 {/* Group Items */}
-                <ul className={(isHovered || isMobileOpen) ? 'space-y-1' : 'space-y-2'}>
+                <ul className={(isHovered || isMobileOpen) ? 'space-y-0.5' : 'space-y-1'}>
                     {group.items.map((item) => (
                       <li key={item.id}>
                         <button 
@@ -486,7 +486,7 @@ export default function Sidebar({ currentPage, onPageChange, hideHamburger = fal
                             }
                           }}
                           disabled={item.disabled}
-                          className={`w-full flex items-center ${(isHovered || isMobileOpen) ? 'px-3 py-2' : 'justify-center px-3 py-2'} ${
+                          className={`w-full flex items-center ${(isHovered || isMobileOpen) ? 'px-3 py-1.5' : 'justify-center px-3 py-2'} ${
                             item.disabled
                               ? 'cursor-not-allowed opacity-60'
                               : 'hover:opacity-80'
@@ -509,7 +509,7 @@ export default function Sidebar({ currentPage, onPageChange, hideHamburger = fal
                 
                 {/* Group Separator - only show between groups when hovered */}
                 {(isHovered || isMobileOpen) && groupIndex < visibleMenuGroups.length - 1 && (
-                  <div className="my-2 border-t border-gray-200"></div>
+                  <div className="my-1 border-t border-gray-200"></div>
                 )}
               </div>
             )
