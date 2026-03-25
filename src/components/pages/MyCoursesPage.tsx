@@ -256,7 +256,7 @@ export default function MyCoursesPage() {
 
       {/* Courses View — two-panel layout */}
       {currentView === 'courses' && (
-        <div className="flex flex-col lg:flex-row h-auto lg:h-[calc(100vh-160px)] gap-0 overflow-hidden rounded-2xl border border-gray-200 bg-white">
+        <div className="flex flex-col lg:flex-row h-auto lg:h-[calc(100vh-100px)] gap-0 overflow-hidden rounded-2xl border border-gray-200 bg-white">
 
           {/* Left Panel */}
           <div className={`w-full lg:w-[40%] flex-shrink-0 flex flex-col border-b lg:border-b-0 lg:border-r border-gray-200 ${previewCourse ? 'hidden lg:flex' : 'flex'}`} style={{ minHeight: 0 }}>
@@ -432,12 +432,14 @@ export default function MyCoursesPage() {
                 </div>
               </div>
             </div>
+            {isAdmin && (
             <div className="bg-white px-4 py-2 flex items-center gap-6 border-t border-gray-100">
               <span className="text-xs text-gray-500">{subjects.length} Total</span>
               <span className="text-xs text-green-600">{subjects.filter(s => s.status === 'active').length} Active</span>
               <span className="text-xs text-yellow-600">{subjects.filter(s => s.status === 'draft').length} Draft</span>
               <span className="text-xs text-red-500">{subjects.filter(s => s.status === 'inactive').length} Inactive</span>
             </div>
+            )}
           </div>
 
           <div className="flex flex-col lg:flex-row gap-4 lg:items-stretch">
@@ -573,6 +575,7 @@ export default function MyCoursesPage() {
                   </div>
                 </div>
               </div>
+              {isAdmin && (
               <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                 <div className="px-4 py-3 border-b border-gray-100"><span className="text-sm font-semibold text-gray-900">Statistics</span></div>
                 <div className="divide-y divide-gray-100">
@@ -580,6 +583,38 @@ export default function MyCoursesPage() {
                   <div className="flex items-center justify-between px-4 py-3"><span className="text-sm text-green-600">Active</span><span className="text-sm font-bold text-green-700">{subjects.filter(s => s.status === 'active').length}</span></div>
                   <div className="flex items-center justify-between px-4 py-3"><span className="text-sm text-yellow-600">Draft</span><span className="text-sm font-bold text-yellow-700">{subjects.filter(s => s.status === 'draft').length}</span></div>
                   <div className="flex items-center justify-between px-4 py-3"><span className="text-sm text-red-500">Inactive</span><span className="text-sm font-bold text-red-600">{subjects.filter(s => s.status === 'inactive').length}</span></div>
+                </div>
+              </div>
+              )}
+              {/* This course includes — visible to all roles */}
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-100"><span className="text-sm font-semibold text-gray-900">This course includes</span></div>
+                <div className="px-4 py-3 space-y-3">
+                  {(() => {
+                    const allMods = Object.values(subjectModules).flat()
+                    const totalMods = allMods.length
+                    const videoMods = allMods.filter(m => m.content_type === 'video').length
+                    const articleMods = allMods.filter(m => m.content_type === 'text').length
+                    const pdfMods = allMods.filter(m => m.content_type === 'pdf_document').length
+                    const slideMods = allMods.filter(m => m.content_type === 'slide_presentation' || m.content_type === 'canva_presentation').length
+                    const confMods = allMods.filter(m => m.content_type === 'online_conference').length
+                    const totalDuration = allMods.reduce((sum, m) => sum + (m.duration_minutes || 0), 0)
+                    return (
+                      <>
+                        <div className="flex items-center gap-3"><svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg><span className="text-sm text-gray-600">{subjects.length} subject{subjects.length !== 1 ? 's' : ''}</span></div>
+                        {totalMods > 0 && <div className="flex items-center gap-3"><svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg><span className="text-sm text-gray-600">{totalMods} module{totalMods !== 1 ? 's' : ''}</span></div>}
+                        {videoMods > 0 && <div className="flex items-center gap-3"><svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" /></svg><span className="text-sm text-gray-600">{videoMods} video lesson{videoMods !== 1 ? 's' : ''}</span></div>}
+                        {articleMods > 0 && <div className="flex items-center gap-3"><svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg><span className="text-sm text-gray-600">{articleMods} article{articleMods !== 1 ? 's' : ''}</span></div>}
+                        {pdfMods > 0 && <div className="flex items-center gap-3"><svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg><span className="text-sm text-gray-600">{pdfMods} PDF document{pdfMods !== 1 ? 's' : ''}</span></div>}
+                        {slideMods > 0 && <div className="flex items-center gap-3"><svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" /></svg><span className="text-sm text-gray-600">{slideMods} presentation{slideMods !== 1 ? 's' : ''}</span></div>}
+                        {confMods > 0 && <div className="flex items-center gap-3"><svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" /></svg><span className="text-sm text-gray-600">{confMods} online session{confMods !== 1 ? 's' : ''}</span></div>}
+                        {totalDuration > 0 && <div className="flex items-center gap-3"><svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><span className="text-sm text-gray-600">{totalDuration >= 60 ? `${Math.floor(totalDuration / 60)}h ${totalDuration % 60 > 0 ? `${totalDuration % 60}m` : ''}`.trim() : `${totalDuration} min total`}</span></div>}
+                        <div className="flex items-center gap-3"><svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg><span className="text-sm text-gray-600 capitalize">{selectedCourse?.course_type?.replace(/_/g, ' ')} course</span></div>
+                        <div className="flex items-center gap-3 opacity-40"><svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg><span className="text-sm text-gray-400">Activities <span className="text-xs italic">(coming soon)</span></span></div>
+                        <div className="flex items-center gap-3 opacity-40"><svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg><span className="text-sm text-gray-400">Badges <span className="text-xs italic">(coming soon)</span></span></div>
+                      </>
+                    )
+                  })()}
                 </div>
               </div>
             </div>

@@ -2179,13 +2179,13 @@ export default function CourseManagementPage() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-6 space-y-4">
 
-      {renderBreadcrumb()}
+      {currentView !== 'courses' && renderBreadcrumb()}
 
       {/* Courses View */}
       {currentView === 'courses' && (
-        <div className="flex flex-col lg:flex-row h-auto lg:h-[calc(100vh-120px)] gap-0 overflow-hidden rounded-2xl border border-gray-200 bg-white">
+        <div className="flex flex-col lg:flex-row h-auto lg:h-[calc(100vh-100px)] gap-0 overflow-hidden rounded-2xl border border-gray-200 bg-white">
 
           {/* Left Panel - Course List: full width on mobile, 40% on desktop */}
           <div className={`w-full lg:w-[40%] flex-shrink-0 flex flex-col border-b lg:border-b-0 lg:border-r border-gray-200 ${previewCourse ? 'hidden lg:flex' : 'flex'}`} style={{ minHeight: '0' }}>
