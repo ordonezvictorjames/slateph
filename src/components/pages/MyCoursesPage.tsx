@@ -73,6 +73,7 @@ export default function MyCoursesPage() {
   const [expandedSubjects, setExpandedSubjects] = useState<Set<string>>(new Set())
   const [subjectModules, setSubjectModules] = useState<Record<string, Module[]>>({})
   const [subjectModulesLoading, setSubjectModulesLoading] = useState<Set<string>>(new Set())
+  const [showActiveOnly, setShowActiveOnly] = useState(true)
 
   // Sidebar data
   const [courseEnrolledCount, setCourseEnrolledCount] = useState(0)
@@ -127,14 +128,13 @@ export default function MyCoursesPage() {
   }
 
   const fetchSubjects = async (courseId: string) => {
-    let query = supabase
+    // All roles see all subjects — access is controlled in the UI
+    const { data } = await supabase
       .from('subjects')
       .select('*, instructor:profiles(first_name, last_name)')
       .eq('course_id', courseId)
+      .order('order_index', { ascending: true })
 
-    if (isStudent) query = query.eq('status', 'active')
-
-    const { data } = await query.order('order_index', { ascending: true })
     const mapped = (data || []).map((s: Subject) => ({
       ...s,
       instructor_name: s.instructor ? `${s.instructor.first_name} ${s.instructor.last_name}` : 'Unassigned'
@@ -143,14 +143,12 @@ export default function MyCoursesPage() {
   }
 
   const fetchAllModulesForCourse = async (courseId: string) => {
-    let query = supabase
+    const { data } = await supabase
       .from('modules')
       .select('*, subjects!inner(course_id)')
       .eq('subjects.course_id', courseId)
+      .order('order_index', { ascending: true })
 
-    if (isStudent) query = (query as any).eq('status', 'active')
-
-    const { data } = await query.order('order_index', { ascending: true })
     const grouped: Record<string, Module[]> = {}
     for (const mod of (data || [])) {
       if (!grouped[mod.subject_id]) grouped[mod.subject_id] = []
@@ -200,6 +198,9 @@ export default function MyCoursesPage() {
   }
 
   const toggleSubjectExpand = async (subject: Subject) => {
+    // Non-admin/dev cannot access inactive or draft subjects
+    if (!isAdmin && subject.status !== 'active') return
+
     const newExpanded = new Set(expandedSubjects)
     if (newExpanded.has(subject.id)) {
       newExpanded.delete(subject.id)
@@ -207,9 +208,7 @@ export default function MyCoursesPage() {
       newExpanded.add(subject.id)
       if (!subjectModules[subject.id]) {
         setSubjectModulesLoading(prev => new Set(prev).add(subject.id))
-        let query = supabase.from('modules').select('*').eq('subject_id', subject.id)
-        if (isStudent) query = (query as any).eq('status', 'active')
-        const { data } = await query.order('order_index', { ascending: true })
+        const { data } = await supabase.from('modules').select('*').eq('subject_id', subject.id).order('order_index', { ascending: true })
         setSubjectModules(prev => ({ ...prev, [subject.id]: data || [] }))
         setSubjectModulesLoading(prev => { const s = new Set(prev); s.delete(subject.id); return s })
       }
@@ -365,8 +364,27 @@ export default function MyCoursesPage() {
           <div className="flex flex-col lg:flex-row gap-4 lg:items-stretch">
             {/* Left: Subjects accordion (70%) */}
             <div className="w-full lg:flex-[7] lg:min-w-0 lg:flex lg:flex-col">
-              <div className="overflow-y-auto border border-gray-200 rounded-xl bg-white p-3 lg:flex-1">
-                {subjects.length === 0 ? (
+              <div className="overflow-y-auto border border-gray-200 rounded-xl bg-white p-2 sm:p-3 lg:flex-1">
+                {/* Toggle */}
+                <div className="flex items-center gap-1 mb-3 p-1 bg-gray-100 rounded-lg w-fit">
+                  <button
+                    onClick={() => setShowActiveOnly(false)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${!showActiveOnly ? 'text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                    style={!showActiveOnly ? { backgroundColor: '#1f7a8c' } : {}}
+                  >
+                    All Subjects
+                  </button>
+                  <button
+                    onClick={() => setShowActiveOnly(true)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${showActiveOnly ? 'text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                    style={showActiveOnly ? { backgroundColor: '#1f7a8c' } : {}}
+                  >
+                    Active Only
+                  </button>
+                </div>
+                {(() => {
+                  const visibleSubjects = showActiveOnly ? subjects.filter(s => s.status === 'active') : subjects
+                  return visibleSubjects.length === 0 ? (
                   <div className="text-center py-16">
                     <svg className="w-10 h-10 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
@@ -374,28 +392,35 @@ export default function MyCoursesPage() {
                     <p className="text-sm text-gray-500">No subjects available</p>
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    {subjects.map((subject) => {
+                  <div className="space-y-2 overflow-y-auto" style={{ maxHeight: '70vh' }}>
+                    {visibleSubjects.map((subject) => {
                       const isExpanded = expandedSubjects.has(subject.id)
                       const mods = subjectModules[subject.id] || []
                       const isLoadingMods = subjectModulesLoading.has(subject.id)
+                      const isLocked = !isAdmin && subject.status !== 'active'
                       return (
-                        <div key={subject.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                        <div key={subject.id} className={`rounded-xl overflow-hidden bg-white ${isLocked ? 'opacity-60' : ''}`} style={{ border: '1.5px solid #e5e7eb' }}>
                           <div
-                            className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors"
-                            onClick={() => toggleSubjectExpand(subject)}
+                            className={`flex items-center gap-2 px-3 py-3 sm:px-4 sm:py-5 transition-colors ${isLocked ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-[#d0eaf0]/40'}`}
+                            onClick={() => !isLocked && toggleSubjectExpand(subject)}
                           >
-                            <svg className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
-                              fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
-                            <span className="flex-shrink-0 text-xs font-bold text-gray-400 w-5 text-center">{subject.order_index}</span>
-                            <div className="flex-shrink-0 w-10 h-10 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                            {isLocked ? (
+                              <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                              </svg>
+                            ) : (
+                              <svg className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
+                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                            )}
+                            <span className="flex-shrink-0 text-xs font-bold text-gray-400 w-4 text-center">{subject.order_index}</span>
+                            <div className="flex-shrink-0 w-10 h-10 sm:w-14 sm:h-14 bg-white/80 rounded-lg overflow-hidden border border-gray-200">
                               {subject.thumbnail_url ? (
                                 <img src={subject.thumbnail_url} alt={subject.title} className="w-full h-full object-cover" />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center">
-                                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                                   </svg>
                                 </div>
@@ -403,39 +428,34 @@ export default function MyCoursesPage() {
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-semibold text-gray-900 truncate">{subject.title}</p>
-                              <div className="flex items-center gap-1 mt-0.5">
+                              <div className="flex items-center gap-1 mt-0.5 min-w-0">
                                 <svg className="w-3 h-3 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                 </svg>
-                                <span className={`text-xs ${subject.instructor_name === 'Unassigned' ? 'text-gray-400 italic' : 'text-gray-500'}`}>
-                                  {subject.instructor_name}
-                                </span>
+                                <span className="text-xs text-gray-500 italic truncate">{subject.instructor_name}</span>
                                 {subject.online_class_link && (
-                                  <>
-                                    <span className="text-gray-300 mx-1">·</span>
-                                    <a href={subject.online_class_link} target="_blank" rel="noopener noreferrer"
-                                      className="text-xs text-blue-500 hover:underline" onClick={(e) => e.stopPropagation()}>
-                                      Join class
-                                    </a>
-                                  </>
+                                  <a href={subject.online_class_link} target="_blank" rel="noopener noreferrer"
+                                    className="hidden sm:inline text-xs text-[#00637C] hover:underline flex-shrink-0 ml-1" onClick={(e) => e.stopPropagation()}>
+                                    · Join class
+                                  </a>
                                 )}
                               </div>
                             </div>
-                            <span className="flex-shrink-0 text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-                              {isExpanded ? `${mods.length} modules` : '...'}
+                            {/* Module count — hidden on mobile to save space */}
+                            <span className="hidden sm:inline-flex flex-shrink-0 text-xs text-gray-500 bg-white/70 px-2 py-0.5 rounded-full border border-gray-200">
+                              {isExpanded ? `${mods.length} mod` : '...'}
                             </span>
-                            {!isStudent && (
-                              <span className={`flex-shrink-0 inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full ${
-                                subject.status === 'active' ? 'bg-green-100 text-green-700' :
-                                subject.status === 'inactive' ? 'bg-red-100 text-red-700' :
-                                'bg-yellow-100 text-yellow-700'
-                              }`}>
-                                {subject.status.charAt(0).toUpperCase() + subject.status.slice(1)}
-                              </span>
-                            )}
+                            {/* Status badge — hidden on mobile */}
+                            <span className={`hidden sm:inline-flex flex-shrink-0 items-center px-2 py-0.5 text-xs font-semibold rounded-full ${
+                              subject.status === 'active' ? 'bg-green-100 text-green-700' :
+                              subject.status === 'inactive' ? 'bg-red-100 text-red-700' :
+                              'bg-yellow-100 text-yellow-700'
+                            }`}>
+                              {subject.status.charAt(0).toUpperCase() + subject.status.slice(1)}
+                            </span>
                           </div>
                           {isExpanded && (
-                            <div className="border-t border-gray-100 bg-gray-50 px-4 py-3">
+                            <div className="border-t border-gray-100 bg-gray-50 px-2 py-2 sm:px-4 sm:py-3 overflow-hidden">
                               <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-2">Modules</span>
                               {isLoadingMods ? (
                                 <div className="py-4 flex justify-center">
@@ -451,11 +471,11 @@ export default function MyCoursesPage() {
                                   {mods.map((mod, idx) => (
                                     <div
                                       key={mod.id}
-                                      className="flex items-center gap-3 px-3 py-2.5 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                                      className="flex items-center gap-2 px-2 py-3 sm:px-3 sm:py-4 bg-white border border-[#1f7a8c]/40 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer overflow-hidden min-w-0"
                                       onClick={() => handleStartLesson(mod)}
                                     >
                                       <span className="text-xs font-bold text-gray-400 w-4 text-center flex-shrink-0">{String.fromCharCode(97 + idx)}</span>
-                                      <div className="flex-shrink-0 w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center border border-gray-200 overflow-hidden">
+                                      <div className="flex-shrink-0 w-9 h-9 sm:w-12 sm:h-12 bg-gray-100 rounded-lg flex items-center justify-center border border-gray-200 overflow-hidden">
                                         {mod.thumbnail_url ? (
                                           <img src={mod.thumbnail_url} alt={mod.title} className="w-full h-full object-cover" />
                                         ) : (
@@ -463,14 +483,11 @@ export default function MyCoursesPage() {
                                         )}
                                       </div>
                                       <div className="flex-1 min-w-0">
-                                        <p className="text-xs font-semibold text-gray-900 truncate">{mod.title}</p>
-                                        <div className="flex items-center gap-2 mt-0.5">
-                                          <span className="text-[10px] text-gray-400 capitalize">{mod.content_type.replace(/_/g, ' ')}</span>
-                                          {mod.duration_minutes ? <span className="text-[10px] text-gray-400">{mod.duration_minutes} min</span> : null}
-                                        </div>
+                                        <p className="text-xs font-semibold text-gray-900 break-words">{mod.title}</p>
+                                        <span className="text-[10px] text-gray-400 capitalize">{mod.content_type.replace(/_/g, ' ')}</span>
                                       </div>
                                       {!isStudent && mod.status && (
-                                        <span className={`flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                                        <span className={`hidden sm:inline-flex flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
                                           mod.status === 'active' ? 'bg-green-100 text-green-700' :
                                           mod.status === 'inactive' ? 'bg-red-100 text-red-700' :
                                           'bg-yellow-100 text-yellow-700'
@@ -478,7 +495,7 @@ export default function MyCoursesPage() {
                                           {mod.status.charAt(0).toUpperCase() + mod.status.slice(1)}
                                         </span>
                                       )}
-                                      <svg className="w-4 h-4 text-gray-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <svg className="w-4 h-4 text-[#1f7a8c] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                       </svg>
                                     </div>
@@ -491,7 +508,8 @@ export default function MyCoursesPage() {
                       )
                     })}
                   </div>
-                )}
+                )
+                })()}
               </div>
             </div>
 

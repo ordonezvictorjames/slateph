@@ -2338,7 +2338,7 @@ export default function CourseManagementPage() {
           <div className="flex flex-col lg:flex-row gap-4 lg:items-stretch">
             {/* Left: Subjects list (70%) */}
             <div className="w-full lg:flex-[7] lg:min-w-0 lg:flex lg:flex-col">
-              <div className="overflow-y-auto border border-gray-200 rounded-xl bg-white p-3 lg:flex-1">
+              <div className="overflow-y-auto border border-gray-200 rounded-xl bg-white p-2 sm:p-3 lg:flex-1">
           {subjects.length === 0 ? (
             <div className="text-center py-16">
               <div className="w-14 h-14 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
@@ -2359,16 +2359,16 @@ export default function CourseManagementPage() {
               </button>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2 overflow-y-auto" style={{ maxHeight: '70vh' }}>
               {subjects.map((subject, subjectIdx) => {
                 const isExpanded = expandedSubjects.has(subject.id)
                 const mods = subjectModules[subject.id] || []
                 const isLoadingMods = subjectModulesLoading.has(subject.id)
                 return (
-                  <div key={subject.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                  <div key={subject.id} className="rounded-xl overflow-hidden bg-white" style={{ border: '1.5px solid #e5e7eb' }}>
                     {/* Subject row */}
                     <div
-                      className="flex items-center gap-2 px-3 py-2.5 cursor-pointer hover:bg-gray-50 transition-colors"
+                      className="flex items-center gap-2 px-3 py-3 sm:py-5 cursor-pointer hover:bg-[#d0eaf0]/40 transition-all"
                       onClick={() => toggleSubjectExpand(subject)}
                     >
                       <svg
@@ -2378,12 +2378,12 @@ export default function CourseManagementPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                       <span className="flex-shrink-0 text-xs font-bold text-gray-400 w-4 text-center">{subject.order_index}</span>
-                      <div className="flex-shrink-0 w-8 h-8 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                      <div className="flex-shrink-0 w-10 h-10 sm:w-14 sm:h-14 bg-white/80 rounded-lg overflow-hidden border border-gray-200">
                         {subject.thumbnail_url ? (
                           <img src={subject.thumbnail_url} alt={subject.title} className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
-                            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-4 h-4 sm:w-6 sm:h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                             </svg>
                           </div>
@@ -2391,26 +2391,21 @@ export default function CourseManagementPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-gray-900 truncate">{subject.title}</p>
-                        <div className="flex items-center gap-1 mt-0.5">
+                        <div className="flex items-center gap-1 mt-0.5 min-w-0">
                           <svg className="w-3 h-3 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                           </svg>
-                          <span className={`text-xs truncate ${subject.trainee_name === 'Unassigned' ? 'text-gray-400 italic' : 'text-gray-500'}`}>
-                            {subject.trainee_name}
-                          </span>
+                          <span className="text-xs text-gray-500 italic truncate">{subject.trainee_name}</span>
                           {subject.online_class_link && (
-                            <>
-                              <span className="text-gray-300 mx-1 hidden sm:inline">·</span>
-                              <a href={subject.online_class_link} target="_blank" rel="noopener noreferrer"
-                                className="text-xs text-blue-500 hover:underline hidden sm:inline" onClick={(e) => e.stopPropagation()}>
-                                Join class
-                              </a>
-                            </>
+                            <a href={subject.online_class_link} target="_blank" rel="noopener noreferrer"
+                              className="hidden sm:inline text-xs text-[#00637C] hover:underline flex-shrink-0 ml-1" onClick={(e) => e.stopPropagation()}>
+                              · Join class
+                            </a>
                           )}
                         </div>
                       </div>
-                      <span className="hidden sm:inline-flex flex-shrink-0 text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-                        {isExpanded ? `${mods.length} modules` : '...'}
+                      <span className="hidden sm:inline-flex flex-shrink-0 text-xs text-gray-500 bg-white/70 px-2 py-0.5 rounded-full border border-gray-200">
+                        {isExpanded ? `${mods.length} mod` : '...'}
                       </span>
                       <span className={`hidden sm:inline-flex flex-shrink-0 items-center px-2 py-0.5 text-xs font-semibold rounded-full ${
                         subject.status === 'active' ? 'bg-green-100 text-green-700' :
@@ -2421,7 +2416,7 @@ export default function CourseManagementPage() {
                       </span>
                       <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                         <button onClick={() => handleEditSubject(subject)}
-                          className="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-colors" title="Edit">
+                          className="p-1.5 bg-white/70 hover:bg-white text-gray-600 rounded-lg transition-colors border border-gray-200" title="Edit">
                           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                           </svg>
@@ -2437,7 +2432,7 @@ export default function CourseManagementPage() {
 
                     {/* Expanded modules */}
                     {isExpanded && (
-                      <div className="border-t border-gray-100 bg-gray-50 px-4 py-3">
+                      <div className="border-t border-gray-100 bg-gray-50 px-2 py-2 sm:px-4 sm:py-3 overflow-hidden">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Modules</span>
                           <button
@@ -2467,11 +2462,11 @@ export default function CourseManagementPage() {
                             {mods.map((mod, idx) => (
                               <div
                                 key={mod.id}
-                                className="flex items-center gap-3 px-3 py-2.5 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                                className="flex items-center gap-2 px-2 py-3 sm:px-3 sm:py-4 bg-white border border-[#1f7a8c]/40 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer overflow-hidden min-w-0"
                                 onClick={() => { setSelectedSubject(subject); handleStartLesson(mod) }}
                               >
                                 <span className="text-xs font-bold text-gray-400 w-4 text-center flex-shrink-0">{String.fromCharCode(97 + idx)}</span>
-                                <div className="flex-shrink-0 w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center border border-gray-200 overflow-hidden">
+                                <div className="flex-shrink-0 w-9 h-9 sm:w-12 sm:h-12 bg-gray-100 rounded-lg flex items-center justify-center border border-gray-200 overflow-hidden">
                                   {mod.thumbnail_url ? (
                                     <img src={mod.thumbnail_url} alt={mod.title} className="w-full h-full object-cover" />
                                   ) : (
@@ -2479,14 +2474,11 @@ export default function CourseManagementPage() {
                                   )}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-semibold text-gray-900 truncate">{mod.title}</p>
-                                  <div className="flex items-center gap-2 mt-0.5">
-                                    <span className="text-[10px] text-gray-400 capitalize">{mod.content_type.replace(/_/g, ' ')}</span>
-                                    {mod.duration_minutes ? <span className="text-[10px] text-gray-400">{mod.duration_minutes} min</span> : null}
-                                  </div>
+                                  <p className="text-xs font-semibold text-gray-900 break-words">{mod.title}</p>
+                                  <span className="text-[10px] text-gray-400 capitalize">{mod.content_type.replace(/_/g, ' ')}</span>
                                 </div>
                                 {'status' in mod && mod.status && (
-                                  <span className={`flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                                  <span className={`hidden sm:inline-flex flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
                                     mod.status === 'active' ? 'bg-green-100 text-green-700' :
                                     mod.status === 'inactive' ? 'bg-red-100 text-red-700' :
                                     'bg-yellow-100 text-yellow-700'
