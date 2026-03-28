@@ -468,17 +468,17 @@ export default function MyCoursesPage() {
                         const isLocked = !isAdmin && subject.status !== 'active'
                         const isHighlighted = highlightedSubjectId === subject.id
                         return (
-                          <div key={subject.id} className="rounded-xl" style={{ border: isHighlighted ? '1.5px solid #1f7a8c' : '1.5px solid #e5e7eb', backgroundColor: '#ffffff' }}>
+                          <div key={subject.id} className="rounded-xl border border-gray-200 bg-white">
                             <div
-                              className={`flex items-center gap-2 px-3 py-3 sm:py-5 transition-colors ${isLocked ? 'cursor-not-allowed opacity-60' : isHighlighted ? 'cursor-pointer hover:bg-[#e6f4f7]' : 'cursor-pointer hover:bg-[#d0eaf0]/40'}`}
+                              className={`flex items-center gap-2 px-3 py-3 sm:py-5 transition-colors ${isLocked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-gray-50'}`}
                               onClick={() => !isLocked && toggleSubjectExpand(subject)}
                             >
                               {isLocked ? (
                                 <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
                               ) : (
-                                <svg className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''} ${isHighlighted ? 'text-[#1f7a8c]' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                                <svg className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''} text-gray-400`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                               )}
-                              <span className={`flex-shrink-0 text-xs font-bold w-4 text-center ${isHighlighted ? 'text-[#1f7a8c]' : 'text-gray-400'}`}>{subject.order_index}</span>
+                              <span className="flex-shrink-0 text-xs font-bold w-4 text-center text-gray-400">{subject.order_index}</span>
                               <div className="flex-shrink-0 w-10 h-10 sm:w-14 sm:h-14 bg-white/80 rounded-lg overflow-hidden border border-gray-200">
                                 {subject.thumbnail_url ? (
                                   <img src={subject.thumbnail_url} alt={subject.title} className="w-full h-full object-cover" />
@@ -489,7 +489,7 @@ export default function MyCoursesPage() {
                                 )}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className={`text-sm font-semibold truncate ${isHighlighted ? 'text-[#1f7a8c]' : 'text-gray-900'}`}>{subject.title}</p>
+                                <p className="text-sm font-semibold truncate text-gray-900">{subject.title}</p>
                                 <div className="flex items-center gap-1 mt-0.5 min-w-0">
                                   <svg className="w-3 h-3 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                                   <span className="text-xs text-gray-500 italic truncate">{subject.instructor_name}</span>
@@ -511,7 +511,7 @@ export default function MyCoursesPage() {
                               <div className="border-t border-gray-100 bg-gray-50 px-2 py-2 sm:px-4 sm:py-3 rounded-b-xl">
                                 <div className="flex items-center justify-between mb-2">
                                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Modules</span>
-                                  <span className={`inline-flex text-xs px-2 py-0.5 rounded-full border ${isHighlighted ? 'text-[#1f7a8c] bg-[#e6f4f7] border-[#1f7a8c]/30' : 'text-gray-500 bg-white border-gray-200'}`}>
+                                  <span className="inline-flex text-xs px-2 py-0.5 rounded-full border text-gray-500 bg-white border-gray-200">
                                     {mods.length} module{mods.length !== 1 ? 's' : ''}
                                   </span>
                                 </div>

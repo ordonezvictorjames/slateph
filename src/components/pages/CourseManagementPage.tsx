@@ -2381,19 +2381,19 @@ export default function CourseManagementPage() {
                 const mods = subjectModules[subject.id] || []
                 const isLoadingMods = subjectModulesLoading.has(subject.id)
                 return (
-                  <div key={subject.id} className="rounded-xl" style={{ border: highlightedSubjectId === subject.id ? '1.5px solid #1f7a8c' : '1.5px solid #e5e7eb', backgroundColor: '#ffffff' }}>
+                  <div key={subject.id} className="rounded-xl border border-gray-200 bg-white">
                     {/* Subject row */}
                     <div
-                      className={`flex items-center gap-2 px-3 py-3 sm:py-5 cursor-pointer transition-all ${highlightedSubjectId === subject.id ? 'hover:bg-[#e6f4f7]' : 'hover:bg-[#d0eaf0]/40'}`}
+                      className="flex items-center gap-2 px-3 py-3 sm:py-5 cursor-pointer transition-all hover:bg-gray-50"
                       onClick={() => toggleSubjectExpand(subject)}
                     >
                       <svg
-                        className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''} ${highlightedSubjectId === subject.id ? 'text-[#1f7a8c]' : 'text-gray-400'}`}
+                        className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''} text-gray-400`}
                         fill="none" stroke="currentColor" viewBox="0 0 24 24"
                       >
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
-                      <span className={`flex-shrink-0 text-xs font-bold w-4 text-center ${highlightedSubjectId === subject.id ? 'text-[#1f7a8c]' : 'text-gray-400'}`}>{subject.order_index}</span>
+                      <span className="flex-shrink-0 text-xs font-bold w-4 text-center text-gray-400">{subject.order_index}</span>
                       <div className="flex-shrink-0 w-10 h-10 sm:w-14 sm:h-14 bg-white/80 rounded-lg overflow-hidden border border-gray-200">
                         {subject.thumbnail_url ? (
                           <img src={subject.thumbnail_url} alt={subject.title} className="w-full h-full object-cover" />
@@ -2406,7 +2406,7 @@ export default function CourseManagementPage() {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-semibold truncate ${highlightedSubjectId === subject.id ? 'text-[#1f7a8c]' : 'text-gray-900'}`}>{subject.title}</p>
+                        <p className="text-sm font-semibold truncate text-gray-900">{subject.title}</p>
                         <div className="flex items-center gap-1 mt-0.5 min-w-0">
                           <svg className="w-3 h-3 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -2498,7 +2498,7 @@ export default function CourseManagementPage() {
                       <div className="border-t border-gray-100 bg-gray-50 px-2 py-2 sm:px-4 sm:py-3 rounded-b-xl">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Modules</span>
-                          <span className={`inline-flex text-xs px-2 py-0.5 rounded-full border ${highlightedSubjectId === subject.id ? 'text-[#1f7a8c] bg-[#e6f4f7] border-[#1f7a8c]/30' : 'text-gray-500 bg-white border-gray-200'}`}>
+                          <span className="inline-flex text-xs px-2 py-0.5 rounded-full border text-gray-500 bg-white border-gray-200">
                             {mods.length} module{mods.length !== 1 ? 's' : ''}
                           </span>
                         </div>
@@ -2516,7 +2516,7 @@ export default function CourseManagementPage() {
                             {mods.map((mod, idx) => (
                               <div
                                 key={mod.id}
-                                className="flex items-center gap-2 px-2 py-3 sm:px-3 sm:py-4 bg-white border border-[#1f7a8c]/40 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer overflow-hidden min-w-0"
+                                className="flex items-center gap-2 px-2 py-3 sm:px-3 sm:py-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer overflow-hidden min-w-0"
                                 onClick={() => { setSelectedSubject(subject); handleStartLesson(mod) }}
                               >
                                 <span className="text-xs font-bold text-gray-400 w-4 text-center flex-shrink-0">{String.fromCharCode(97 + idx)}</span>

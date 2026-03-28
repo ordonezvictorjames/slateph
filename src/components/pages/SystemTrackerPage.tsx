@@ -55,7 +55,7 @@ export default function SystemTrackerPage() {
       }
 
       // Collect unique user IDs then fetch profiles in one query
-      const userIds = [...new Set((logs || []).map((l: any) => l.user_id).filter(Boolean))]
+      const userIds = Array.from(new Set<string>((logs || []).map((l: any) => l.user_id).filter(Boolean)))
       let profileMap: Record<string, any> = {}
 
       if (userIds.length > 0) {
