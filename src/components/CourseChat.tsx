@@ -72,15 +72,6 @@ export default function CourseChat({ isOpen, onClose, onNavigateToProfile }: Cou
   useEffect(() => {
     if (selectedCourse) {
       loadMessages()
-      
-      // Refresh messages every second for real-time updates
-      const messageRefreshInterval = setInterval(() => {
-        loadMessages()
-      }, 1000)
-
-      return () => {
-        clearInterval(messageRefreshInterval)
-      }
     }
   }, [selectedCourse])
 
@@ -169,62 +160,73 @@ export default function CourseChat({ isOpen, onClose, onNavigateToProfile }: Cou
         if (!error && data) {
           coursesData = data
         }
-      } else if (userRole === 'instructor' || userRole === 'developer') {
-        // Instructors and developers can access courses they teach
-        const { data, error } = await supabase
+      } else if (userRole === 'instructor') {
+        // Get course IDs from subjects where this user is instructor
+        const { data: subjectData, error: subjectError } = await supabase
           .from('subjects')
-          .select(`
-            course_id,
-            courses!inner (
-              id,
-              title,
-              description
-            )
-          `)
+          .select('course_id')
           .eq('instructor_id', user.id)
-          .eq('courses.status', 'active')
+
+        if (subjectError) {
+          console.error('Error loading subjects for instructor:', subjectError.message || JSON.stringify(subjectError), subjectError)
+        }
+
+        if (!subjectError && subjectData && subjectData.length > 0) {
+          const courseIds = Array.from(new Set(subjectData.map((s: any) => s.course_id).filter(Boolean)))
+          const { data: courseData, error: courseError } = await supabase
+            .from('courses')
+            .select('id, title, description')
+            .in('id', courseIds)
+            .eq('status', 'active')
+            .order('title')
+
+          if (courseError) {
+            console.error('Error loading courses for instructor:', courseError.message, courseError.code, courseError.details)
+          }
+          if (!courseError && courseData) {
+            coursesData = courseData
+          }
+        }
+      } else if (userRole === 'developer') {
+        // Developers see all active courses (same as admin)
+        const { data, error } = await supabase
+          .from('courses')
+          .select('id, title, description')
+          .eq('status', 'active')
+          .order('title')
 
         if (error) {
-          console.error('Error loading courses for instructor/developer:', error)
+          console.error('Error loading courses for developer:', error.message || JSON.stringify(error), error)
         }
         if (!error && data) {
-          // Extract unique courses
-          const uniqueCourses = new Map()
-          data.forEach((item: any) => {
-            if (item.courses && !uniqueCourses.has(item.courses.id)) {
-              uniqueCourses.set(item.courses.id, item.courses)
-            }
-          })
-          coursesData = Array.from(uniqueCourses.values())
+          coursesData = data
         }
       } else {
         // trainees can access courses they're enrolled in
-        console.log('Querying course_enrollments for trainee_id:', user.id)
-        const { data, error } = await supabase
+        const { data: enrollData, error: enrollError } = await supabase
           .from('course_enrollments')
-          .select(`
-            course_id,
-            courses!inner (
-              id,
-              title,
-              description
-            )
-          `)
+          .select('course_id')
           .eq('trainee_id', user.id)
-          .eq('courses.status', 'active')
 
-        if (error) {
-          console.error('Error loading courses for trainee:', error)
-          console.error('Error details:', {
-            message: error.message,
-            details: error.details,
-            hint: error.hint,
-            code: error.code
-          })
+        if (enrollError) {
+          console.error('Error loading enrollments for trainee:', enrollError.message, enrollError.code, enrollError.details)
         }
-        if (!error && data) {
-          console.log('trainee enrollments found:', data)
-          coursesData = data.map((item: any) => item.courses)
+
+        if (!enrollError && enrollData && enrollData.length > 0) {
+          const courseIds = Array.from(new Set(enrollData.map((e: any) => e.course_id).filter(Boolean)))
+          const { data: courseData, error: courseError } = await supabase
+            .from('courses')
+            .select('id, title, description')
+            .in('id', courseIds)
+            .eq('status', 'active')
+            .order('title')
+
+          if (courseError) {
+            console.error('Error loading courses for trainee:', courseError.message, courseError.code, courseError.details)
+          }
+          if (!courseError && courseData) {
+            coursesData = courseData
+          }
         }
       }
 

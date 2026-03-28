@@ -128,10 +128,7 @@ export default function OnlineUsers({ onNavigateToProfile }: OnlineUsersProps = 
     // Update presence every 2 minutes
     const presenceInterval = setInterval(updatePresence, 120000)
 
-    // Refresh users list every second for real-time updates
-    const usersInterval = setInterval(fetchAllUsers, 1000)
-
-    // Subscribe to presence changes
+    // Subscribe to presence changes (replaces polling)
     const channel = supabase
       .channel('user-presence')
       .on(
@@ -159,7 +156,6 @@ export default function OnlineUsers({ onNavigateToProfile }: OnlineUsersProps = 
 
     return () => {
       clearInterval(presenceInterval)
-      clearInterval(usersInterval)
       window.removeEventListener('beforeunload', handleBeforeUnload)
       supabase.removeChannel(channel)
       

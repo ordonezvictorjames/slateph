@@ -624,21 +624,18 @@ export default function MyCoursesPage() {
 
       {/* Lesson View */}
       {currentView === 'lesson' && selectedModule && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">{selectedModule.title}</h2>
-              <p className="text-sm text-gray-500 mt-0.5 capitalize">{selectedModule.content_type.replace(/_/g, ' ')}</p>
-            </div>
-            <button onClick={handleBackToSubjects} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-              Back
-            </button>
-          </div>
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden" style={{ height: 'calc(100vh - 220px)' }}>
-            <LessonViewer module={selectedModule} isOpen={true} onClose={handleBackToSubjects} inline={true} />
-          </div>
-        </div>
+        <LessonViewer
+          module={selectedModule}
+          isOpen={true}
+          onClose={handleBackToSubjects}
+          inline={true}
+          siblingModules={subjectModules[selectedModule.subject_id] || []}
+          onNavigate={(mod) => setSelectedModule(mod)}
+          userId={user?.id}
+          userRole={user?.profile?.role || role}
+          subjectId={selectedModule.subject_id}
+          courseId={selectedCourse?.id}
+        />
       )}
     </div>
   )

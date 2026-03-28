@@ -40,37 +40,52 @@ export default function SystemTrackerPage() {
   const fetchActivities = async () => {
     try {
       setLoading(true)
-      // Use the activity_logs_with_users view (unrestricted)
-      const { data, error } = await supabase
-        .from('activity_logs_with_users')
-        .select('*')
+
+      // Fetch logs first (fast — indexed on created_at)
+      const { data: logs, error } = await supabase
+        .from('activity_logs')
+        .select('id, user_id, activity_type, description, metadata, created_at')
         .order('created_at', { ascending: false })
-        .limit(500)
+        .limit(100)
 
       if (error) {
-        console.error('Error fetching activities:', error)
+        console.error('Error fetching activities:', error.message, error.code, error.details)
         showError('Error loading activities', error.message)
-      } else {
-        // Transform the data to match our ActivityLog interface
-        const transformedData = (data || []).map((item: any) => ({
-          id: item.id,
-          user_id: item.user_id,
-          activity_type: item.activity_type,
-          description: item.description,
-          metadata: item.metadata,
-          ip_address: item.ip_address,
-          user_agent: item.user_agent,
-          created_at: item.created_at,
-          user: {
-            first_name: item.user_first_name,
-            last_name: item.user_last_name,
-            email: item.user_email,
-            role: item.user_role,
-            avatar_url: item.user_avatar_url
-          }
-        }))
-        setActivities(transformedData)
+        return
       }
+
+      // Collect unique user IDs then fetch profiles in one query
+      const userIds = [...new Set((logs || []).map((l: any) => l.user_id).filter(Boolean))]
+      let profileMap: Record<string, any> = {}
+
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name, email, role, avatar_url')
+          .in('id', userIds)
+
+        for (const p of profiles || []) {
+          profileMap[p.id] = p
+        }
+      }
+
+      const transformedData = (logs || []).map((item: any) => ({
+        id: item.id,
+        user_id: item.user_id,
+        activity_type: item.activity_type,
+        description: item.description,
+        metadata: item.metadata,
+        created_at: item.created_at,
+        user: item.user_id && profileMap[item.user_id] ? {
+          first_name: profileMap[item.user_id].first_name,
+          last_name: profileMap[item.user_id].last_name,
+          email: profileMap[item.user_id].email,
+          role: profileMap[item.user_id].role,
+          avatar_url: profileMap[item.user_id].avatar_url
+        } : null
+      }))
+
+      setActivities(transformedData)
     } catch (error) {
       console.error('Error fetching activities:', error)
       showError('Error loading activities', 'Please try again.')

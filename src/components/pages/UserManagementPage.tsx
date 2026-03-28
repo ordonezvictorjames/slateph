@@ -104,6 +104,8 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
   const [roleFilter, setRoleFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [viewMode, setViewMode] = useState<'list' | 'card'>('list')
+  const [currentPage, setCurrentPage] = useState(1)
+  const PAGE_SIZE = 25
   
   const supabase = createClient()
 
@@ -168,6 +170,8 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
     fetchUsers()
   }, [])
 
+  // Reset to page 1 when filters change
+  useEffect(() => { setCurrentPage(1) }, [searchQuery, roleFilter, statusFilter])
   const fetchUsers = async () => {
     try {
       setLoading(true)
@@ -200,6 +204,10 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
     
     return matchesSearch && matchesRole && matchesStatus
   })
+
+  // Reset to page 1 whenever filters change
+  const totalPages = Math.ceil(filteredUsers.length / PAGE_SIZE)
+  const paginatedUsers = filteredUsers.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -718,7 +726,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
                   </td>
                 </tr>
               ) : (
-                filteredUsers.map((u) => (
+                paginatedUsers.map((u) => (
                   <tr key={u.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-2 whitespace-nowrap">
                       <div className="flex items-center">
@@ -943,7 +951,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {filteredUsers.map((u) => (
+              {paginatedUsers.map((u) => (
                 <div key={u.id} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex items-start mb-4">
                     <div className="flex-shrink-0 h-14 w-14">
@@ -1082,12 +1090,50 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
         </div>
         )}
 
-        {/* Table Footer with Count */}
+        {/* Table Footer with Pagination */}
         {!loading && filteredUsers.length > 0 && (
-          <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
+          <div className="bg-gray-50 px-6 py-3 border-t border-gray-200 flex items-center justify-between flex-wrap gap-2">
             <div className="text-sm text-gray-700">
-              Showing <span className="font-medium">{filteredUsers.length}</span> of <span className="font-medium">{users.length}</span> users
+              Showing <span className="font-medium">{(currentPage - 1) * PAGE_SIZE + 1}</span>–<span className="font-medium">{Math.min(currentPage * PAGE_SIZE, filteredUsers.length)}</span> of <span className="font-medium">{filteredUsers.length}</span> users
             </div>
+            {totalPages > 1 && (
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 text-sm rounded border border-gray-300 bg-white hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Prev
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+                  .reduce<(number | '...')[]>((acc, p, idx, arr) => {
+                    if (idx > 0 && (p as number) - (arr[idx - 1] as number) > 1) acc.push('...')
+                    acc.push(p)
+                    return acc
+                  }, [])
+                  .map((p, i) =>
+                    p === '...' ? (
+                      <span key={`ellipsis-${i}`} className="px-2 text-gray-400">…</span>
+                    ) : (
+                      <button
+                        key={p}
+                        onClick={() => setCurrentPage(p as number)}
+                        className={`px-3 py-1 text-sm rounded border ${currentPage === p ? 'bg-primary-500 text-white border-primary-500' : 'border-gray-300 bg-white hover:bg-gray-100'}`}
+                      >
+                        {p}
+                      </button>
+                    )
+                  )}
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1 text-sm rounded border border-gray-300 bg-white hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

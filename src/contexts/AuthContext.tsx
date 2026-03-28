@@ -50,7 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // Fetch full user profile from database using the session id
             const { data: profile, error } = await supabase
               .from('profiles')
-              .select('*')
+              .select('id, email, role, first_name, last_name, avatar_url, banner_url, grade, section, strand, cluster, batch_number, created_at, updated_at')
               .eq('id', data.session.id)
               .single()
 
@@ -67,7 +67,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   email: profile.email,
                   avatar_url: profile.avatar_url,
                   banner_url: profile.banner_url,
-                  spotify_url: profile.spotify_url,
                   grade: profile.grade,
                   section: profile.section,
                   strand: profile.strand,
@@ -162,7 +161,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           email: data.user.email,
           avatar_url: data.user.avatar_url,
           banner_url: data.user.banner_url,
-          spotify_url: data.user.spotify_url,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }
@@ -279,7 +277,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Fetch updated profile from database
       const { data: profile, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, email, role, first_name, last_name, avatar_url, banner_url, grade, section, strand, cluster, batch_number, created_at, updated_at')
         .eq('id', user.id)
         .single()
 
@@ -300,7 +298,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             email: profile.email,
             avatar_url: profile.avatar_url,
             banner_url: profile.banner_url,
-            spotify_url: profile.spotify_url,
             grade: profile.grade,
             section: profile.section,
             strand: profile.strand,

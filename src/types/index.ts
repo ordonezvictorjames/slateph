@@ -9,7 +9,6 @@ export interface Profile {
   email: string
   avatar_url?: string
   banner_url?: string
-  spotify_url?: string
   account_tier?: AccountTier
   account_duration_days?: number | null
   account_expires_at?: string | null

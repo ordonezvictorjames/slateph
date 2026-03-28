@@ -14,5 +14,7 @@ export async function GET() {
       nextVersion: '15.5.12',
       nodeVersion: process.version
     }
+  }, {
+    headers: { 'Cache-Control': 'public, max-age=30, stale-while-revalidate=60' }
   })
 }

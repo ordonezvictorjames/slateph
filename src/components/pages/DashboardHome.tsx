@@ -99,7 +99,6 @@ interface CourseSchedule {
 // Component for upcoming schedule list
 function UpcomingScheduleList() {
   const [schedules, setSchedules] = useState<CourseSchedule[]>([])
-  const [courseColors, setCourseColors] = useState<CourseColor[]>([])
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
   const { user } = useAuth()
@@ -186,26 +185,13 @@ function UpcomingScheduleList() {
         }
       }
 
-      // Fetch course colors
-      const { data: colorsData, error: colorsError } = await supabase
-        .from('course_colors')
-        .select('*')
-
-      if (colorsError) {
-        console.error('Error fetching course colors:', colorsError)
-      } else {
-        setCourseColors(colorsData || [])
-      }
+      // course_colors are passed as a prop — no need to fetch here
 
     } catch (error) {
       console.error('Error fetching upcoming schedules:', error)
     } finally {
       setLoading(false)
     }
-  }
-
-  const getCourseColor = (courseId: string) => {
-    return courseColors.find(color => color.course_id === courseId) || null
   }
 
   const formatDate = (dateString: string) => {
@@ -272,7 +258,7 @@ function UpcomingScheduleList() {
   return (
     <div className="space-y-2.5">
       {schedules.map((schedule) => {
-        const courseColor = getCourseColor(schedule.course_id)
+        const courseColor = null as CourseColor | null
         return (
           <div key={schedule.id} className="flex items-start space-x-3 p-3 bg-white rounded-lg border border-[#DCFCE7] transition-all">
             <div 
@@ -343,25 +329,36 @@ interface ActivityLog {
 }
 
 // Component for recent activity list
-function RecentActivityList() {
+function RecentActivityList({ role }: { role: string }) {
   const [activities, setActivities] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
 
+  const isAdminOrDev = role === 'admin' || role === 'developer'
+
   useEffect(() => {
-    fetchRecentActivities()
-  }, [])
+    if (isAdminOrDev) {
+      fetchRecentActivities()
+    } else {
+      setLoading(false)
+    }
+  }, [isAdminOrDev])
 
   const fetchRecentActivities = async () => {
     try {
       const { data, error } = await supabase
-        .from('activity_logs_with_users')
-        .select('*')
+        .from('activity_logs')
+        .select(`
+          id, user_id, activity_type, description, created_at,
+          profiles!activity_logs_user_id_fkey (
+            first_name, last_name, role
+          )
+        `)
         .order('created_at', { ascending: false })
-        .limit(3) // Show only 3 most recent activities
+        .limit(3)
 
       if (error) {
-        console.error('Error fetching recent activities:', error)
+        console.error('Error fetching recent activities:', error.message, error.code, error.details)
       } else {
         const transformedData = (data || []).map((item: any) => ({
           id: item.id,
@@ -369,11 +366,11 @@ function RecentActivityList() {
           activity_type: item.activity_type,
           description: item.description,
           created_at: item.created_at,
-          user: {
-            first_name: item.user_first_name,
-            last_name: item.user_last_name,
-            role: item.user_role,
-          }
+          user: item.profiles ? {
+            first_name: item.profiles.first_name,
+            last_name: item.profiles.last_name,
+            role: item.profiles.role,
+          } : null
         }))
         setActivities(transformedData)
       }
@@ -988,13 +985,15 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
         }
       }
 
-      // Fetch course colors
+      // Fetch course colors (table may not exist yet — fail silently)
       const { data: colorsData, error: colorsError } = await supabase
         .from('course_colors')
         .select('*')
 
       if (colorsError) {
-        console.error('Error fetching course colors:', colorsError)
+        if (colorsError.code !== 'PGRST205') { // PGRST205 = table not in schema cache
+          console.error('Error fetching course colors:', colorsError.message, colorsError.code)
+        }
       } else {
         setCourseColors(colorsData || [])
       }
@@ -1492,7 +1491,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 </button>
               </div>
               <div className="overflow-y-auto scrollbar-autohide" style={{ maxHeight: '320px' }}>
-                <RecentActivityList />
+                <RecentActivityList role={userRole} />
               </div>
             </div>
           </div>

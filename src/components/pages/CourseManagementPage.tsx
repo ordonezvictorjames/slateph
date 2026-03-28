@@ -7,7 +7,8 @@ import { logCourseCreation, logActivity } from '@/lib/activityLogger'
 import { useToast } from '@/contexts/ToastContext'
 import { Loading, ButtonLoading } from '@/components/ui/loading'
 import LessonViewer from '@/components/LessonViewer'
-
+import QuizBuilder, { QuizConfig, emptyQuizConfig } from '@/components/QuizBuilder'
+import { compressImage, validatePDFSize, validatePresentationSize } from '@/lib/imageCompression'
 interface Course {
   id: string
   title: string
@@ -57,6 +58,10 @@ interface CourseModule {
   document_url?: string
   created_at: string
   thumbnail_url?: string
+  explanation?: string
+  key_takeaways?: string
+  quiz_activity?: string
+  notes_content?: string
 }
 
 interface NewCourse {
@@ -64,11 +69,6 @@ interface NewCourse {
   course_type: 'academic' | 'tesda' | 'upskill'
   status: 'active' | 'inactive' | 'draft'
   enrollment_type: 'trainee' | 'tesda_scholar' | 'both'
-  color_name?: string
-  color_hex?: string
-  bg_class?: string
-  text_class?: string
-  border_class?: string
   thumbnail_url?: string
 }
 
@@ -95,6 +95,12 @@ interface NewCourseModule {
   video_url?: string
   document_url?: string
   thumbnail_url?: string
+  // Lesson viewer sections
+  explanation?: string
+  key_takeaways?: string
+  quiz_activity?: string
+  notes_content?: string
+  quiz_config?: QuizConfig | null
 }
 
 export default function CourseManagementPage() {
@@ -149,10 +155,7 @@ export default function CourseManagementPage() {
   const [availabletrainees, setAvailabletrainees] = useState<Array<{id: string, first_name: string, last_name: string, email: string, role: string}>>([])
   const [selectedtrainees, setSelectedtrainees] = useState<string[]>([])
   const [traineeRoleFilter, setTraineeRoleFilter] = useState<string>('all')
-  const [selectedCourseForEnrollment, setSelectedCourseForEnrollment] = useState<Course | null>(null)
-  const [availableColors, setAvailableColors] = useState<Array<{id: string, color_name: string, color_hex: string, bg_class: string, text_class: string, border_class: string}>>([])
-  const [courseColors, setCourseColors] = useState<Array<{course_id: string, color_name: string, color_hex: string}>>([])
-  
+  const [selectedCourseForEnrollment, setSelectedCourseForEnrollment] = useState<Course | null>(null)  
   // Modal states
   const [showAddCourseModal, setShowAddCourseModal] = useState(false)
   const [showAddSubjectModal, setShowAddSubjectModal] = useState(false)
@@ -173,11 +176,6 @@ export default function CourseManagementPage() {
     course_type: 'academic',
     status: 'draft',
     enrollment_type: 'trainee',
-    color_name: '',
-    color_hex: '',
-    bg_class: '',
-    text_class: '',
-    border_class: '',
     thumbnail_url: ''
   })
   
@@ -202,7 +200,12 @@ export default function CourseManagementPage() {
     text_content: '',
     video_url: '',
     document_url: '',
-    thumbnail_url: ''
+    thumbnail_url: '',
+    explanation: '',
+    key_takeaways: '',
+    quiz_activity: '',
+    notes_content: '',
+    quiz_config: null,
   })
   
   // Editing states
@@ -232,6 +235,10 @@ export default function CourseManagementPage() {
 
   // Function to upload PDF file to Supabase Storage
   const uploadPDFFile = async (file: File, oldFileUrl?: string | null): Promise<string | null> => {
+    // Validate PDF size before uploading
+    const sizeError = validatePDFSize(file)
+    if (sizeError) { showError('File Too Large', sizeError); return null }
+
     try {
       setUploadingFile(true)
       
@@ -270,7 +277,7 @@ export default function CourseManagementPage() {
       const { data, error } = await supabase.storage
         .from('documents')
         .upload(filePath, file, {
-          cacheControl: '3600',
+          cacheControl: '86400',
           upsert: false,
           contentType: 'application/pdf'
         })
@@ -299,6 +306,10 @@ export default function CourseManagementPage() {
 
   // Function to upload Presentation files (PPT, PPTX, PDF)
   const uploadPresentationFile = async (file: File, oldFileUrl?: string | null): Promise<string | null> => {
+    // Validate presentation size before uploading
+    const sizeError = validatePresentationSize(file)
+    if (sizeError) { showError('File Too Large', sizeError); return null }
+
     try {
       setUploadingFile(true)
       
@@ -347,7 +358,7 @@ export default function CourseManagementPage() {
       const { data, error } = await supabase.storage
         .from('documents')
         .upload(filePath, file, {
-          cacheControl: '3600',
+          cacheControl: '86400',
           upsert: false,
           contentType
         })
@@ -378,6 +389,8 @@ export default function CourseManagementPage() {
   const uploadThumbnail = async (file: File, oldUrl?: string | null): Promise<string | null> => {
     try {
       setUploadingFile(true)
+      // Compress image before uploading (resize to max 1200px, convert to WebP)
+      const compressed = await compressImage(file, { maxWidth: 1200, maxHeight: 1200, quality: 0.82 })
       if (oldUrl && oldUrl.includes('supabase.co/storage')) {
         try {
           const urlParts = oldUrl.split('/documents/')
@@ -387,12 +400,12 @@ export default function CourseManagementPage() {
           }
         } catch {}
       }
-      const fileExt = file.name.split('.').pop()
+      const fileExt = compressed.name.split('.').pop()
       const fileName = `thumbnails/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
-      const { error } = await supabase.storage.from('documents').upload(fileName, file, {
-        cacheControl: '3600',
+      const { error } = await supabase.storage.from('documents').upload(fileName, compressed, {
+        cacheControl: '86400',
         upsert: false,
-        contentType: file.type
+        contentType: compressed.type
       })
       if (error) { showError('Upload Error', error.message); return null }
       const { data: { publicUrl } } = supabase.storage.from('documents').getPublicUrl(fileName)
@@ -438,17 +451,6 @@ export default function CourseManagementPage() {
         setPreviewCourse(null)
       }
       console.log('Courses loaded:', coursesData?.length || 0, coursesData)
-
-      // Fetch course colors
-      const { data: colorsData, error: colorsError } = await supabase
-        .from('course_colors')
-        .select('*')
-
-      if (colorsError) {
-        console.error('Error fetching course colors:', colorsError)
-      } else {
-        setCourseColors(colorsData || [])
-      }
 
     } catch (error) {
       console.error('Error fetching courses:', error)
@@ -743,25 +745,6 @@ export default function CourseManagementPage() {
     }
   }
 
-  const fetchAvailableColors = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('available_colors')
-        .select('*')
-        .eq('is_used', false)
-        .order('color_name', { ascending: true })
-
-      if (error) {
-        console.error('Error fetching available colors:', error)
-        return
-      }
-
-      setAvailableColors(data || [])
-    } catch (error) {
-      console.error('Error fetching available colors:', error)
-    }
-  }
-
   const fetchEnrollments = async (courseId: string, enrollmentType: 'trainee' | 'tesda_scholar' | 'both' = 'both') => {
       try {
         const { data, error } = await supabase
@@ -874,7 +857,6 @@ export default function CourseManagementPage() {
     fetchCourses()
     fetchtrainees()
     fetchInstructors()
-    fetchAvailableColors()
     fetchStatistics()
   }, [])
 
@@ -1001,49 +983,15 @@ export default function CourseManagementPage() {
         return
       }
 
-      // If a color was selected, assign it to the course
-      if (newCourse.color_name && courseData) {
-        const { error: colorError } = await supabase
-          .from('course_colors')
-          .insert([{
-            course_id: courseData.id,
-            color_name: newCourse.color_name,
-            color_hex: newCourse.color_hex,
-            bg_class: newCourse.bg_class,
-            text_class: newCourse.text_class,
-            border_class: newCourse.border_class
-          }])
-
-        if (colorError) {
-          console.error('Error assigning course color:', colorError)
-          // Don't fail the course creation if color assignment fails
-        } else {
-          // Mark the color as used
-          const selectedColor = availableColors.find(c => c.color_name === newCourse.color_name)
-          if (selectedColor) {
-            await supabase
-              .from('available_colors')
-              .update({ is_used: true })
-              .eq('id', selectedColor.id)
-          }
-        }
-      }
-
       setNewCourse({
         title: '',
         course_type: 'academic',
         status: 'draft',
         enrollment_type: 'trainee',
-        color_name: '',
-        color_hex: '',
-        bg_class: '',
-        text_class: '',
-        border_class: '',
         thumbnail_url: ''
       })
       setShowAddCourseModal(false)
       await fetchCourses()
-      await fetchAvailableColors() // Refresh available colors
       
       // Log the course creation activity
       if (user?.id && courseData) {
@@ -1053,8 +1001,7 @@ export default function CourseManagementPage() {
           courseData.title,
           {
             status: courseData.status,
-            enrollment_type: courseData.enrollment_type,
-            color_assigned: !!newCourse.color_name
+            enrollment_type: courseData.enrollment_type
           }
         )
       }
@@ -1185,7 +1132,14 @@ export default function CourseManagementPage() {
         duration_minutes: newModule.duration_minutes || null,
         canva_url: newModule.canva_url || null,
         conference_url: newModule.conference_url || null,
-        text_content: newModule.text_content || null,
+        text_content: JSON.stringify({
+          body: newModule.text_content || '',
+          explanation: newModule.explanation || '',
+          key_takeaways: newModule.key_takeaways || '',
+          quiz_activity: newModule.quiz_activity || '',
+          notes_content: newModule.notes_content || '',
+          quiz_config: newModule.quiz_config || null,
+        }),
         video_url: newModule.video_url || null,
         document_url: newModule.document_url || null,
         thumbnail_url: newModule.thumbnail_url || null
@@ -1214,7 +1168,12 @@ export default function CourseManagementPage() {
         text_content: '',
         video_url: '',
         document_url: '',
-        thumbnail_url: ''
+        thumbnail_url: '',
+        explanation: '',
+        key_takeaways: '',
+        quiz_activity: '',
+        notes_content: '',
+        quiz_config: null,
       })
       setShowAddModuleModal(false)
       await fetchModules(selectedSubject.id)
@@ -1254,6 +1213,10 @@ export default function CourseManagementPage() {
   // Edit and Delete functions for modules
   const handleEditModule = (module: CourseModule) => {
     setEditingModule(module)
+    let parsed: any = {}
+    try { parsed = module.text_content ? JSON.parse(module.text_content) : {} } catch { parsed = { body: module.text_content || '' } }
+    let quizConfig = null
+    try { quizConfig = parsed.quiz_config ? (typeof parsed.quiz_config === 'string' ? JSON.parse(parsed.quiz_config) : parsed.quiz_config) : null } catch { quizConfig = null }
     setNewModule({
       title: module.title,
       description: module.description,
@@ -1262,10 +1225,15 @@ export default function CourseManagementPage() {
       duration_minutes: module.duration_minutes || 0,
       canva_url: module.canva_url || '',
       conference_url: module.conference_url || '',
-      text_content: module.text_content || '',
+      text_content: parsed.body || '',
       video_url: module.video_url || '',
       document_url: module.document_url || '',
-      thumbnail_url: module.thumbnail_url || ''
+      thumbnail_url: module.thumbnail_url || '',
+      explanation: parsed.explanation || '',
+      key_takeaways: parsed.key_takeaways || '',
+      quiz_activity: parsed.quiz_activity || '',
+      notes_content: parsed.notes_content || '',
+      quiz_config: quizConfig,
     })
     setShowEditModuleModal(true)
   }
@@ -1284,7 +1252,14 @@ export default function CourseManagementPage() {
         duration_minutes: newModule.duration_minutes || null,
         canva_url: newModule.canva_url || null,
         conference_url: newModule.conference_url || null,
-        text_content: newModule.text_content || null,
+        text_content: JSON.stringify({
+          body: newModule.text_content || '',
+          explanation: newModule.explanation || '',
+          key_takeaways: newModule.key_takeaways || '',
+          quiz_activity: newModule.quiz_activity || '',
+          notes_content: newModule.notes_content || '',
+          quiz_config: newModule.quiz_config || null,
+        }),
         video_url: newModule.video_url || null,
         document_url: newModule.document_url || null,
         thumbnail_url: newModule.thumbnail_url || null
@@ -1303,6 +1278,18 @@ export default function CourseManagementPage() {
         return
       }
 
+      // Always delete old grades when module is updated — grades belong to the specific quiz config.
+      // If the quiz was replaced or removed, old scores are no longer valid.
+      let hadQuiz = false
+      try {
+        const prev = editingModule.text_content ? JSON.parse(editingModule.text_content) : {}
+        hadQuiz = !!(prev.quiz_config)
+      } catch { hadQuiz = false }
+
+      if (hadQuiz) {
+        await supabase.from('quiz_grades').delete().eq('module_id', editingModule.id)
+      }
+
       setNewModule({
         title: '',
         description: '',
@@ -1311,7 +1298,15 @@ export default function CourseManagementPage() {
         duration_minutes: 0,
         canva_url: '',
         conference_url: '',
-        thumbnail_url: ''
+        text_content: '',
+        video_url: '',
+        document_url: '',
+        thumbnail_url: '',
+        explanation: '',
+        key_takeaways: '',
+        quiz_activity: '',
+        notes_content: '',
+        quiz_config: null,
       })
       setEditingModule(null)
       setShowEditModuleModal(false)
@@ -1333,26 +1328,13 @@ export default function CourseManagementPage() {
   }
 
   // Edit and Delete functions for courses
-  const handleEditCourse = async (course: Course) => {
+  const handleEditCourse = (course: Course) => {
     setEditingCourse(course)
-    
-    // Load current course color if exists
-    const { data: courseColor } = await supabase
-      .from('course_colors')
-      .select('*')
-      .eq('course_id', course.id)
-      .single()
-    
     setNewCourse({
       title: course.title,
       course_type: course.course_type || 'academic',
       status: course.status,
       enrollment_type: course.enrollment_type,
-      color_name: courseColor?.color_name || '',
-      color_hex: courseColor?.color_hex || '',
-      bg_class: courseColor?.bg_class || '',
-      text_class: courseColor?.text_class || '',
-      border_class: courseColor?.border_class || '',
       thumbnail_url: course.thumbnail_url || ''
     })
     setShowEditCourseModal(true)
@@ -1383,106 +1365,16 @@ export default function CourseManagementPage() {
         return
       }
 
-      // Handle color updates
-      const { data: existingColor } = await supabase
-        .from('course_colors')
-        .select('*')
-        .eq('course_id', editingCourse.id)
-        .single()
-
-      if (newCourse.color_name) {
-        // User selected a color
-        if (existingColor) {
-          // Update existing color assignment
-          const { error: colorUpdateError } = await supabase
-            .from('course_colors')
-            .update({
-              color_name: newCourse.color_name,
-              color_hex: newCourse.color_hex,
-              bg_class: newCourse.bg_class,
-              text_class: newCourse.text_class,
-              border_class: newCourse.border_class
-            })
-            .eq('course_id', editingCourse.id)
-
-          if (colorUpdateError) {
-            console.error('Error updating course color:', colorUpdateError)
-          }
-
-          // If color changed, mark old color as available and new color as used
-          if (existingColor.color_name !== newCourse.color_name) {
-            // Mark old color as available
-            await supabase
-              .from('available_colors')
-              .update({ is_used: false })
-              .eq('color_name', existingColor.color_name)
-
-            // Mark new color as used
-            await supabase
-              .from('available_colors')
-              .update({ is_used: true })
-              .eq('color_name', newCourse.color_name)
-          }
-        } else {
-          // Create new color assignment
-          const { error: colorInsertError } = await supabase
-            .from('course_colors')
-            .insert([{
-              course_id: editingCourse.id,
-              color_name: newCourse.color_name,
-              color_hex: newCourse.color_hex,
-              bg_class: newCourse.bg_class,
-              text_class: newCourse.text_class,
-              border_class: newCourse.border_class
-            }])
-
-          if (colorInsertError) {
-            console.error('Error assigning course color:', colorInsertError)
-          } else {
-            // Mark color as used
-            await supabase
-              .from('available_colors')
-              .update({ is_used: true })
-              .eq('color_name', newCourse.color_name)
-          }
-        }
-      } else {
-        // User removed color selection
-        if (existingColor) {
-          // Delete color assignment
-          const { error: colorDeleteError } = await supabase
-            .from('course_colors')
-            .delete()
-            .eq('course_id', editingCourse.id)
-
-          if (colorDeleteError) {
-            console.error('Error removing course color:', colorDeleteError)
-          } else {
-            // Mark color as available
-            await supabase
-              .from('available_colors')
-              .update({ is_used: false })
-              .eq('color_name', existingColor.color_name)
-          }
-        }
-      }
-
       setNewCourse({
         title: '',
         course_type: 'academic',
         status: 'draft',
         enrollment_type: 'trainee',
-        color_name: '',
-        color_hex: '',
-        bg_class: '',
-        text_class: '',
-        border_class: '',
         thumbnail_url: ''
       })
       setEditingCourse(null)
       setShowEditCourseModal(false)
       await fetchCourses()
-      await fetchAvailableColors() // Refresh available colors
       
       // Log the course update activity
       if (user?.id && editingCourse) {
@@ -1494,8 +1386,7 @@ export default function CourseManagementPage() {
             course_id: editingCourse.id,
             course_title: newCourse.title,
             status: newCourse.status,
-            enrollment_type: newCourse.enrollment_type,
-            color_changed: !!newCourse.color_name
+            enrollment_type: newCourse.enrollment_type
           }
         })
       }
@@ -1739,12 +1630,6 @@ export default function CourseManagementPage() {
             .delete()
             .eq('course_id', deletingItem.item.id)
           
-          // Delete course colors
-          await supabase
-            .from('course_colors')
-            .delete()
-            .eq('course_id', deletingItem.item.id)
-          
           // Finally, delete the course
           const courseDeleteResult = await supabase
             .from('courses')
@@ -1859,18 +1744,6 @@ export default function CourseManagementPage() {
   const handleStartLesson = (module: CourseModule) => {
     setSelectedModule(module)
     setCurrentView('lesson')
-  }
-
-  // Color selection handler
-  const handleColorSelect = (color: {color_name: string, color_hex: string, bg_class: string, text_class: string, border_class: string}) => {
-    setNewCourse(prev => ({
-      ...prev,
-      color_name: color.color_name,
-      color_hex: color.color_hex,
-      bg_class: color.bg_class,
-      text_class: color.text_class,
-      border_class: color.border_class
-    }))
   }
 
   // Helper function to get Canva embed URL
@@ -2091,12 +1964,6 @@ export default function CourseManagementPage() {
     return [{ text: 'Trainees', color: 'bg-blue-100 text-blue-800' }]
   }
 
-  // Helper function to get course color
-  const getCourseColor = (courseId: string) => {
-    const courseColor = courseColors.find(color => color.course_id === courseId)
-    return courseColor || null
-  }
-
   // Render functions
   const renderBreadcrumb = () => (
     <div className="flex items-center space-x-2 text-sm text-gray-500 mb-6">
@@ -2273,7 +2140,6 @@ export default function CourseManagementPage() {
                     return matchesFilter && matchesSearch
                   })
                   .map((course) => {
-                    const courseColor = getCourseColor(course.id)
                     const isSelected = previewCourse?.id === course.id
                     return (
                       <div
@@ -2287,7 +2153,7 @@ export default function CourseManagementPage() {
                             <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover" />
                           ) : (
                             <div className="w-full h-full" style={{
-                              background: courseColor?.color_hex ? `linear-gradient(135deg, ${courseColor.color_hex}30, ${courseColor.color_hex}10)` : 'linear-gradient(135deg, #1f7a8c20, #1f7a8c08)'
+                              background: 'linear-gradient(135deg, #1f7a8c20, #1f7a8c08)'
                             }} />
                           )}
                         </div>
@@ -2361,7 +2227,6 @@ export default function CourseManagementPage() {
               </div>
             ) : (() => {
               const c = previewCourse
-              const courseColor = getCourseColor(c.id)
               const enrollmentBadges = getEnrollmentTypeDisplay(c.enrollment_type)
               return (
                 <div className="flex flex-col h-full overflow-hidden">
@@ -2385,7 +2250,7 @@ export default function CourseManagementPage() {
                       <img src={c.thumbnail_url} alt={c.title} className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full" style={{
-                        background: courseColor?.color_hex ? `linear-gradient(135deg, ${courseColor.color_hex}40, ${courseColor.color_hex}15)` : 'linear-gradient(135deg, #1f7a8c30, #1f7a8c10)'
+                        background: 'linear-gradient(135deg, #1f7a8c30, #1f7a8c10)'
                       }} />
                     )}
                   </div>
@@ -2461,7 +2326,7 @@ export default function CourseManagementPage() {
                 <img src={selectedCourse.thumbnail_url} alt={selectedCourse.title} className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full" style={{
-                  background: (() => { const c = getCourseColor(selectedCourse.id); return c?.color_hex ? `linear-gradient(135deg, ${c.color_hex}40 0%, ${c.color_hex}20 100%)` : 'linear-gradient(135deg, #1f7a8c30 0%, #1f7a8c10 100%)' })()
+                  background: 'linear-gradient(135deg, #1f7a8c30 0%, #1f7a8c10 100%)'
                 }} />
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
@@ -2885,31 +2750,18 @@ export default function CourseManagementPage() {
 
       {/* Lesson View */}
       {currentView === 'lesson' && selectedModule && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">{selectedModule.title}</h2>
-              <p className="text-sm text-gray-500 mt-0.5 capitalize">{selectedModule.content_type.replace(/_/g, ' ')}</p>
-            </div>
-            <button
-              onClick={handleBackToModules}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Back to Modules
-            </button>
-          </div>
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden" style={{ height: 'calc(100vh - 220px)' }}>
-            <LessonViewer
-              module={selectedModule}
-              isOpen={true}
-              onClose={handleBackToModules}
-              inline={true}
-            />
-          </div>
-        </div>
+        <LessonViewer
+          module={selectedModule}
+          isOpen={true}
+          onClose={handleBackToModules}
+          inline={true}
+          siblingModules={selectedSubject?.modules ?? []}
+          onNavigate={(mod) => setSelectedModule(mod)}
+          userId={user?.id}
+          userRole={userRole}
+          subjectId={selectedModule.subject_id}
+          courseId={selectedCourse?.id}
+        />
       )}
 
       {/* Add Course Modal */}
@@ -3312,268 +3164,158 @@ export default function CourseManagementPage() {
       {showAddModuleModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-100">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-black">Add New Module</h2>
-                <button 
-                  onClick={() => setShowAddModuleModal(false)}
-                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-black">Add New Module</h2>
+              <button onClick={() => setShowAddModuleModal(false)} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
             </div>
-
-            <form onSubmit={handleAddModule} className="p-6 space-y-6">
-              <div>
-                <label className="block text-xs font-medium text-black mb-1">Module Title *</label>
-                <input
-                  type="text"
-                  required
-                  value={newModule.title}
-                  onChange={(e) => setNewModule(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
-                  placeholder="Enter module title"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-black mb-1">Content Type *</label>
-                <select
-                  required
-                  value={newModule.content_type}
-                  onChange={(e) => setNewModule(prev => ({ ...prev, content_type: e.target.value as any }))}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
-                >
-                  <option value="video">Video</option>
-                  <option value="canva_presentation">Canva Presentation</option>
-                  <option value="slide_presentation">Slide Presentation</option>
-                  <option value="online_document">Online Document</option>
-                  <option value="pdf_document">Document</option>
-                </select>
-              </div>
-
-              {/* Canva URL field - only show when content type is canva_presentation */}
-              {newModule.content_type === 'canva_presentation' && (
+            <form onSubmit={handleAddModule} className="p-6 space-y-5">
+              {/* Section 1: Title + Info */}
+              <div className="border border-gray-200 rounded-lg p-4 space-y-3">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Module Title + Info</h3>
                 <div>
-                  <label className="block text-xs font-medium text-black mb-1">
-                    Canva Presentation URL *
-                    <span className="text-xs text-gray-500 block mt-1">
-                      Paste your Canva presentation share link or embed URL
-                    </span>
-                  </label>
-                  <input
-                    type="url"
-                    required={newModule.content_type === 'canva_presentation'}
-                    value={newModule.canva_url || ''}
-                    onChange={(e) => setNewModule(prev => ({ ...prev, canva_url: e.target.value }))}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
-                    placeholder="https://www.canva.com/design/..."
-                  />
-                  <div className="text-xs text-gray-500 mt-1">
-                    ?? Tip: Make sure your Canva presentation is set to "Anyone with the link can view"
+                  <label className="block text-xs font-medium text-black mb-1">Title *</label>
+                  <input type="text" required value={newModule.title} onChange={(e) => setNewModule(prev => ({ ...prev, title: e.target.value }))}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c] focus:border-[#1f7a8c]" placeholder="Enter module title" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-black mb-1">Status *</label>
+                    <select required value={newModule.status} onChange={(e) => setNewModule(prev => ({ ...prev, status: e.target.value as any }))}
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c]">
+                      <option value="draft">Draft</option>
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-black mb-1">Duration (min)</label>
+                    <input type="number" min={0} value={newModule.duration_minutes || ''} onChange={(e) => setNewModule(prev => ({ ...prev, duration_minutes: parseInt(e.target.value) || 0 }))}
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c]" placeholder="0" />
                   </div>
                 </div>
-              )}
-
-              {/* Video URL field - only show when content type is video */}
-              {newModule.content_type === 'video' && (
+                {/* Cover Image */}
                 <div>
-                  <label className="block text-xs font-medium text-black mb-1">
-                    Video URL *
-                    <span className="text-xs text-gray-500 block mt-1">
-                      Paste your YouTube, Vimeo, or other video link
-                    </span>
-                  </label>
-                  <input
-                    type="url"
-                    required={newModule.content_type === 'video'}
-                    value={newModule.video_url || ''}
-                    onChange={(e) => setNewModule(prev => ({ ...prev, video_url: e.target.value }))}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
-                    placeholder="https://www.youtube.com/watch?v=..."
-                  />
-                  <div className="text-xs text-gray-500 mt-1">
-                    ?? Tip: Supports YouTube, Vimeo, and direct video URLs
-                  </div>
-                </div>
-              )}
-
-              {/* Document URL field - only show when content type is document */}
-              {newModule.content_type === 'online_document' && (
-                <div>
-                  <label className="block text-xs font-medium text-black mb-1">
-                    Document URL *
-                    <span className="text-xs text-gray-500 block mt-1">
-                      Paste your Google Docs, PDF, or document link
-                    </span>
-                  </label>
-                  <input
-                    type="url"
-                    required={newModule.content_type === 'online_document'}
-                    value={newModule.document_url || ''}
-                    onChange={(e) => setNewModule(prev => ({ ...prev, document_url: e.target.value }))}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
-                    placeholder="https://docs.google.com/document/..."
-                  />
-                  <div className="text-xs text-gray-500 mt-1">
-                    ?? Tip: Make sure your document is set to "Anyone with the link can view"
-                  </div>
-                </div>
-              )}
-
-              {/* PDF Document Upload - only show when content type is pdf_document */}
-              {newModule.content_type === 'pdf_document' && (
-                <div>
-                  <label className="block text-xs font-medium text-black mb-1">
-                    PDF Document *
-                    <span className="text-xs text-gray-500 block mt-1">
-                      Upload a PDF file (max 10MB)
-                    </span>
-                  </label>
-                  <input
-                    type="file"
-                    accept=".pdf,application/pdf"
-                    required={newModule.content_type === 'pdf_document' && !newModule.document_url}
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0]
-                      if (file) {
-                        if (file.size > 10 * 1024 * 1024) {
-                          alert('File size must be less than 10MB')
-                          e.target.value = ''
-                          return
-                        }
-                        const uploadedUrl = await uploadPDFFile(file, newModule.document_url)
-                        if (uploadedUrl) {
-                          setNewModule(prev => ({ ...prev, document_url: uploadedUrl }))
-                        }
-                      }
-                    }}
-                    disabled={uploadingFile}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500] file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-[primary-500] file:text-white hover:file:bg-[primary-600] disabled:opacity-50"
-                  />
-                  {uploadingFile && (
-                    <div className="text-xs text-[primary-500] mt-1 flex items-center">
-                      <svg className="animate-spin h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Uploading...
+                  <label className="block text-xs font-medium text-black mb-1">Cover Image</label>
+                  {newModule.thumbnail_url && (
+                    <div className="mb-2 relative w-full h-24 rounded-lg overflow-hidden border border-gray-200">
+                      <img src={newModule.thumbnail_url} alt="thumbnail" className="w-full h-full object-cover" />
+                      <button type="button" onClick={() => setNewModule(prev => ({ ...prev, thumbnail_url: '' }))}
+                        className="absolute top-1 right-1 p-1 bg-white rounded-full shadow text-gray-500 hover:text-red-500">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                      </button>
                     </div>
                   )}
-                  {!uploadingFile && newModule.document_url && (
-                    <div className="text-xs text-green-600 mt-1">
-                      ? File uploaded successfully
-                    </div>
-                  )}
+                  <input type="file" accept="image/*" disabled={uploadingFile}
+                    onChange={async (e) => { const f = e.target.files?.[0]; if (f) { const url = await uploadThumbnail(f, newModule.thumbnail_url); if (url) setNewModule(prev => ({ ...prev, thumbnail_url: url })) } }}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-gray-100 file:text-gray-700 disabled:opacity-50" />
                 </div>
-              )}
-
-              {/* Slide Presentation Upload - only show when content type is slide_presentation */}
-              {newModule.content_type === 'slide_presentation' && (
-                <div>
-                  <label className="block text-xs font-medium text-black mb-1">
-                    Slide Presentation *
-                    <span className="text-xs text-gray-500 block mt-1">
-                      Upload PowerPoint (.ppt, .pptx) or PDF (max 10MB)
-                    </span>
-                  </label>
-                  <input
-                    type="file"
-                    accept=".ppt,.pptx,.pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/pdf"
-                    required={newModule.content_type === 'slide_presentation' && !newModule.document_url}
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0]
-                      if (file) {
-                        if (file.size > 10 * 1024 * 1024) {
-                          alert('File size must be less than 10MB')
-                          e.target.value = ''
-                          return
-                        }
-                        const uploadedUrl = await uploadPresentationFile(file, newModule.document_url)
-                        if (uploadedUrl) {
-                          setNewModule(prev => ({ ...prev, document_url: uploadedUrl }))
-                        }
-                      }
-                    }}
-                    disabled={uploadingFile}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500] file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-[primary-500] file:text-white hover:file:bg-[primary-600] disabled:opacity-50"
-                  />
-                  {uploadingFile && (
-                    <div className="text-xs text-[primary-500] mt-1 flex items-center">
-                      <svg className="animate-spin h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Uploading...
-                    </div>
-                  )}
-                  {!uploadingFile && newModule.document_url && (
-                    <div className="text-xs text-green-600 mt-1">
-                      ? Presentation uploaded successfully
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div>
-                <label className="block text-xs font-medium text-black mb-1">Status *</label>
-                <select
-                  required
-                  value={newModule.status}
-                  onChange={(e) => setNewModule(prev => ({ ...prev, status: e.target.value as 'active' | 'inactive' | 'draft' }))}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
-                >
-                  <option value="draft">Draft</option>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </select>
               </div>
 
-              {/* Thumbnail Image */}
-              <div>
-                <label className="block text-xs font-medium text-black mb-1">Cover Image</label>
-                {newModule.thumbnail_url && (
-                  <div className="mb-2 relative w-full h-28 rounded-lg overflow-hidden border border-gray-200">
-                    <img src={newModule.thumbnail_url} alt="thumbnail" className="w-full h-full object-cover" />
-                    <button type="button" onClick={() => setNewModule(prev => ({ ...prev, thumbnail_url: '' }))}
-                      className="absolute top-1 right-1 p-1 bg-white rounded-full shadow text-gray-500 hover:text-red-500">
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
+              {/* Section 2: Main Content */}
+              <div className="border border-gray-200 rounded-lg p-4 space-y-3">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">🎥 Main Content</h3>
+                <div>
+                  <label className="block text-xs font-medium text-black mb-1">Content Type *</label>
+                  <select required value={newModule.content_type} onChange={(e) => setNewModule(prev => ({ ...prev, content_type: e.target.value as any }))}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c]">
+                    <option value="video">Video</option>
+                    <option value="canva_presentation">Canva Presentation</option>
+                    <option value="slide_presentation">Slide Presentation</option>
+                    <option value="online_document">Online Document</option>
+                    <option value="pdf_document">PDF Document</option>
+                    <option value="text">Text Only</option>
+                  </select>
+                </div>
+                {newModule.content_type === 'video' && (
+                  <div>
+                    <label className="block text-xs font-medium text-black mb-1">Video URL *</label>
+                    <input type="url" required value={newModule.video_url || ''} onChange={(e) => setNewModule(prev => ({ ...prev, video_url: e.target.value }))}
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c]" placeholder="https://www.youtube.com/watch?v=..." />
+                    <p className="text-xs text-gray-400 mt-1">Supports YouTube, Vimeo, and direct video URLs</p>
                   </div>
                 )}
-                <input type="file" accept="image/*" disabled={uploadingFile}
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0]
-                    if (file) {
-                      const url = await uploadThumbnail(file, newModule.thumbnail_url)
-                      if (url) setNewModule(prev => ({ ...prev, thumbnail_url: url }))
-                    }
-                  }}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-gray-100 file:text-gray-700 disabled:opacity-50"
-                />
-                {uploadingFile && <p className="text-xs text-gray-500 mt-1">Uploading...</p>}
+                {newModule.content_type === 'canva_presentation' && (
+                  <div>
+                    <label className="block text-xs font-medium text-black mb-1">Canva URL *</label>
+                    <input type="url" required value={newModule.canva_url || ''} onChange={(e) => setNewModule(prev => ({ ...prev, canva_url: e.target.value }))}
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c]" placeholder="https://www.canva.com/design/..." />
+                    <p className="text-xs text-gray-400 mt-1">Set sharing to "Anyone with the link can view"</p>
+                  </div>
+                )}
+                {newModule.content_type === 'online_document' && (
+                  <div>
+                    <label className="block text-xs font-medium text-black mb-1">Document URL *</label>
+                    <input type="url" required value={newModule.document_url || ''} onChange={(e) => setNewModule(prev => ({ ...prev, document_url: e.target.value }))}
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c]" placeholder="https://docs.google.com/document/..." />
+                  </div>
+                )}
+                {newModule.content_type === 'pdf_document' && (
+                  <div>
+                    <label className="block text-xs font-medium text-black mb-1">PDF File * <span className="text-gray-400 font-normal">(max 10MB)</span></label>
+                    <input type="file" accept=".pdf,application/pdf" required={!newModule.document_url} disabled={uploadingFile}
+                      onChange={async (e) => { const f = e.target.files?.[0]; if (f) { if (f.size > 10*1024*1024) { alert('Max 10MB'); e.target.value=''; return } const url = await uploadPDFFile(f, newModule.document_url); if (url) setNewModule(prev => ({ ...prev, document_url: url })) } }}
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-gray-100 file:text-gray-700 disabled:opacity-50" />
+                    {uploadingFile && <p className="text-xs text-blue-500 mt-1">Uploading...</p>}
+                    {!uploadingFile && newModule.document_url && <p className="text-xs text-green-600 mt-1">✓ Uploaded</p>}
+                  </div>
+                )}
+                {newModule.content_type === 'slide_presentation' && (
+                  <div>
+                    <label className="block text-xs font-medium text-black mb-1">Slides * <span className="text-gray-400 font-normal">(.ppt, .pptx, .pdf — max 10MB)</span></label>
+                    <input type="file" accept=".ppt,.pptx,.pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/pdf"
+                      required={!newModule.document_url} disabled={uploadingFile}
+                      onChange={async (e) => { const f = e.target.files?.[0]; if (f) { if (f.size > 10*1024*1024) { alert('Max 10MB'); e.target.value=''; return } const url = await uploadPresentationFile(f, newModule.document_url); if (url) setNewModule(prev => ({ ...prev, document_url: url })) } }}
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-gray-100 file:text-gray-700 disabled:opacity-50" />
+                    {uploadingFile && <p className="text-xs text-blue-500 mt-1">Uploading...</p>}
+                    {!uploadingFile && newModule.document_url && <p className="text-xs text-green-600 mt-1">✓ Uploaded</p>}
+                  </div>
+                )}
+                {newModule.content_type === 'text' && (
+                  <div>
+                    <label className="block text-xs font-medium text-black mb-1">Text Content</label>
+                    <textarea rows={4} value={newModule.text_content || ''} onChange={(e) => setNewModule(prev => ({ ...prev, text_content: e.target.value }))}
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c] resize-none" placeholder="Enter the main lesson text..." />
+                  </div>
+                )}
               </div>
 
-              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModuleModal(false)}
-                  disabled={submitting || uploadingFile}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting || uploadingFile}
+              {/* Section 3: Explanation / Lesson Body */}
+              <div className="border border-gray-200 rounded-lg p-4">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">📝 Explanation / Lesson Body</h3>
+                <textarea rows={4} value={newModule.explanation || ''} onChange={(e) => setNewModule(prev => ({ ...prev, explanation: e.target.value }))}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c] resize-none" placeholder="Explain the lesson in your own words, add context, background info..." />
+              </div>
+
+              {/* Section 5: Key Takeaways */}
+              <div className="border border-gray-200 rounded-lg p-4">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">🧠 Key Takeaways</h3>
+                <textarea rows={3} value={newModule.key_takeaways || ''} onChange={(e) => setNewModule(prev => ({ ...prev, key_takeaways: e.target.value }))}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c] resize-none" placeholder="• Key point 1&#10;• Key point 2&#10;• Key point 3" />
+              </div>
+
+              {/* Section 6: Quiz / Activity */}
+              <QuizBuilder
+                value={newModule.quiz_config ?? null}
+                onChange={(v) => setNewModule(prev => ({ ...prev, quiz_config: v }))}
+              />
+
+              {/* Section 7: Notes */}
+              <div className="border border-gray-200 rounded-lg p-4">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">💬 Notes</h3>
+                <textarea rows={3} value={newModule.notes_content || ''} onChange={(e) => setNewModule(prev => ({ ...prev, notes_content: e.target.value }))}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c] resize-none" placeholder="Instructor notes, reminders, or additional context..." />
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-2 border-t border-gray-100">
+                <button type="button" onClick={() => setShowAddModuleModal(false)} disabled={submitting || uploadingFile}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50">Cancel</button>
+                <button type="submit" disabled={submitting || uploadingFile}
                   className="px-4 py-2 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center space-x-2"
                   style={{ backgroundColor: getButtonBg() }}
                   onMouseEnter={(e) => !submitting && !uploadingFile && (e.currentTarget.style.backgroundColor = getButtonHoverBg())}
-                  onMouseLeave={(e) => !submitting && !uploadingFile && (e.currentTarget.style.backgroundColor = getButtonBg())}
-                >
+                  onMouseLeave={(e) => !submitting && !uploadingFile && (e.currentTarget.style.backgroundColor = getButtonBg())}>
                   {(submitting || uploadingFile) && <ButtonLoading />}
                   <span>{uploadingFile ? 'Uploading...' : submitting ? 'Creating...' : 'Create Module'}</span>
                 </button>
@@ -3587,268 +3329,157 @@ export default function CourseManagementPage() {
       {showEditModuleModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-100">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-black">Edit Module</h2>
-                <button 
-                  onClick={() => setShowEditModuleModal(false)}
-                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-black">Edit Module</h2>
+              <button onClick={() => setShowEditModuleModal(false)} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
             </div>
-
-            <form onSubmit={handleUpdateModule} className="p-6 space-y-6">
-              <div>
-                <label className="block text-xs font-medium text-black mb-1">Module Title *</label>
-                <input
-                  type="text"
-                  required
-                  value={newModule.title}
-                  onChange={(e) => setNewModule(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
-                  placeholder="Enter module title"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-black mb-1">Content Type *</label>
-                <select
-                  required
-                  value={newModule.content_type}
-                  onChange={(e) => setNewModule(prev => ({ ...prev, content_type: e.target.value as any }))}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
-                >
-                  <option value="video">Video</option>
-                  <option value="canva_presentation">Canva Presentation</option>
-                  <option value="slide_presentation">Slide Presentation</option>
-                  <option value="online_document">Online Document</option>
-                  <option value="pdf_document">Document</option>
-                </select>
-              </div>
-
-              {/* Canva URL field - only show when content type is canva_presentation */}
-              {newModule.content_type === 'canva_presentation' && (
+            <form onSubmit={handleUpdateModule} className="p-6 space-y-5">
+              {/* Section 1: Title + Info */}
+              <div className="border border-gray-200 rounded-lg p-4 space-y-3">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Module Title + Info</h3>
                 <div>
-                  <label className="block text-xs font-medium text-black mb-1">
-                    Canva Presentation URL *
-                    <span className="text-xs text-gray-500 block mt-1">
-                      Paste your Canva presentation share link or embed URL
-                    </span>
-                  </label>
-                  <input
-                    type="url"
-                    required={newModule.content_type === 'canva_presentation'}
-                    value={newModule.canva_url || ''}
-                    onChange={(e) => setNewModule(prev => ({ ...prev, canva_url: e.target.value }))}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
-                    placeholder="https://www.canva.com/design/..."
-                  />
-                  <div className="text-xs text-gray-500 mt-1">
-                    ?? Tip: Make sure your Canva presentation is set to "Anyone with the link can view"
+                  <label className="block text-xs font-medium text-black mb-1">Title *</label>
+                  <input type="text" required value={newModule.title} onChange={(e) => setNewModule(prev => ({ ...prev, title: e.target.value }))}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c] focus:border-[#1f7a8c]" placeholder="Enter module title" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-black mb-1">Status *</label>
+                    <select required value={newModule.status} onChange={(e) => setNewModule(prev => ({ ...prev, status: e.target.value as any }))}
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c]">
+                      <option value="draft">Draft</option>
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-black mb-1">Duration (min)</label>
+                    <input type="number" min={0} value={newModule.duration_minutes || ''} onChange={(e) => setNewModule(prev => ({ ...prev, duration_minutes: parseInt(e.target.value) || 0 }))}
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c]" placeholder="0" />
                   </div>
                 </div>
-              )}
-
-              {/* Video URL field - only show when content type is video */}
-              {newModule.content_type === 'video' && (
                 <div>
-                  <label className="block text-xs font-medium text-black mb-1">
-                    Video URL *
-                    <span className="text-xs text-gray-500 block mt-1">
-                      Paste your YouTube, Vimeo, or other video link
-                    </span>
-                  </label>
-                  <input
-                    type="url"
-                    required={newModule.content_type === 'video'}
-                    value={newModule.video_url || ''}
-                    onChange={(e) => setNewModule(prev => ({ ...prev, video_url: e.target.value }))}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
-                    placeholder="https://www.youtube.com/watch?v=..."
-                  />
-                  <div className="text-xs text-gray-500 mt-1">
-                    ?? Tip: Supports YouTube, Vimeo, and direct video URLs
-                  </div>
-                </div>
-              )}
-
-              {/* Document URL field - only show when content type is online_document */}
-              {newModule.content_type === 'online_document' && (
-                <div>
-                  <label className="block text-xs font-medium text-black mb-1">
-                    Document URL *
-                    <span className="text-xs text-gray-500 block mt-1">
-                      Paste your Google Docs, PDF, or document link
-                    </span>
-                  </label>
-                  <input
-                    type="url"
-                    required={newModule.content_type === 'online_document'}
-                    value={newModule.document_url || ''}
-                    onChange={(e) => setNewModule(prev => ({ ...prev, document_url: e.target.value }))}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
-                    placeholder="https://docs.google.com/document/..."
-                  />
-                  <div className="text-xs text-gray-500 mt-1">
-                    ?? Tip: Make sure your document is set to "Anyone with the link can view"
-                  </div>
-                </div>
-              )}
-
-              {/* PDF Document Upload - only show when content type is pdf_document */}
-              {newModule.content_type === 'pdf_document' && (
-                <div>
-                  <label className="block text-xs font-medium text-black mb-1">
-                    PDF Document *
-                    <span className="text-xs text-gray-500 block mt-1">
-                      Upload a PDF file (max 10MB)
-                    </span>
-                  </label>
-                  <input
-                    type="file"
-                    accept=".pdf,application/pdf"
-                    required={newModule.content_type === 'pdf_document' && !newModule.document_url}
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0]
-                      if (file) {
-                        if (file.size > 10 * 1024 * 1024) {
-                          alert('File size must be less than 10MB')
-                          e.target.value = ''
-                          return
-                        }
-                        const uploadedUrl = await uploadPDFFile(file, newModule.document_url)
-                        if (uploadedUrl) {
-                          setNewModule(prev => ({ ...prev, document_url: uploadedUrl }))
-                        }
-                      }
-                    }}
-                    disabled={uploadingFile}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500] file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-[primary-500] file:text-white hover:file:bg-[primary-600] disabled:opacity-50"
-                  />
-                  {uploadingFile && (
-                    <div className="text-xs text-[primary-500] mt-1 flex items-center">
-                      <svg className="animate-spin h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Uploading...
+                  <label className="block text-xs font-medium text-black mb-1">Cover Image</label>
+                  {newModule.thumbnail_url && (
+                    <div className="mb-2 relative w-full h-24 rounded-lg overflow-hidden border border-gray-200">
+                      <img src={newModule.thumbnail_url} alt="thumbnail" className="w-full h-full object-cover" />
+                      <button type="button" onClick={() => setNewModule(prev => ({ ...prev, thumbnail_url: '' }))}
+                        className="absolute top-1 right-1 p-1 bg-white rounded-full shadow text-gray-500 hover:text-red-500">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                      </button>
                     </div>
                   )}
-                  {!uploadingFile && newModule.document_url && (
-                    <div className="text-xs text-green-600 mt-1">
-                      ? File uploaded successfully
-                    </div>
-                  )}
+                  <input type="file" accept="image/*" disabled={uploadingFile}
+                    onChange={async (e) => { const f = e.target.files?.[0]; if (f) { const url = await uploadThumbnail(f, newModule.thumbnail_url); if (url) setNewModule(prev => ({ ...prev, thumbnail_url: url })) } }}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-gray-100 file:text-gray-700 disabled:opacity-50" />
                 </div>
-              )}
-
-              {/* Slide Presentation Upload - only show when content type is slide_presentation */}
-              {newModule.content_type === 'slide_presentation' && (
-                <div>
-                  <label className="block text-xs font-medium text-black mb-1">
-                    Slide Presentation *
-                    <span className="text-xs text-gray-500 block mt-1">
-                      Upload PowerPoint (.ppt, .pptx) or PDF (max 10MB)
-                    </span>
-                  </label>
-                  <input
-                    type="file"
-                    accept=".ppt,.pptx,.pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/pdf"
-                    required={newModule.content_type === 'slide_presentation' && !newModule.document_url}
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0]
-                      if (file) {
-                        if (file.size > 10 * 1024 * 1024) {
-                          alert('File size must be less than 10MB')
-                          e.target.value = ''
-                          return
-                        }
-                        const uploadedUrl = await uploadPresentationFile(file, newModule.document_url)
-                        if (uploadedUrl) {
-                          setNewModule(prev => ({ ...prev, document_url: uploadedUrl }))
-                        }
-                      }
-                    }}
-                    disabled={uploadingFile}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500] file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-[primary-500] file:text-white hover:file:bg-[primary-600] disabled:opacity-50"
-                  />
-                  {uploadingFile && (
-                    <div className="text-xs text-[primary-500] mt-1 flex items-center">
-                      <svg className="animate-spin h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Uploading...
-                    </div>
-                  )}
-                  {!uploadingFile && newModule.document_url && (
-                    <div className="text-xs text-green-600 mt-1">
-                      ? Presentation uploaded successfully
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div>
-                <label className="block text-xs font-medium text-black mb-1">Status *</label>
-                <select
-                  required
-                  value={newModule.status}
-                  onChange={(e) => setNewModule(prev => ({ ...prev, status: e.target.value as 'active' | 'inactive' | 'draft' }))}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[primary-500] focus:border-[primary-500]"
-                >
-                  <option value="draft">Draft</option>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </select>
               </div>
 
-              {/* Thumbnail Image */}
-              <div>
-                <label className="block text-xs font-medium text-black mb-1">Cover Image</label>
-                {newModule.thumbnail_url && (
-                  <div className="mb-2 relative w-full h-28 rounded-lg overflow-hidden border border-gray-200">
-                    <img src={newModule.thumbnail_url} alt="thumbnail" className="w-full h-full object-cover" />
-                    <button type="button" onClick={() => setNewModule(prev => ({ ...prev, thumbnail_url: '' }))}
-                      className="absolute top-1 right-1 p-1 bg-white rounded-full shadow text-gray-500 hover:text-red-500">
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
+              {/* Section 2: Main Content */}
+              <div className="border border-gray-200 rounded-lg p-4 space-y-3">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">🎥 Main Content</h3>
+                <div>
+                  <label className="block text-xs font-medium text-black mb-1">Content Type *</label>
+                  <select required value={newModule.content_type} onChange={(e) => setNewModule(prev => ({ ...prev, content_type: e.target.value as any }))}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c]">
+                    <option value="video">Video</option>
+                    <option value="canva_presentation">Canva Presentation</option>
+                    <option value="slide_presentation">Slide Presentation</option>
+                    <option value="online_document">Online Document</option>
+                    <option value="pdf_document">PDF Document</option>
+                    <option value="text">Text Only</option>
+                  </select>
+                </div>
+                {newModule.content_type === 'video' && (
+                  <div>
+                    <label className="block text-xs font-medium text-black mb-1">Video URL *</label>
+                    <input type="url" required value={newModule.video_url || ''} onChange={(e) => setNewModule(prev => ({ ...prev, video_url: e.target.value }))}
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c]" placeholder="https://www.youtube.com/watch?v=..." />
+                    <p className="text-xs text-gray-400 mt-1">Supports YouTube, Vimeo, and direct video URLs</p>
                   </div>
                 )}
-                <input type="file" accept="image/*" disabled={uploadingFile}
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0]
-                    if (file) {
-                      const url = await uploadThumbnail(file, newModule.thumbnail_url)
-                      if (url) setNewModule(prev => ({ ...prev, thumbnail_url: url }))
-                    }
-                  }}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-gray-100 file:text-gray-700 disabled:opacity-50"
-                />
-                {uploadingFile && <p className="text-xs text-gray-500 mt-1">Uploading...</p>}
+                {newModule.content_type === 'canva_presentation' && (
+                  <div>
+                    <label className="block text-xs font-medium text-black mb-1">Canva URL *</label>
+                    <input type="url" required value={newModule.canva_url || ''} onChange={(e) => setNewModule(prev => ({ ...prev, canva_url: e.target.value }))}
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c]" placeholder="https://www.canva.com/design/..." />
+                    <p className="text-xs text-gray-400 mt-1">Set sharing to "Anyone with the link can view"</p>
+                  </div>
+                )}
+                {newModule.content_type === 'online_document' && (
+                  <div>
+                    <label className="block text-xs font-medium text-black mb-1">Document URL *</label>
+                    <input type="url" required value={newModule.document_url || ''} onChange={(e) => setNewModule(prev => ({ ...prev, document_url: e.target.value }))}
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c]" placeholder="https://docs.google.com/document/..." />
+                  </div>
+                )}
+                {newModule.content_type === 'pdf_document' && (
+                  <div>
+                    <label className="block text-xs font-medium text-black mb-1">PDF File <span className="text-gray-400 font-normal">(max 10MB)</span></label>
+                    <input type="file" accept=".pdf,application/pdf" disabled={uploadingFile}
+                      onChange={async (e) => { const f = e.target.files?.[0]; if (f) { if (f.size > 10*1024*1024) { alert('Max 10MB'); e.target.value=''; return } const url = await uploadPDFFile(f, newModule.document_url); if (url) setNewModule(prev => ({ ...prev, document_url: url })) } }}
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-gray-100 file:text-gray-700 disabled:opacity-50" />
+                    {uploadingFile && <p className="text-xs text-blue-500 mt-1">Uploading...</p>}
+                    {!uploadingFile && newModule.document_url && <p className="text-xs text-green-600 mt-1">✓ Uploaded</p>}
+                  </div>
+                )}
+                {newModule.content_type === 'slide_presentation' && (
+                  <div>
+                    <label className="block text-xs font-medium text-black mb-1">Slides <span className="text-gray-400 font-normal">(.ppt, .pptx, .pdf — max 10MB)</span></label>
+                    <input type="file" accept=".ppt,.pptx,.pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/pdf"
+                      disabled={uploadingFile}
+                      onChange={async (e) => { const f = e.target.files?.[0]; if (f) { if (f.size > 10*1024*1024) { alert('Max 10MB'); e.target.value=''; return } const url = await uploadPresentationFile(f, newModule.document_url); if (url) setNewModule(prev => ({ ...prev, document_url: url })) } }}
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-gray-100 file:text-gray-700 disabled:opacity-50" />
+                    {uploadingFile && <p className="text-xs text-blue-500 mt-1">Uploading...</p>}
+                    {!uploadingFile && newModule.document_url && <p className="text-xs text-green-600 mt-1">✓ Uploaded</p>}
+                  </div>
+                )}
+                {newModule.content_type === 'text' && (
+                  <div>
+                    <label className="block text-xs font-medium text-black mb-1">Text Content</label>
+                    <textarea rows={4} value={newModule.text_content || ''} onChange={(e) => setNewModule(prev => ({ ...prev, text_content: e.target.value }))}
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c] resize-none" placeholder="Enter the main lesson text..." />
+                  </div>
+                )}
               </div>
 
-              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
-                <button
-                  type="button"
-                  onClick={() => setShowEditModuleModal(false)}
-                  disabled={submitting || uploadingFile}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting || uploadingFile}
+              {/* Section 3: Explanation / Lesson Body */}
+              <div className="border border-gray-200 rounded-lg p-4">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">📝 Explanation / Lesson Body</h3>
+                <textarea rows={4} value={newModule.explanation || ''} onChange={(e) => setNewModule(prev => ({ ...prev, explanation: e.target.value }))}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c] resize-none" placeholder="Explain the lesson in your own words, add context, background info..." />
+              </div>
+
+              {/* Section 5: Key Takeaways */}
+              <div className="border border-gray-200 rounded-lg p-4">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">🧠 Key Takeaways</h3>
+                <textarea rows={3} value={newModule.key_takeaways || ''} onChange={(e) => setNewModule(prev => ({ ...prev, key_takeaways: e.target.value }))}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c] resize-none" placeholder="• Key point 1&#10;• Key point 2&#10;• Key point 3" />
+              </div>
+
+              {/* Section 6: Quiz / Activity */}
+              <QuizBuilder
+                value={newModule.quiz_config ?? null}
+                onChange={(v) => setNewModule(prev => ({ ...prev, quiz_config: v }))}
+              />
+
+              {/* Section 7: Notes */}
+              <div className="border border-gray-200 rounded-lg p-4">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">💬 Notes</h3>
+                <textarea rows={3} value={newModule.notes_content || ''} onChange={(e) => setNewModule(prev => ({ ...prev, notes_content: e.target.value }))}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c] resize-none" placeholder="Instructor notes, reminders, or additional context..." />
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-2 border-t border-gray-100">
+                <button type="button" onClick={() => setShowEditModuleModal(false)} disabled={submitting || uploadingFile}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50">Cancel</button>
+                <button type="submit" disabled={submitting || uploadingFile}
                   className="px-4 py-2 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center space-x-2"
                   style={{ backgroundColor: getButtonBg() }}
                   onMouseEnter={(e) => !submitting && !uploadingFile && (e.currentTarget.style.backgroundColor = getButtonHoverBg())}
-                  onMouseLeave={(e) => !submitting && !uploadingFile && (e.currentTarget.style.backgroundColor = getButtonBg())}
-                >
+                  onMouseLeave={(e) => !submitting && !uploadingFile && (e.currentTarget.style.backgroundColor = getButtonBg())}>
                   {(submitting || uploadingFile) && <ButtonLoading />}
                   <span>{uploadingFile ? 'Uploading...' : submitting ? 'Updating...' : 'Update Module'}</span>
                 </button>
@@ -3857,6 +3488,8 @@ export default function CourseManagementPage() {
           </div>
         </div>
       )}
+
+
 
       {/* Edit Course Modal */}
       {showEditCourseModal && (

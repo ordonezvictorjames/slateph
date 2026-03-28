@@ -11,7 +11,10 @@ export async function GET() {
     const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME)
     
     if (!sessionCookie?.value) {
-      return NextResponse.json({ session: null }, { status: 200 })
+      return NextResponse.json({ session: null }, { 
+        status: 200,
+        headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
+      })
     }
 
     // Decode the session data (userId, role, email)
@@ -24,7 +27,10 @@ export async function GET() {
         role: sessionData.role,
         email: sessionData.email
       } 
-    }, { status: 200 })
+    }, { 
+      status: 200,
+      headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
+    })
   } catch (error) {
     console.error('Session retrieval error:', error)
     return NextResponse.json({ session: null }, { status: 200 })
