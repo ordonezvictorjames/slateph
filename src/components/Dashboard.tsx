@@ -99,8 +99,10 @@ export default function Dashboard() {
           hideHamburger={showChat || showAI || showPython}
         />
         <div className="flex-1 flex flex-col ml-0 lg:ml-16">
-          <div className="w-full text-center py-1 text-xs font-medium tracking-wide text-white" style={{ backgroundColor: '#006d77' }}>
-            🧪 Beta Test — Encounter any issues? Report them via Bugs &amp; Requests in the sidebar.
+          <div className="w-full overflow-hidden py-1 border-b border-gray-100" style={{ backgroundColor: '#fff' }}>
+            <span className="animate-marquee text-xs font-medium tracking-wide" style={{ color: '#006d77' }}>
+              Beta Test — Encounter any issues? Report them via Bugs &amp; Requests in the sidebar.
+            </span>
           </div>
           <main className="flex-1">{renderCurrentPage()}</main>
         </div>

@@ -24,6 +24,7 @@ export interface QuizConfig {
   is_open: boolean
   available_from?: string
   available_until?: string
+  instructions?: string
 }
 
 export const emptyQuizConfig = (): QuizConfig => ({
@@ -33,6 +34,7 @@ export const emptyQuizConfig = (): QuizConfig => ({
   questions: [],
   is_open: true,
   available_from: '',
+  instructions: '',
   available_until: '',
 })
 
@@ -210,6 +212,18 @@ export default function QuizBuilder({ value, onChange }: Props) {
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Instructions */}
+          <div>
+            <label className="block text-xs font-medium text-black mb-1">Instructions</label>
+            <textarea
+              rows={3}
+              value={cfg.instructions || ''}
+              onChange={e => update({ instructions: e.target.value })}
+              placeholder="Enter test instructions for students..."
+              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c] resize-none"
+            />
           </div>
 
           {/* Questions */}

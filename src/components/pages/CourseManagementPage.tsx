@@ -2543,9 +2543,9 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
                                     )}
                                     <div className="flex items-center gap-1">
                                       <button onClick={() => handleOpenTest(mod)}
-                                        className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-full border border-[#1f7a8c] bg-white text-[#1f7a8c] hover:bg-[#e6f4f7] transition-colors" title="Add/Edit Test">
+                                        className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-full border border-[#1f7a8c] bg-white text-[#1f7a8c] hover:bg-[#e6f4f7] transition-colors" title="Create/Edit Test">
                                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
-                                        Add Test
+                                        Create Test
                                       </button>
                                       <button onClick={() => handleEditModule(mod)}
                                         className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-full border border-[#1f7a8c] bg-white text-[#1f7a8c] hover:bg-[#e6f4f7] transition-colors" title="Edit">
@@ -3635,7 +3635,7 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
           <div className="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-100 flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-semibold text-black">Add Test</h2>
+                <h2 className="text-xl font-semibold text-black">Create Test</h2>
                 <p className="text-xs text-gray-500 mt-0.5">{testModule.title}</p>
               </div>
               <button onClick={() => { setShowTestModal(false); setTestModule(null); setTestQuizConfig(null) }}

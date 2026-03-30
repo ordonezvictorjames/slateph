@@ -245,3 +245,14 @@ body {
 .scrollbar-autohide:hover::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* Marquee / ticker animation */
+@keyframes marquee {
+  0%   { transform: translateX(100vw); }
+  100% { transform: translateX(-100%); }
+}
+.animate-marquee {
+  display: inline-block;
+  white-space: nowrap;
+  animation: marquee 20s linear infinite;
+}

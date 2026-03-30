@@ -75,12 +75,41 @@ function ContentEmbed({ module, textBody }: { module: Module; textBody: string }
 
     case 'canva_presentation': {
       if (!module.canva_url) return <Placeholder label="No Canva URL provided." />
-      const src = module.canva_url.includes('/embed')
-        ? module.canva_url
-        : module.canva_url.replace(/\?.*$/, '') + '?embed'
+      // canva.link short URLs cannot be embedded — show a fallback
+      if (module.canva_url.includes('canva.link')) {
+        return (
+          <div className="flex flex-col items-center gap-4 py-10 bg-orange-50 rounded-xl border border-orange-100">
+            <svg className="w-10 h-10 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div className="text-center px-4">
+              <p className="text-sm font-semibold text-orange-800 mb-1">Short link cannot be embedded</p>
+              <p className="text-xs text-orange-600 mb-3">Use the full Canva embed URL instead.<br/>In Canva: Share → More → Embed → copy the URL ending in <code className="bg-orange-100 px-1 rounded">/view?embed</code></p>
+            </div>
+            <a href={module.canva_url} target="_blank" rel="noopener noreferrer"
+              className="px-4 py-2 bg-orange-500 text-white text-sm rounded-lg hover:bg-orange-600 transition-colors">
+              Open in Canva
+            </a>
+          </div>
+        )
+      }
+      // Canva embed requires the URL to end with /view?embed
+      let canvaUrl = module.canva_url.trim()
+      if (canvaUrl.includes('?embed')) {
+        // already correct
+      } else if (canvaUrl.includes('/embed')) {
+        // old-style embed path — leave as-is
+      } else {
+        // strip any query string, ensure path ends with /view, then add ?embed
+        canvaUrl = canvaUrl.replace(/\?.*$/, '').replace(/\/(edit|present|watch)$/, '/view')
+        if (!canvaUrl.endsWith('/view')) canvaUrl = canvaUrl.replace(/\/$/, '') + '/view'
+        canvaUrl = canvaUrl + '?embed'
+      }
       return (
         <div className="w-full aspect-video rounded-xl overflow-hidden border border-gray-200">
-          <iframe src={src} className="w-full h-full" allowFullScreen title={module.title} />
+          <iframe src={canvaUrl} className="w-full h-full" allowFullScreen
+            allow="fullscreen" title={module.title}
+            style={{ border: 'none' }} />
         </div>
       )
     }
