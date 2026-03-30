@@ -54,7 +54,7 @@ interface Module {
 
 type ViewType = 'courses' | 'subjects' | 'lesson'
 
-export default function MyCoursesPage() {
+export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: string }) {
   const { user } = useAuth()
   const supabase = createClient()
 
@@ -86,6 +86,14 @@ export default function MyCoursesPage() {
   useEffect(() => {
     if (user?.id) fetchEnrolledCourses()
   }, [user])
+
+  // Auto-select course when navigated from dashboard
+  useEffect(() => {
+    if (initialCourseId && courses.length > 0 && !selectedCourse) {
+      const course = courses.find(c => c.id === initialCourseId)
+      if (course) handleCourseSelect(course)
+    }
+  }, [initialCourseId, courses])
 
   const fetchEnrolledCourses = async () => {
     try {
@@ -259,7 +267,7 @@ export default function MyCoursesPage() {
         <div className="flex flex-col lg:flex-row h-auto lg:h-[calc(100vh-100px)] gap-0 overflow-hidden rounded-2xl border border-gray-200 bg-white">
 
           {/* Left Panel */}
-          <div className={`w-full lg:w-[40%] flex-shrink-0 flex flex-col border-b lg:border-b-0 lg:border-r border-gray-200 ${previewCourse ? 'hidden lg:flex' : 'flex'}`} style={{ minHeight: 0 }}>
+          <div className={`w-full lg:w-[40%] flex-shrink-0 flex flex-col border-b lg:border-b-0 lg:border-r border-gray-200 bg-gray-50 ${previewCourse ? 'hidden lg:flex' : 'flex'}`} style={{ minHeight: 0 }}>
             <div className="px-5 pt-5 pb-3 border-b border-gray-100">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-gray-900">My Courses</h2>
@@ -305,8 +313,8 @@ export default function MyCoursesPage() {
                   const isSelected = previewCourse?.id === course.id
                   return (
                     <div key={course.id} onClick={() => setPreviewCourse(course)}
-                      className={`flex items-center gap-3 px-4 py-3.5 cursor-pointer border-b border-gray-100 transition-colors ${isSelected ? 'bg-gray-50' : 'hover:bg-gray-50'}`}>
-                      <div className="flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border border-gray-200 bg-gray-100">
+                      className={`flex items-center gap-4 px-4 py-5 cursor-pointer border-b border-gray-100 transition-colors ${isSelected ? 'bg-gray-50' : 'hover:bg-gray-50'}`}>
+                      <div className="flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border border-gray-200 bg-gray-100">
                         {course.thumbnail_url ? (
                           <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover" />
                         ) : (

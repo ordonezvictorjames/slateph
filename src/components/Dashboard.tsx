@@ -29,9 +29,10 @@ import BadgesPage from '@/components/pages/BadgesPage'
 export type PageType = 'dashboard' | 'user-management' | 'course-management' | 'my-courses' | 'schedule' | 'analytics' | 'profile' | 'settings' | 'system-tracker' | 'code-generator' | 'feature-requests' | 'tasks' | 'games' | 'activity' | 'ai-assistant' | 'library' | 'badges'
 
 export default function Dashboard() {
-  const { signOut } = useAuth()
+  const { signOut, user } = useAuth()
   const [currentPage, setCurrentPage] = useState<PageType>('dashboard')
   const [profileUserId, setProfileUserId] = useState<string | undefined>(undefined)
+  const [initialCourseId, setInitialCourseId] = useState<string | undefined>(undefined)
   const [isPageTransitioning, setIsPageTransitioning] = useState(false)
   const [showChat, setShowChat] = useState(false)
   const [showAI, setShowAI] = useState(false)
@@ -41,6 +42,11 @@ export default function Dashboard() {
   const navigateToProfile = (userId?: string) => {
     setProfileUserId(userId)
     setCurrentPage('profile')
+  }
+
+  const navigateToPage = (page: PageType, courseId?: string) => {
+    setInitialCourseId(courseId)
+    setCurrentPage(page)
   }
 
   // Page transition loading effect
@@ -64,10 +70,10 @@ export default function Dashboard() {
     const userRole = user?.profile?.role || 'trainee'
     
     switch (currentPage) {
-      case 'dashboard': return <DashboardHome onNavigate={setCurrentPage} />
+      case 'dashboard': return <DashboardHome onNavigate={navigateToPage} />
       case 'user-management': return userRole === 'instructor' ? <MyStudentsPage /> : <UserManagementPage onNavigateToProfile={navigateToProfile} />
-      case 'course-management': return <CourseManagementPage />
-      case 'my-courses': return <MyCoursesPage />
+      case 'course-management': return <CourseManagementPage initialCourseId={initialCourseId} />
+      case 'my-courses': return <MyCoursesPage initialCourseId={initialCourseId} />
       case 'schedule': return <SchedulePage />
       case 'analytics': return <AnalyticsPage />
       case 'profile': return <ProfilePage userId={profileUserId} onNavigateToProfile={navigateToProfile} />
@@ -93,6 +99,9 @@ export default function Dashboard() {
           hideHamburger={showChat || showAI || showPython}
         />
         <div className="flex-1 flex flex-col ml-0 lg:ml-16">
+          <div className="w-full text-center py-1 text-xs font-medium tracking-wide text-white" style={{ backgroundColor: '#006d77' }}>
+            🧪 Beta Test — Encounter any issues? Report them via Bugs &amp; Requests in the sidebar.
+          </div>
           <main className="flex-1">{renderCurrentPage()}</main>
         </div>
         {/* Floating Action Menu */}

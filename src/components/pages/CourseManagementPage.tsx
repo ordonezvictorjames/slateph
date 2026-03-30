@@ -103,7 +103,7 @@ interface NewCourseModule {
   quiz_config?: QuizConfig | null
 }
 
-export default function CourseManagementPage() {
+export default function CourseManagementPage({ initialCourseId }: { initialCourseId?: string }) {
   const { user } = useAuth()
   
   // Permission check: Only admins and developers can access this page
@@ -167,6 +167,10 @@ export default function CourseManagementPage() {
   const [showPresentationModal, setShowPresentationModal] = useState(false)
   const [showEnrolltraineesModal, setShowEnrolltraineesModal] = useState(false)
   const [currentPresentationModule, setCurrentPresentationModule] = useState<CourseModule | null>(null)
+  const [showTestModal, setShowTestModal] = useState(false)
+  const [testModule, setTestModule] = useState<CourseModule | null>(null)
+  const [testQuizConfig, setTestQuizConfig] = useState<QuizConfig | null>(null)
+  const [savingTest, setSavingTest] = useState(false)
   
   // View mode state removed - card view only
 
@@ -710,18 +714,16 @@ export default function CourseManagementPage() {
       const { data, error } = await supabase
         .from('profiles')
         .select('id, first_name, last_name, email, role')
-        .in('role', ['shs_student', 'jhs_student', 'college_student', 'scholar'])
+        .in('role', ['shs_student', 'jhs_student', 'college_student', 'scholar', 'tesda_scholar'])
         .order('first_name', { ascending: true })
 
       if (error) {
-        // Silently handle RLS policy restrictions - set empty array to prevent UI issues
         settrainees([])
         return
       }
 
       settrainees(data || [])
     } catch (error) {
-      // Silently handle errors - set empty array to prevent UI issues
       settrainees([])
     }
   }
@@ -745,19 +747,29 @@ export default function CourseManagementPage() {
     }
   }
 
-  const fetchEnrollments = async (courseId: string, enrollmentType: 'trainee' | 'tesda_scholar' | 'both' = 'both') => {
+  const fetchEnrollments = async (courseId: string) => {
       try {
-        const { data, error } = await supabase
-          .from('course_enrollments')
-          .select(`
-            id,
-            enrolled_at,
-            status,
-            trainee_id,
-            trainee:profiles!course_enrollments_trainee_id_fkey(id, first_name, last_name, email, role)
-          `)
-          .eq('course_id', courseId)
-          .order('enrolled_at', { ascending: false })
+        // Use RPC to bypass RLS (same as UserManagementPage)
+        const { data: allUsers, error: studentsError } = await supabase.rpc('get_all_users')
+
+        if (studentsError) {
+          console.error('Error fetching students for enrollment:', studentsError.message)
+        }
+
+        const studentRoles = ['shs_student', 'jhs_student', 'college_student', 'scholar', 'tesda_scholar']
+        const freshTrainees = (allUsers || []).filter((u: {role: string}) => studentRoles.includes(u.role))
+        settrainees(freshTrainees)
+
+        const { data: enrollData, error: enrollError } = await supabase
+          .rpc('get_course_enrollments', { p_course_id: courseId })
+
+        if (enrollError) {
+          console.error('Error fetching enrollments:', enrollError.message)
+          return
+        }
+
+        const error = enrollError
+        const data = enrollData
 
         if (error) {
           console.error('Error fetching enrollments:', error)
@@ -765,18 +777,7 @@ export default function CourseManagementPage() {
           return
         }
 
-        interface EnrollmentData {
-          id: string
-          enrolled_at: string
-          status: string
-          trainee: {
-            id: string
-            first_name: string
-            last_name: string
-            email: string
-          }
-        }
-
+        // Map enrolled trainees using freshTrainees (already fetched via RPC)
         type Enrolledtrainee = {
           id: string
           first_name: string
@@ -787,28 +788,24 @@ export default function CourseManagementPage() {
           status: string
         }
 
-        const enrolled: Enrolledtrainee[] = (data || []).map((enrollment: EnrollmentData) => ({
-          ...enrollment.trainee,
-          enrollment_id: enrollment.id,
-          enrolled_at: enrollment.enrolled_at,
-          status: enrollment.status
-        }))
+        const enrolled: Enrolledtrainee[] = (data || []).map((enrollment: { id: string; enrolled_at: string; status: string; trainee_id: string }) => {
+          const profile = freshTrainees.find((t: { id: string }) => t.id === enrollment.trainee_id) as any
+          return {
+            id: enrollment.trainee_id,
+            first_name: profile?.first_name || '',
+            last_name: profile?.last_name || '',
+            email: profile?.email || '',
+            enrollment_id: enrollment.id,
+            enrolled_at: enrollment.enrolled_at,
+            status: enrollment.status
+          }
+        }).filter((e: Enrolledtrainee) => e.first_name || e.last_name)
 
         setEnrolledtrainees(enrolled)
 
-        // Filter available trainees based on enrollment type and not already enrolled
+        // Show all students not already enrolled — no enrollment type filtering
         const enrolledtraineeIds = enrolled.map((s: Enrolledtrainee) => s.id)
-        let available = trainees.filter(trainee => !enrolledtraineeIds.includes(trainee.id))
-        
-        // Further filter by enrollment type
-        if (enrollmentType === 'trainee') {
-          // Only show students (not scholars)
-          available = available.filter(t => t.role === 'shs_student' || t.role === 'jhs_student' || t.role === 'college_student')
-        } else if (enrollmentType === 'tesda_scholar') {
-          // Only show scholars
-          available = available.filter(t => t.role === 'tesda_scholar')
-        }
-        // If 'both', show all available students (no additional filtering needed)
+        const available = freshTrainees.filter((trainee: {id: string}) => !enrolledtraineeIds.includes(trainee.id))
         
         setAvailabletrainees(available)
 
@@ -859,6 +856,14 @@ export default function CourseManagementPage() {
     fetchInstructors()
     fetchStatistics()
   }, [])
+
+  // Auto-select course when navigated from dashboard
+  useEffect(() => {
+    if (initialCourseId && courses.length > 0 && !selectedCourse) {
+      const course = courses.find(c => c.id === initialCourseId)
+      if (course) handleCourseSelect(course)
+    }
+  }, [initialCourseId, courses])
 
   // Refresh trainees when component becomes visible (e.g., when navigating back from User Management)
   useEffect(() => {
@@ -1051,7 +1056,7 @@ export default function CourseManagementPage() {
         .insert([{
           course_id: selectedCourse.id,
           title: newSubject.title,
-          description: newSubject.title,
+          description: newSubject.description || newSubject.title,
           instructor_id: newSubject.instructor_id || null,
           status: newSubject.status,
           enrollment_type: newSubject.enrollment_type,
@@ -1125,7 +1130,7 @@ export default function CourseManagementPage() {
       const moduleData = {
         subject_id: selectedSubject.id,
         title: newModule.title,
-        description: newModule.title,
+        description: newModule.description || newModule.title,
         content_type: newModule.content_type,
         status: newModule.status,
         order_index: nextOrderIndex,
@@ -1246,7 +1251,7 @@ export default function CourseManagementPage() {
     try {
       const updateData = {
         title: newModule.title,
-        description: newModule.title,
+        description: newModule.description || newModule.title,
         content_type: newModule.content_type,
         status: newModule.status,
         duration_minutes: newModule.duration_minutes || null,
@@ -1325,6 +1330,41 @@ export default function CourseManagementPage() {
   const handleDeleteModule = (module: CourseModule) => {
     setDeletingItem({ type: 'module', item: module })
     setShowDeleteModal(true)
+  }
+
+  const handleOpenTest = (module: CourseModule) => {
+    setTestModule(module)
+    let parsed: any = {}
+    try { parsed = module.text_content ? JSON.parse(module.text_content) : {} } catch { parsed = {} }
+    let quizConfig = null
+    try { quizConfig = parsed.quiz_config ? (typeof parsed.quiz_config === 'string' ? JSON.parse(parsed.quiz_config) : parsed.quiz_config) : null } catch { quizConfig = null }
+    setTestQuizConfig(quizConfig)
+    setShowTestModal(true)
+  }
+
+  const handleSaveTest = async () => {
+    if (!testModule) return
+    setSavingTest(true)
+    try {
+      let parsed: any = {}
+      try { parsed = testModule.text_content ? JSON.parse(testModule.text_content) : {} } catch { parsed = {} }
+      const updated = { ...parsed, quiz_config: testQuizConfig || null }
+      const { error } = await supabase
+        .from('modules')
+        .update({ text_content: JSON.stringify(updated) })
+        .eq('id', testModule.id)
+      if (error) { showError('Error', 'Failed to save test: ' + error.message); return }
+      // If quiz was removed, delete old grades
+      if (!testQuizConfig && parsed.quiz_config) {
+        await supabase.from('quiz_grades').delete().eq('module_id', testModule.id)
+      }
+      if (selectedSubject) await fetchModules(selectedSubject.id)
+      setShowTestModal(false)
+      setTestModule(null)
+      setTestQuizConfig(null)
+      showSuccess('Success', 'Test saved successfully!')
+    } catch { showError('Error', 'Failed to save test.') }
+    finally { setSavingTest(false) }
   }
 
   // Edit and Delete functions for courses
@@ -1471,7 +1511,7 @@ export default function CourseManagementPage() {
         .from('subjects')
         .update({
           title: newSubject.title,
-          description: newSubject.title,
+          description: newSubject.description || newSubject.title,
           instructor_id: newSubject.instructor_id || null,
           status: newSubject.status,
           enrollment_type: newSubject.enrollment_type,
@@ -1518,7 +1558,7 @@ export default function CourseManagementPage() {
       setSelectedCourseForEnrollment(course)
       setSelectedtrainees([])
       setTraineeRoleFilter('all')
-      fetchEnrollments(course.id, course.enrollment_type)
+      fetchEnrollments(course.id)
       setShowEnrolltraineesModal(true)
     }
 
@@ -2055,7 +2095,7 @@ export default function CourseManagementPage() {
         <div className="flex flex-col lg:flex-row h-auto lg:h-[calc(100vh-100px)] gap-0 overflow-hidden rounded-2xl border border-gray-200 bg-white">
 
           {/* Left Panel - Course List: full width on mobile, 40% on desktop */}
-          <div className={`w-full lg:w-[40%] flex-shrink-0 flex flex-col border-b lg:border-b-0 lg:border-r border-gray-200 ${previewCourse ? 'hidden lg:flex' : 'flex'}`} style={{ minHeight: '0' }}>
+          <div className={`w-full lg:w-[40%] flex-shrink-0 flex flex-col border-b lg:border-b-0 lg:border-r border-gray-200 bg-gray-50 ${previewCourse ? 'hidden lg:flex' : 'flex'}`} style={{ minHeight: '0' }}>
             {/* Header */}
             <div className="px-5 pt-5 pb-3 border-b border-gray-100">
               <div className="flex items-center justify-between mb-4">
@@ -2145,10 +2185,10 @@ export default function CourseManagementPage() {
                       <div
                         key={course.id}
                         onClick={() => setPreviewCourse(course)}
-                        className={`flex items-center gap-3 px-4 py-3.5 cursor-pointer border-b border-gray-100 transition-colors ${isSelected ? 'bg-gray-50' : 'hover:bg-gray-50'}`}
+                        className={`flex items-center gap-4 px-4 py-5 cursor-pointer border-b border-gray-100 transition-colors ${isSelected ? 'bg-gray-50' : 'hover:bg-gray-50'}`}
                       >
                         {/* Thumbnail */}
-                        <div className="flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border border-gray-200 bg-gray-100">
+                        <div className="flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border border-gray-200 bg-gray-100">
                           {course.thumbnail_url ? (
                             <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover" />
                           ) : (
@@ -2354,7 +2394,7 @@ export default function CourseManagementPage() {
           <div className="flex flex-col lg:flex-row gap-4 lg:items-stretch">
             {/* Left: Subjects list (70%) */}
             <div className="w-full lg:flex-[7] lg:min-w-0 lg:flex lg:flex-col">
-              <div className="overflow-y-auto overflow-x-visible border border-gray-200 rounded-xl bg-white p-2 sm:p-3 lg:flex-1">
+              <div className="overflow-y-auto overflow-x-visible border border-gray-200 rounded-xl bg-white p-2 sm:p-3 lg:flex-1" style={{ minHeight: 0 }}>
           {subjects.length === 0 ? (
             <div className="text-center py-16">
               <div className="w-14 h-14 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
@@ -2375,51 +2415,41 @@ export default function CourseManagementPage() {
               </button>
             </div>
           ) : (
-            <div className="space-y-2 overflow-y-auto" style={{ maxHeight: '70vh' }}>
+            <div className="space-y-2">{/* subjects list */}
               {subjects.map((subject, subjectIdx) => {
                 const isExpanded = expandedSubjects.has(subject.id)
                 const mods = subjectModules[subject.id] || []
                 const isLoadingMods = subjectModulesLoading.has(subject.id)
                 return (
-                  <div key={subject.id} className="rounded-xl border border-gray-200 bg-white">
+                  <div key={subject.id} className="rounded-xl border border-gray-200 overflow-hidden bg-white">
                     {/* Subject row */}
                     <div
-                      className="flex items-center gap-2 px-3 py-3 sm:py-5 cursor-pointer transition-all hover:bg-gray-50"
+                      className="flex gap-3 p-3 cursor-pointer transition-all hover:bg-gray-50"
                       onClick={() => toggleSubjectExpand(subject)}
                     >
-                      <svg
-                        className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''} text-gray-400`}
-                        fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                      <span className="flex-shrink-0 text-xs font-bold w-4 text-center text-gray-400">{subject.order_index}</span>
-                      <div className="flex-shrink-0 w-10 h-10 sm:w-14 sm:h-14 bg-white/80 rounded-lg overflow-hidden border border-gray-200">
+                      {/* Cover image */}
+                      <div className="flex-shrink-0 w-20 h-20 sm:w-24 sm:h-24 lg:w-[100px] lg:h-[100px] bg-gray-100 rounded-xl overflow-hidden border border-gray-200">
                         {subject.thumbnail_url ? (
                           <img src={subject.thumbnail_url} alt={subject.title} className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
-                            <svg className="w-4 h-4 sm:w-6 sm:h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                             </svg>
                           </div>
                         )}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold truncate text-gray-900">{subject.title}</p>
-                        <div className="flex items-center gap-1 mt-0.5 min-w-0">
-                          <svg className="w-3 h-3 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                          </svg>
-                          <span className="text-xs text-gray-500 italic truncate">{subject.trainee_name}</span>
-                          {subject.online_class_link && (
-                            <a href={subject.online_class_link} target="_blank" rel="noopener noreferrer"
-                              className="hidden sm:inline text-xs text-[#00637C] hover:underline flex-shrink-0 ml-1" onClick={(e) => e.stopPropagation()}>
-                              · Join class
-                            </a>
+
+                      {/* Right: title, description, then badges + actions at bottom */}
+                      <div className="flex-1 min-w-0 flex flex-col justify-between">
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900 leading-snug">{subject.title}</p>
+                          {subject.description && subject.description !== subject.title && (
+                            <p className="text-xs text-gray-500 mt-1 line-clamp-3 leading-relaxed">{subject.description}</p>
                           )}
                         </div>
-                        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                        <div className="flex items-center justify-between mt-2 flex-wrap gap-1.5" onClick={(e) => e.stopPropagation()}>
+                          {/* Status badge */}
                           <span className={`inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full border ${
                             subject.status === 'active'
                               ? 'text-white border-[#1f7a8c]'
@@ -2427,69 +2457,40 @@ export default function CourseManagementPage() {
                           }`} style={subject.status === 'active' ? { backgroundColor: '#1f7a8c' } : {}}>
                             {subject.status.charAt(0).toUpperCase() + subject.status.slice(1)}
                           </span>
+                          {/* Action buttons */}
+                          <div className="flex items-center gap-1">
+                            <button onClick={() => { setSelectedSubject(subject); fetchResources(subject.id); setShowAddModuleModal(true) }}
+                              className="sm:hidden p-1.5 rounded-lg border border-[#1f7a8c] bg-white text-[#1f7a8c] hover:bg-[#e6f4f7] transition-colors" title="Add Module">
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+                            </button>
+                            <button onClick={() => handleEditSubject(subject)}
+                              className="sm:hidden p-1.5 rounded-lg border border-[#1f7a8c] bg-white text-[#1f7a8c] hover:bg-[#e6f4f7] transition-colors" title="Edit">
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                            </button>
+                            <button onClick={() => handleDeleteSubject(subject)}
+                              className="sm:hidden p-1.5 rounded-lg text-white transition-colors" style={{ backgroundColor: '#1f7a8c' }} title="Delete">
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            </button>
+                            <button onClick={() => { setSelectedSubject(subject); fetchResources(subject.id); setShowAddModuleModal(true) }}
+                              className="hidden sm:flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-full border border-[#1f7a8c] bg-white text-[#1f7a8c] hover:bg-[#e6f4f7] transition-colors">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+                              Add Module
+                            </button>
+                            <button onClick={() => handleEditSubject(subject)}
+                              className="hidden sm:flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-full border border-[#1f7a8c] bg-white text-[#1f7a8c] hover:bg-[#e6f4f7] transition-colors">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                              Edit
+                            </button>
+                            <button onClick={() => handleDeleteSubject(subject)}
+                              className="hidden sm:flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-white rounded-full transition-colors"
+                              style={{ backgroundColor: '#1f7a8c' }}
+                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1a6b7a'}
+                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#1f7a8c'}>
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                              Delete
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-                        {/* Mobile: icon-only buttons */}
-                        <button
-                          onClick={() => { setSelectedSubject(subject); fetchResources(subject.id); setShowAddModuleModal(true) }}
-                          className="sm:hidden p-1.5 rounded-lg border border-[#1f7a8c] bg-white text-[#1f7a8c] hover:bg-[#e6f4f7] transition-colors"
-                          title="Add Module"
-                        >
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => handleEditSubject(subject)}
-                          className="sm:hidden p-1.5 rounded-lg border border-[#1f7a8c] bg-white text-[#1f7a8c] hover:bg-[#e6f4f7] transition-colors"
-                          title="Edit"
-                        >
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => handleDeleteSubject(subject)}
-                          className="sm:hidden p-1.5 rounded-lg text-white transition-colors"
-                          style={{ backgroundColor: '#1f7a8c' }}
-                          title="Delete"
-                        >
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                        {/* Desktop: full pill buttons */}
-                        <button
-                          onClick={() => { setSelectedSubject(subject); fetchResources(subject.id); setShowAddModuleModal(true) }}
-                          className="hidden sm:flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-full transition-colors border border-[#1f7a8c] bg-white text-[#1f7a8c] hover:bg-[#e6f4f7]"
-                        >
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                          </svg>
-                          Add Module
-                        </button>
-                        <button
-                          onClick={() => handleEditSubject(subject)}
-                          className="hidden sm:flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-full transition-colors border border-[#1f7a8c] bg-white text-[#1f7a8c] hover:bg-[#e6f4f7]"
-                        >
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteSubject(subject)}
-                          className="hidden sm:flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-white rounded-full transition-colors"
-                          style={{ backgroundColor: '#1f7a8c' }}
-                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1a6b7a'}
-                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#1f7a8c'}
-                        >
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                          Delete
-                        </button>
                       </div>
                     </div>
 
@@ -2497,9 +2498,8 @@ export default function CourseManagementPage() {
                     {isExpanded && (
                       <div className="border-t border-gray-100 bg-gray-50 px-2 py-2 sm:px-4 sm:py-3 rounded-b-xl">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Modules</span>
-                          <span className="inline-flex text-xs px-2 py-0.5 rounded-full border text-gray-500 bg-white border-gray-200">
-                            {mods.length} module{mods.length !== 1 ? 's' : ''}
+                          <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#006d77' }}>
+                            Modules ({mods.length})
                           </span>
                         </div>
                         {isLoadingMods ? (
@@ -2512,47 +2512,57 @@ export default function CourseManagementPage() {
                         ) : mods.length === 0 ? (
                           <p className="text-xs text-gray-400 italic py-2 text-center">No modules yet.</p>
                         ) : (
-                          <div className="space-y-1.5">
+                          <div className="space-y-1.5 overflow-y-auto" style={{ maxHeight: '420px' }}>
                             {mods.map((mod, idx) => (
                               <div
                                 key={mod.id}
-                                className="flex items-center gap-2 px-2 py-3 sm:px-3 sm:py-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer overflow-hidden min-w-0"
+                                className="flex gap-3 p-3 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
                                 onClick={() => { setSelectedSubject(subject); handleStartLesson(mod) }}
                               >
-                                <span className="text-xs font-bold text-gray-400 w-4 text-center flex-shrink-0">{String.fromCharCode(97 + idx)}</span>
-                                <div className="flex-shrink-0 w-9 h-9 sm:w-12 sm:h-12 bg-gray-100 rounded-lg flex items-center justify-center border border-gray-200 overflow-hidden">
-                                  {mod.thumbnail_url ? (
-                                    <img src={mod.thumbnail_url} alt={mod.title} className="w-full h-full object-cover" />
-                                  ) : (
-                                    <span className="text-gray-400">{getContentTypeIcon(mod.content_type)}</span>
-                                  )}
+                                {/* Module number */}
+                                <div className="flex-shrink-0 self-center w-10 h-10 sm:w-12 sm:h-12 bg-[#e6f4f7] rounded-lg border border-[#b3dce5] flex items-center justify-center">
+                                  <span className="text-base font-bold" style={{ color: '#006d77' }}>{idx + 1}</span>
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-semibold text-gray-900 break-words">{mod.title}</p>
-                                  <span className="text-[10px] text-gray-400 capitalize">{mod.content_type.replace(/_/g, ' ')}</span>
-                                </div>
-                                {'status' in mod && mod.status && (
-                                  <span className={`hidden sm:inline-flex flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded-full font-medium border ${
-                                    mod.status === 'active'
-                                      ? 'text-white border-[#1f7a8c]'
-                                      : 'bg-white text-[#1f7a8c] border-[#1f7a8c]'
-                                  }`} style={mod.status === 'active' ? { backgroundColor: '#1f7a8c' } : {}}>
-                                    {mod.status.charAt(0).toUpperCase() + mod.status.slice(1)}
-                                  </span>
-                                )}
-                                <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-                                  <button onClick={() => handleEditModule(mod)}
-                                    className="p-1 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded transition-colors" title="Edit">
-                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                    </svg>
-                                  </button>
-                                  <button onClick={() => handleDeleteModule(mod)}
-                                    className="p-1 bg-red-50 hover:bg-red-100 text-red-500 rounded transition-colors" title="Delete">
-                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                    </svg>
-                                  </button>
+                                {/* Right: title, content type, then status + actions at bottom */}
+                                <div className="flex-1 min-w-0 flex flex-col justify-between">
+                                  <div>
+                                    <p className="text-sm font-semibold text-gray-900 leading-snug">{mod.title}</p>
+                                    {mod.description && mod.description !== mod.title && (
+                                      <p className="text-xs text-gray-500 mt-0.5 line-clamp-3 leading-relaxed">{mod.description}</p>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center justify-between mt-2 flex-wrap gap-1.5" onClick={(e) => e.stopPropagation()}>
+                                    {'status' in mod && mod.status && (
+                                      <span className={`inline-flex text-[10px] px-1.5 py-0.5 rounded-full font-medium border ${
+                                        mod.status === 'active'
+                                          ? 'text-white border-[#1f7a8c]'
+                                          : 'bg-white text-[#1f7a8c] border-[#1f7a8c]'
+                                      }`} style={mod.status === 'active' ? { backgroundColor: '#1f7a8c' } : {}}>
+                                        {mod.status.charAt(0).toUpperCase() + mod.status.slice(1)}
+                                      </span>
+                                    )}
+                                    <div className="flex items-center gap-1">
+                                      <button onClick={() => handleOpenTest(mod)}
+                                        className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-full border border-[#1f7a8c] bg-white text-[#1f7a8c] hover:bg-[#e6f4f7] transition-colors" title="Add/Edit Test">
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+                                        Add Test
+                                      </button>
+                                      <button onClick={() => handleEditModule(mod)}
+                                        className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-full border border-[#1f7a8c] bg-white text-[#1f7a8c] hover:bg-[#e6f4f7] transition-colors" title="Edit">
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                        Edit
+                                      </button>
+                                      <button onClick={() => handleDeleteModule(mod)}
+                                        className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-white rounded-full transition-colors"
+                                        style={{ backgroundColor: '#1f7a8c' }}
+                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1a6b7a'}
+                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#1f7a8c'}
+                                        title="Delete">
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                        Delete
+                                      </button>
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
                             ))}
@@ -2916,6 +2926,17 @@ export default function CourseManagementPage() {
               </div>
 
               <div>
+                <label className="block text-xs font-medium text-black mb-1">Description</label>
+                <textarea
+                  rows={3}
+                  value={newSubject.description}
+                  onChange={(e) => setNewSubject(prev => ({ ...prev, description: e.target.value }))}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c] resize-none"
+                  placeholder="Brief description of this subject..."
+                />
+              </div>
+
+              <div>
                 <label className="block text-xs font-medium text-black mb-1">Online Class Link</label>
                 <input
                   type="url"
@@ -3054,6 +3075,17 @@ export default function CourseManagementPage() {
               </div>
 
               <div>
+                <label className="block text-xs font-medium text-black mb-1">Description</label>
+                <textarea
+                  rows={3}
+                  value={newSubject.description}
+                  onChange={(e) => setNewSubject(prev => ({ ...prev, description: e.target.value }))}
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c] resize-none"
+                  placeholder="Brief description of this subject..."
+                />
+              </div>
+
+              <div>
                 <label className="block text-xs font-medium text-black mb-1">Online Class Link</label>
                 <input
                   type="url"
@@ -3179,6 +3211,11 @@ export default function CourseManagementPage() {
                   <input type="text" required value={newModule.title} onChange={(e) => setNewModule(prev => ({ ...prev, title: e.target.value }))}
                     className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c] focus:border-[#1f7a8c]" placeholder="Enter module title" />
                 </div>
+                <div>
+                  <label className="block text-xs font-medium text-black mb-1">Description</label>
+                  <textarea rows={3} value={newModule.description} onChange={(e) => setNewModule(prev => ({ ...prev, description: e.target.value }))}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c] resize-none" placeholder="Brief description of this module..." />
+                </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-black mb-1">Status *</label>
@@ -3189,28 +3226,8 @@ export default function CourseManagementPage() {
                       <option value="inactive">Inactive</option>
                     </select>
                   </div>
-                  <div>
-                    <label className="block text-xs font-medium text-black mb-1">Duration (min)</label>
-                    <input type="number" min={0} value={newModule.duration_minutes || ''} onChange={(e) => setNewModule(prev => ({ ...prev, duration_minutes: parseInt(e.target.value) || 0 }))}
-                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c]" placeholder="0" />
-                  </div>
                 </div>
-                {/* Cover Image */}
-                <div>
-                  <label className="block text-xs font-medium text-black mb-1">Cover Image</label>
-                  {newModule.thumbnail_url && (
-                    <div className="mb-2 relative w-full h-24 rounded-lg overflow-hidden border border-gray-200">
-                      <img src={newModule.thumbnail_url} alt="thumbnail" className="w-full h-full object-cover" />
-                      <button type="button" onClick={() => setNewModule(prev => ({ ...prev, thumbnail_url: '' }))}
-                        className="absolute top-1 right-1 p-1 bg-white rounded-full shadow text-gray-500 hover:text-red-500">
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                      </button>
-                    </div>
-                  )}
-                  <input type="file" accept="image/*" disabled={uploadingFile}
-                    onChange={async (e) => { const f = e.target.files?.[0]; if (f) { const url = await uploadThumbnail(f, newModule.thumbnail_url); if (url) setNewModule(prev => ({ ...prev, thumbnail_url: url })) } }}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-gray-100 file:text-gray-700 disabled:opacity-50" />
-                </div>
+                {/* Cover Image removed */}
               </div>
 
               {/* Section 2: Main Content */}
@@ -3288,25 +3305,7 @@ export default function CourseManagementPage() {
                   className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c] resize-none" placeholder="Explain the lesson in your own words, add context, background info..." />
               </div>
 
-              {/* Section 5: Key Takeaways */}
-              <div className="border border-gray-200 rounded-lg p-4">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">🧠 Key Takeaways</h3>
-                <textarea rows={3} value={newModule.key_takeaways || ''} onChange={(e) => setNewModule(prev => ({ ...prev, key_takeaways: e.target.value }))}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c] resize-none" placeholder="• Key point 1&#10;• Key point 2&#10;• Key point 3" />
-              </div>
-
               {/* Section 6: Quiz / Activity */}
-              <QuizBuilder
-                value={newModule.quiz_config ?? null}
-                onChange={(v) => setNewModule(prev => ({ ...prev, quiz_config: v }))}
-              />
-
-              {/* Section 7: Notes */}
-              <div className="border border-gray-200 rounded-lg p-4">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">💬 Notes</h3>
-                <textarea rows={3} value={newModule.notes_content || ''} onChange={(e) => setNewModule(prev => ({ ...prev, notes_content: e.target.value }))}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c] resize-none" placeholder="Instructor notes, reminders, or additional context..." />
-              </div>
 
               <div className="flex justify-end space-x-3 pt-2 border-t border-gray-100">
                 <button type="button" onClick={() => setShowAddModuleModal(false)} disabled={submitting || uploadingFile}
@@ -3344,6 +3343,11 @@ export default function CourseManagementPage() {
                   <input type="text" required value={newModule.title} onChange={(e) => setNewModule(prev => ({ ...prev, title: e.target.value }))}
                     className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c] focus:border-[#1f7a8c]" placeholder="Enter module title" />
                 </div>
+                <div>
+                  <label className="block text-xs font-medium text-black mb-1">Description</label>
+                  <textarea rows={3} value={newModule.description} onChange={(e) => setNewModule(prev => ({ ...prev, description: e.target.value }))}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c] resize-none" placeholder="Brief description of this module..." />
+                </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-black mb-1">Status *</label>
@@ -3354,26 +3358,6 @@ export default function CourseManagementPage() {
                       <option value="inactive">Inactive</option>
                     </select>
                   </div>
-                  <div>
-                    <label className="block text-xs font-medium text-black mb-1">Duration (min)</label>
-                    <input type="number" min={0} value={newModule.duration_minutes || ''} onChange={(e) => setNewModule(prev => ({ ...prev, duration_minutes: parseInt(e.target.value) || 0 }))}
-                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c]" placeholder="0" />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-black mb-1">Cover Image</label>
-                  {newModule.thumbnail_url && (
-                    <div className="mb-2 relative w-full h-24 rounded-lg overflow-hidden border border-gray-200">
-                      <img src={newModule.thumbnail_url} alt="thumbnail" className="w-full h-full object-cover" />
-                      <button type="button" onClick={() => setNewModule(prev => ({ ...prev, thumbnail_url: '' }))}
-                        className="absolute top-1 right-1 p-1 bg-white rounded-full shadow text-gray-500 hover:text-red-500">
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                      </button>
-                    </div>
-                  )}
-                  <input type="file" accept="image/*" disabled={uploadingFile}
-                    onChange={async (e) => { const f = e.target.files?.[0]; if (f) { const url = await uploadThumbnail(f, newModule.thumbnail_url); if (url) setNewModule(prev => ({ ...prev, thumbnail_url: url })) } }}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-gray-100 file:text-gray-700 disabled:opacity-50" />
                 </div>
               </div>
 
@@ -3452,25 +3436,7 @@ export default function CourseManagementPage() {
                   className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c] resize-none" placeholder="Explain the lesson in your own words, add context, background info..." />
               </div>
 
-              {/* Section 5: Key Takeaways */}
-              <div className="border border-gray-200 rounded-lg p-4">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">🧠 Key Takeaways</h3>
-                <textarea rows={3} value={newModule.key_takeaways || ''} onChange={(e) => setNewModule(prev => ({ ...prev, key_takeaways: e.target.value }))}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c] resize-none" placeholder="• Key point 1&#10;• Key point 2&#10;• Key point 3" />
-              </div>
-
               {/* Section 6: Quiz / Activity */}
-              <QuizBuilder
-                value={newModule.quiz_config ?? null}
-                onChange={(v) => setNewModule(prev => ({ ...prev, quiz_config: v }))}
-              />
-
-              {/* Section 7: Notes */}
-              <div className="border border-gray-200 rounded-lg p-4">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">💬 Notes</h3>
-                <textarea rows={3} value={newModule.notes_content || ''} onChange={(e) => setNewModule(prev => ({ ...prev, notes_content: e.target.value }))}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c] resize-none" placeholder="Instructor notes, reminders, or additional context..." />
-              </div>
 
               <div className="flex justify-end space-x-3 pt-2 border-t border-gray-100">
                 <button type="button" onClick={() => setShowEditModuleModal(false)} disabled={submitting || uploadingFile}
@@ -3656,6 +3622,41 @@ export default function CourseManagementPage() {
                 >
                   {submitting && <ButtonLoading />}
                   <span>{submitting ? 'Deleting...' : 'Delete'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Test Modal */}
+      {showTestModal && testModule && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-black">Add Test</h2>
+                <p className="text-xs text-gray-500 mt-0.5">{testModule.title}</p>
+              </div>
+              <button onClick={() => { setShowTestModal(false); setTestModule(null); setTestQuizConfig(null) }}
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div className="p-6">
+              <QuizBuilder value={testQuizConfig} onChange={setTestQuizConfig} />
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 mt-4">
+                <button type="button" onClick={() => { setShowTestModal(false); setTestModule(null); setTestQuizConfig(null) }}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+                  Cancel
+                </button>
+                <button type="button" onClick={handleSaveTest} disabled={savingTest}
+                  className="px-4 py-2 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+                  style={{ backgroundColor: getButtonBg() }}
+                  onMouseEnter={(e) => !savingTest && (e.currentTarget.style.backgroundColor = getButtonHoverBg())}
+                  onMouseLeave={(e) => !savingTest && (e.currentTarget.style.backgroundColor = getButtonBg())}>
+                  {savingTest && <ButtonLoading />}
+                  <span>{savingTest ? 'Saving...' : 'Save Test'}</span>
                 </button>
               </div>
             </div>

@@ -190,19 +190,6 @@ export default function LessonViewer({
     <div className="p-5">
       {/* Title row */}
       <div className="mb-4">
-        <div className="flex items-center gap-2 mb-1 flex-wrap">
-          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-            {TYPE_LABEL[module.content_type] ?? module.content_type}
-          </span>
-          {module.duration_minutes ? (
-            <span className="text-xs text-gray-400">{module.duration_minutes} min</span>
-          ) : null}
-          {module.status && module.status !== 'active' && (
-            <span className={`text-xs px-2 py-0.5 rounded-full ${
-              module.status === 'draft' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-500'
-            }`}>{module.status}</span>
-          )}
-        </div>
         <h2 className="text-xl font-bold text-gray-900 leading-tight">{module.title}</h2>
       </div>
 
@@ -211,34 +198,13 @@ export default function LessonViewer({
 
         {/* LEFT — content + info cards (60%) */}
         <div className={`space-y-5 ${hasRightPanel ? 'w-full lg:w-[60%]' : 'w-full'}`}>
-          {/* Thumbnail */}
-          {module.thumbnail_url && (
-            <div className="w-full h-48 rounded-xl overflow-hidden border border-gray-100">
-              <img src={module.thumbnail_url} alt={module.title} className="w-full h-full object-cover" />
-            </div>
-          )}
 
           {/* Main content embed */}
           <ContentEmbed module={module} textBody={textBody} />
-
-          {/* Explanation */}
-          {explanation.trim() && (
-            <InfoCard label="Explanation / Lesson Body" color="blue">{explanation}</InfoCard>
-          )}
-
-          {/* Key Takeaways */}
-          {key_takeaways.trim() && (
-            <InfoCard label="Key Takeaways" color="green">{key_takeaways}</InfoCard>
-          )}
-
-          {/* Notes */}
-          {notes_content.trim() && (
-            <InfoCard label="Notes" color="yellow">{notes_content}</InfoCard>
-          )}
         </div>
 
         {/* RIGHT — quiz/activity (40%) */}
-        <div className="w-full lg:w-[40%] shrink-0">
+        <div className="w-full lg:w-[40%] shrink-0 space-y-5">
           {quizConfig && (quizConfig.type === 'quiz' || quizConfig.type === 'exam') ? (
             <QuizPlayer
               config={quizConfig}
@@ -255,6 +221,11 @@ export default function LessonViewer({
           )}
         </div>
       </div>
+
+      {/* Row 2 — full-width explanation */}
+      {explanation.trim() && (
+        <InfoCard label="Explanation / Lesson Body" color="blue">{explanation}</InfoCard>
+      )}
 
       {/* Prev / Next */}
       {siblingModules.length > 1 && (

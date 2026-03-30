@@ -76,7 +76,7 @@ interface UserStats {
 }
 
 interface DashboardHomeProps {
-  onNavigate: (page: PageType) => void
+  onNavigate: (page: PageType, courseId?: string) => void
 }
 
 interface CourseSchedule {
@@ -230,7 +230,7 @@ function UpcomingScheduleList() {
               <div className="w-8 h-8 bg-gray-200 rounded-lg"></div>
               <div className="flex-1">
                 <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                <div className="h-3 bg-gray-100 rounded w-1/2"></div>
+                <div className="h-3 bg-white rounded w-1/2"></div>
               </div>
             </div>
           </div>
@@ -247,7 +247,7 @@ function UpcomingScheduleList() {
             <div className="w-2 h-8 rounded-full bg-gray-200 flex-shrink-0" />
             <div className="flex-1 space-y-1.5">
               <div className="h-2.5 bg-gray-200 rounded w-3/4" />
-              <div className="h-2 bg-gray-100 rounded w-1/2" />
+              <div className="h-2 bg-white rounded w-1/2" />
             </div>
           </div>
         ))}
@@ -1430,7 +1430,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                       <div className="w-2 h-8 rounded-full bg-gray-200 flex-shrink-0" />
                       <div className="flex-1 space-y-1.5">
                         <div className="h-2.5 bg-gray-200 rounded w-3/4" />
-                        <div className="h-2 bg-gray-100 rounded w-1/2" />
+                        <div className="h-2 bg-white rounded w-1/2" />
                       </div>
                     </div>
                   ))}
@@ -1591,7 +1591,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                       const courseColor = getCourseColor(course.id)
                       const isStudent = userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student' || userRole === 'scholar'
                       const isLocked = isStudent && !course.is_user_enrolled
-                      const handleClick = () => { if (isLocked) return; if (userRole === 'admin' || userRole === 'developer') onNavigate('course-management'); else onNavigate('my-courses') }
+                      const handleClick = () => { if (isLocked) return; if (userRole === 'admin' || userRole === 'developer') onNavigate('course-management', course.id); else onNavigate('my-courses', course.id) }
                       const subjectCount = course.subjects?.length ?? 0
                       const moduleCount = course.subjects?.reduce((acc: number, s: Subject) => acc + (s.modules?.length ?? 0), 0) ?? 0
                       const activityCount = course.subjects?.reduce((acc: number, s: Subject) => acc + (s.modules?.filter((m: Module) => m.content_type === 'activity').length ?? 0), 0) ?? 0
@@ -1978,7 +1978,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                               <div className="text-sm font-bold text-gray-400">Unenrolled Students</div>
                               <div className="text-xs text-gray-400 mt-0.5">All students enrolled</div>
                             </div>
-                            <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-gray-400 bg-gray-100 rounded-full">0</span>
+                            <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-gray-400 bg-white rounded-full">0</span>
                           </div>
                         )}
 
@@ -1993,7 +1993,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                               <div className="text-sm font-bold text-gray-400">Unassigned Instructors</div>
                               <div className="text-xs text-gray-400 mt-0.5">All instructors assigned</div>
                             </div>
-                            <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-gray-400 bg-gray-100 rounded-full">0</span>
+                            <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-gray-400 bg-white rounded-full">0</span>
                           </div>
                         )}
 
@@ -2008,7 +2008,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                               <div className="text-sm font-bold text-gray-400">Password Resets</div>
                               <div className="text-xs text-gray-400 mt-0.5">No pending requests</div>
                             </div>
-                            <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-gray-400 bg-gray-100 rounded-full">0</span>
+                            <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-gray-400 bg-white rounded-full">0</span>
                           </div>
                         )}
 
@@ -2023,7 +2023,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                               <div className="text-sm font-bold text-gray-400">Guest Users</div>
                               <div className="text-xs text-gray-400 mt-0.5">No guests awaiting role</div>
                             </div>
-                            <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-gray-400 bg-gray-100 rounded-full">0</span>
+                            <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-gray-400 bg-white rounded-full">0</span>
                           </div>
                         )}
                       </>
@@ -2235,7 +2235,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                     </div>
                     <button
                       onClick={() => onNavigate('user-management')}
-                      className="w-10 h-10 bg-gray-50 hover:bg-gray-100 rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-800 transition-all duration-200"
+                      className="w-10 h-10 bg-gray-50 hover:bg-white rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-800 transition-all duration-200"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -2269,7 +2269,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                               <span className="text-sm font-bold w-8 text-right" style={{ color: '#1f7a8c' }}>{value}</span>
                             </div>
                           </div>
-                          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                          <div className="h-1.5 bg-white rounded-full overflow-hidden">
                             <div className={`h-full rounded-full transition-all duration-500`} style={{ width: `${pct}%`, backgroundColor: '#1f7a8c' }} />
                           </div>
                         </div>
