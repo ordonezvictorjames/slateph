@@ -477,50 +477,45 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
                         const isHighlighted = highlightedSubjectId === subject.id
                         return (
                           <div key={subject.id} className="rounded-xl border border-gray-200 bg-white">
-                            <div
-                              className={`flex items-center gap-2 px-3 py-3 sm:py-5 transition-colors ${isLocked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-gray-50'}`}
+                          <div
+                              className={`flex gap-3 p-3 transition-colors ${isLocked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-gray-50'}`}
                               onClick={() => !isLocked && toggleSubjectExpand(subject)}
                             >
-                              {isLocked ? (
-                                <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                              ) : (
-                                <svg className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''} text-gray-400`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                              )}
-                              <span className="flex-shrink-0 text-xs font-bold w-4 text-center text-gray-400">{subject.order_index}</span>
-                              <div className="flex-shrink-0 w-10 h-10 sm:w-14 sm:h-14 bg-white/80 rounded-lg overflow-hidden border border-gray-200">
+                              {/* Cover image */}
+                              <div className="flex-shrink-0 w-20 h-20 sm:w-24 sm:h-24 lg:w-[100px] lg:h-[100px] bg-gray-100 rounded-xl overflow-hidden border border-gray-200 flex items-center justify-center">
                                 {subject.thumbnail_url ? (
                                   <img src={subject.thumbnail_url} alt={subject.title} className="w-full h-full object-cover" />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center">
-                                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                                    <svg className="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
                                   </div>
                                 )}
                               </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold truncate text-gray-900">{subject.title}</p>
-                                <div className="flex items-center gap-1 mt-0.5 min-w-0">
-                                  <svg className="w-3 h-3 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                                  <span className="text-xs text-gray-500 italic truncate">{subject.instructor_name}</span>
-                                  {subject.online_class_link && (
-                                    <a href={subject.online_class_link} target="_blank" rel="noopener noreferrer"
-                                      className="hidden sm:inline text-xs text-[#00637C] hover:underline flex-shrink-0 ml-1" onClick={(e) => e.stopPropagation()}>· Join class</a>
+                              {/* Right: title, description, status at bottom */}
+                              <div className="flex-1 min-w-0 flex flex-col justify-between">
+                                <div>
+                                  <p className="text-sm font-semibold text-gray-900 leading-snug">{subject.title}</p>
+                                  {subject.description && subject.description !== subject.title && (
+                                    <p className="text-xs text-gray-500 mt-1 line-clamp-3 leading-relaxed">{subject.description}</p>
                                   )}
                                 </div>
-                                <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                                <div className="flex items-center justify-between mt-2 flex-wrap gap-1.5">
                                   <span className={`inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full border ${
                                     subject.status === 'active' ? 'text-white border-[#1f7a8c]' : 'bg-white text-[#1f7a8c] border-[#1f7a8c]'
                                   }`} style={subject.status === 'active' ? { backgroundColor: '#1f7a8c' } : {}}>
                                     {subject.status.charAt(0).toUpperCase() + subject.status.slice(1)}
                                   </span>
+                                  {isLocked && (
+                                    <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                                  )}
                                 </div>
                               </div>
                             </div>
                             {isExpanded && (
                               <div className="border-t border-gray-100 bg-gray-50 px-2 py-2 sm:px-4 sm:py-3 rounded-b-xl">
                                 <div className="flex items-center justify-between mb-2">
-                                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Modules</span>
-                                  <span className="inline-flex text-xs px-2 py-0.5 rounded-full border text-gray-500 bg-white border-gray-200">
-                                    {mods.length} module{mods.length !== 1 ? 's' : ''}
+                                  <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#006d77' }}>
+                                    Modules ({mods.length})
                                   </span>
                                 </div>
                                 {isLoadingMods ? (
@@ -530,26 +525,33 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
                                 ) : mods.length === 0 ? (
                                   <p className="text-xs text-gray-400 italic py-2 text-center">No modules yet.</p>
                                 ) : (
-                                  <div className="space-y-1.5">
+                                  <div className="space-y-1.5 overflow-y-auto" style={{ maxHeight: '420px' }}>
                                     {mods.map((mod, idx) => (
                                       <div key={mod.id} onClick={() => handleStartLesson(mod)}
-                                        className="flex items-center gap-2 px-2 py-3 sm:px-3 sm:py-4 bg-white border border-[#1f7a8c]/40 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer min-w-0">
-                                        <span className="text-xs font-bold text-gray-400 w-4 text-center flex-shrink-0">{String.fromCharCode(97 + idx)}</span>
-                                        <div className="flex-shrink-0 w-9 h-9 sm:w-12 sm:h-12 bg-gray-100 rounded-lg flex items-center justify-center border border-gray-200 overflow-hidden">
-                                          {mod.thumbnail_url ? <img src={mod.thumbnail_url} alt={mod.title} className="w-full h-full object-cover" /> : <span className="text-sm">{getContentTypeIcon(mod.content_type)}</span>}
+                                        className="flex gap-3 p-3 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer">
+                                        {/* Module number */}
+                                        <div className="flex-shrink-0 self-center w-10 h-10 sm:w-12 sm:h-12 bg-[#e6f4f7] rounded-lg border border-[#b3dce5] flex items-center justify-center">
+                                          <span className="text-base font-bold" style={{ color: '#006d77' }}>{idx + 1}</span>
                                         </div>
-                                        <div className="flex-1 min-w-0">
-                                          <p className="text-xs font-semibold text-gray-900 break-words">{mod.title}</p>
-                                          <span className="text-[10px] text-gray-400 capitalize">{mod.content_type.replace(/_/g, ' ')}</span>
+                                        {/* Right: title, description, status at bottom */}
+                                        <div className="flex-1 min-w-0 flex flex-col justify-between">
+                                          <div>
+                                            <p className="text-sm font-semibold text-gray-900 leading-snug">{mod.title}</p>
+                                            {mod.description && mod.description !== mod.title && (
+                                              <p className="text-xs text-gray-500 mt-0.5 line-clamp-3 leading-relaxed">{mod.description}</p>
+                                            )}
+                                          </div>
+                                          <div className="flex items-center justify-between mt-2 flex-wrap gap-1.5">
+                                            {!isStudent && mod.status && (
+                                              <span className={`inline-flex text-[10px] px-1.5 py-0.5 rounded-full font-medium border ${
+                                                mod.status === 'active' ? 'text-white border-[#1f7a8c]' : 'bg-white text-[#1f7a8c] border-[#1f7a8c]'
+                                              }`} style={mod.status === 'active' ? { backgroundColor: '#1f7a8c' } : {}}>
+                                                {mod.status.charAt(0).toUpperCase() + mod.status.slice(1)}
+                                              </span>
+                                            )}
+                                            <svg className="w-4 h-4 text-[#1f7a8c] flex-shrink-0 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                                          </div>
                                         </div>
-                                        {!isStudent && mod.status && (
-                                          <span className={`hidden sm:inline-flex flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded-full font-medium border ${
-                                            mod.status === 'active' ? 'text-white border-[#1f7a8c]' : 'bg-white text-[#1f7a8c] border-[#1f7a8c]'
-                                          }`} style={mod.status === 'active' ? { backgroundColor: '#1f7a8c' } : {}}>
-                                            {mod.status.charAt(0).toUpperCase() + mod.status.slice(1)}
-                                          </span>
-                                        )}
-                                        <svg className="w-4 h-4 text-[#1f7a8c] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                                       </div>
                                     ))}
                                   </div>
