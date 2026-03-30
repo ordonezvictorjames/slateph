@@ -25,8 +25,9 @@ import TasksPage from '@/components/pages/TasksPage'
 import AIAssistantPage from '@/components/pages/AIAssistantPage'
 import LibraryPage from '@/components/pages/LibraryPage'
 import BadgesPage from '@/components/pages/BadgesPage'
+import GradesPage from '@/components/pages/GradesPage'
 
-export type PageType = 'dashboard' | 'user-management' | 'course-management' | 'my-courses' | 'schedule' | 'analytics' | 'profile' | 'settings' | 'system-tracker' | 'code-generator' | 'feature-requests' | 'tasks' | 'games' | 'activity' | 'ai-assistant' | 'library' | 'badges'
+export type PageType = 'dashboard' | 'user-management' | 'course-management' | 'my-courses' | 'schedule' | 'analytics' | 'profile' | 'settings' | 'system-tracker' | 'code-generator' | 'feature-requests' | 'tasks' | 'games' | 'activity' | 'ai-assistant' | 'library' | 'badges' | 'grades'
 
 export default function Dashboard() {
   const { signOut, user } = useAuth()
@@ -85,6 +86,7 @@ export default function Dashboard() {
       case 'ai-assistant': return <AIAssistantPage />
       case 'library': return <LibraryPage />
       case 'badges': return <BadgesPage />
+      case 'grades': return <GradesPage />
       default: return <DashboardHome onNavigate={setCurrentPage} />
     }
   }
@@ -101,7 +103,7 @@ export default function Dashboard() {
         <div className="flex-1 flex flex-col ml-0 lg:ml-16">
           <div className="w-full overflow-hidden py-1 border-b border-gray-100" style={{ backgroundColor: '#fff' }}>
             <span className="animate-marquee text-xs font-medium tracking-wide" style={{ color: '#006d77' }}>
-              Beta Test — Encounter any issues? Report them via Bugs &amp; Requests in the sidebar.
+              <span style={{ color: '#dc2626' }}>Beta Test Phase</span> — Encounter any issues? Report them via Bugs &amp; Requests in the sidebar.
             </span>
           </div>
           <main className="flex-1">{renderCurrentPage()}</main>

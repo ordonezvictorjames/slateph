@@ -1289,11 +1289,11 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             >
               {(user?.profile as any)?.avatar_url ? (
                 (user?.profile as any).avatar_url.startsWith('data:') ? (
-                  <img src={(user?.profile as any).avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                  <img src={(user?.profile as any).avatar_url} alt="Profile" className="w-full h-full" style={{ objectFit: "cover", objectPosition: "center" }} />
                 ) : (user?.profile as any).avatar_url.length <= 2 ? (
                   <span className="text-base">{(user?.profile as any).avatar_url}</span>
                 ) : (
-                  <img src={(user?.profile as any).avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                  <img src={(user?.profile as any).avatar_url} alt="Profile" className="w-full h-full" style={{ objectFit: "cover", objectPosition: "center" }} />
                 )
               ) : (
                 <span className="text-xs font-bold text-gray-600">
@@ -1331,11 +1331,11 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                   <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center flex-shrink-0">
                     {(user?.profile as any)?.avatar_url ? (
                       (user?.profile as any).avatar_url.startsWith('data:') ? (
-                        <img src={(user?.profile as any).avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                        <img src={(user?.profile as any).avatar_url} alt="Profile" className="w-full h-full" style={{ objectFit: "cover", objectPosition: "center" }} />
                       ) : (user?.profile as any).avatar_url.length <= 2 ? (
                         <span className="text-xl">{(user?.profile as any).avatar_url}</span>
                       ) : (
-                        <img src={(user?.profile as any).avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                        <img src={(user?.profile as any).avatar_url} alt="Profile" className="w-full h-full" style={{ objectFit: "cover", objectPosition: "center" }} />
                       )
                     ) : (
                       <span className="text-gray-600 font-medium text-sm">
@@ -1597,9 +1597,9 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                       const activityCount = course.subjects?.reduce((acc: number, s: Subject) => acc + (s.modules?.filter((m: Module) => m.content_type === 'activity').length ?? 0), 0) ?? 0
                       return (
                         <div key={course.id} onClick={handleClick} style={{ minWidth: '220px', maxWidth: '220px' }}
-                          className={`snap-start bg-white rounded-2xl overflow-hidden flex flex-col shadow-sm flex-shrink-0 transition-all duration-200 ${isLocked ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}`}>
+                          className={`snap-start bg-white rounded-2xl overflow-hidden flex flex-col shadow-md flex-shrink-0 transition-all duration-200 ${isLocked ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer hover:shadow-xl'}`}>
                           <div className="relative h-28 flex-shrink-0 rounded-xl overflow-hidden m-2">
-                            {course.thumbnail_url ? <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover" /> : (
+                            {course.thumbnail_url ? <img src={course.thumbnail_url} alt={course.title} className="w-full h-full" style={{ objectFit: "cover", objectPosition: "center" }} /> : (
                               <div className="w-full h-full flex items-center justify-center" style={{ background: courseColor?.color_hex ? `linear-gradient(135deg, ${courseColor.color_hex} 0%, ${courseColor.color_hex}99 100%)` : 'linear-gradient(135deg, #0f4c5c 0%, #1f7a8c 100%)' }}>
                                 <svg className="w-10 h-10 text-white/60" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
                               </div>
@@ -1639,9 +1639,9 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                     const activityCount = course.subjects?.reduce((acc: number, s: Subject) => acc + (s.modules?.filter((m: Module) => m.content_type === 'activity').length ?? 0), 0) ?? 0
                     return (
                       <div key={course.id} onClick={handleClick}
-                        className={`bg-white rounded-2xl overflow-hidden flex flex-col shadow-sm transition-all duration-200 ${isLocked ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer hover:shadow-lg'}`}>
+                        className={`bg-white rounded-2xl overflow-hidden flex flex-col shadow-md transition-all duration-200 ${isLocked ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer hover:shadow-xl'}`}>
                         <div className="relative h-36 flex-shrink-0 rounded-xl overflow-hidden m-2">
-                          {course.thumbnail_url ? <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover" /> : (
+                          {course.thumbnail_url ? <img src={course.thumbnail_url} alt={course.title} className="w-full h-full" style={{ objectFit: "cover", objectPosition: "center" }} /> : (
                             <div className="w-full h-full flex items-center justify-center" style={{ background: courseColor?.color_hex ? `linear-gradient(135deg, ${courseColor.color_hex} 0%, ${courseColor.color_hex}99 100%)` : 'linear-gradient(135deg, #0f4c5c 0%, #1f7a8c 100%)' }}>
                               <svg className="w-12 h-12 text-white/60" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
                             </div>
@@ -2351,3 +2351,5 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
     </div>
   )
 }
+
+

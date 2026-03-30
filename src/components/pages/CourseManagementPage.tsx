@@ -151,6 +151,8 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
   const [instructors, setInstructors] = useState<Array<{id: string, first_name: string, last_name: string, email: string}>>([])
   const [enrolledtrainees, setEnrolledtrainees] = useState<Array<{id: string, first_name: string, last_name: string, email: string, enrollment_id: string, enrolled_at: string, status: string}>>([])
   const [courseEnrolledCount, setCourseEnrolledCount] = useState<number>(0)
+  const [courseRankings, setCourseRankings] = useState<Array<{ user_id: string; first_name: string; last_name: string; total_score: number; quiz_count: number }>>([])
+  const [loadingRankings, setLoadingRankings] = useState(false)
   const [courseInstructors, setCourseInstructors] = useState<Array<{id: string, first_name: string, last_name: string}>>([])
   const [availabletrainees, setAvailabletrainees] = useState<Array<{id: string, first_name: string, last_name: string, email: string, role: string}>>([])
   const [selectedtrainees, setSelectedtrainees] = useState<string[]>([])
@@ -515,6 +517,44 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
       const uniqueIds = Array.from(new Set((subjectData || []).map((s: { instructor_id: string }) => s.instructor_id).filter(Boolean)))
 
       setCourseInstructors(uniqueIds.map((id: unknown) => ({ id: id as string, first_name: '', last_name: '' })))
+
+      // Fetch rankings — sum percentage per student for this course
+      setLoadingRankings(true)
+      try {
+        const { data: gradesData } = await supabase
+          .from('quiz_grades')
+          .select('user_id, percentage')
+          .eq('course_id', courseId)
+
+        if (gradesData && gradesData.length > 0) {
+          // Aggregate per user
+          const map: Record<string, { total: number; count: number }> = {}
+          gradesData.forEach((g: { user_id: string; percentage: number }) => {
+            if (!map[g.user_id]) map[g.user_id] = { total: 0, count: 0 }
+            map[g.user_id].total += g.percentage
+            map[g.user_id].count += 1
+          })
+          const userIds = Object.keys(map)
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, first_name, last_name')
+            .in('id', userIds)
+          const ranked = userIds.map(uid => {
+            const p = (profiles || []).find((x: { id: string }) => x.id === uid)
+            return {
+              user_id: uid,
+              first_name: p?.first_name || '',
+              last_name: p?.last_name || '',
+              total_score: Math.round(map[uid].total),
+              quiz_count: map[uid].count,
+            }
+          }).sort((a, b) => b.total_score - a.total_score)
+          setCourseRankings(ranked)
+        } else {
+          setCourseRankings([])
+        }
+      } catch { setCourseRankings([]) }
+      finally { setLoadingRankings(false) }
     } catch (e) {
       console.error('Error fetching course overview:', e)
     }
@@ -887,6 +927,7 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
     setHighlightedSubjectId(null)
     setCourseEnrolledCount(0)
     setCourseInstructors([])
+    setCourseRankings([])
     fetchSubjects(course.id)
     fetchAllModulesForCourse(course.id)
     fetchCourseOverview(course.id)
@@ -2185,12 +2226,12 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
                       <div
                         key={course.id}
                         onClick={() => setPreviewCourse(course)}
-                        className={`flex items-center gap-4 px-4 py-5 cursor-pointer border-b border-gray-100 transition-colors ${isSelected ? 'bg-gray-50' : 'hover:bg-gray-50'}`}
+                        className={`flex items-center gap-4 px-4 py-5 cursor-pointer border-b border-gray-100 transition-all shadow-sm hover:shadow-md ${isSelected ? 'bg-gray-50' : 'hover:bg-gray-50'}`}
                       >
                         {/* Thumbnail */}
                         <div className="flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border border-gray-200 bg-gray-100">
                           {course.thumbnail_url ? (
-                            <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover" />
+                            <img src={course.thumbnail_url} alt={course.title} className="w-full h-full" style={{ objectFit: "cover", objectPosition: "center" }} />
                           ) : (
                             <div className="w-full h-full" style={{
                               background: 'linear-gradient(135deg, #1f7a8c20, #1f7a8c08)'
@@ -2287,7 +2328,7 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
                     {/* Hero image */}
                   <div className="relative w-full" style={{ height: '260px' }}>
                     {c.thumbnail_url ? (
-                      <img src={c.thumbnail_url} alt={c.title} className="w-full h-full object-cover" />
+                      <img src={c.thumbnail_url} alt={c.title} className="w-full h-full" style={{ objectFit: "cover", objectPosition: "center" }} />
                     ) : (
                       <div className="w-full h-full" style={{
                         background: 'linear-gradient(135deg, #1f7a8c30, #1f7a8c10)'
@@ -2315,7 +2356,7 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
                             <div key={subj.id} className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:bg-gray-50 transition-colors">
                               <div className="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden border border-gray-200 bg-gray-100">
                                 {(subj as any).thumbnail_url ? (
-                                  <img src={(subj as any).thumbnail_url} alt={subj.title} className="w-full h-full object-cover" />
+                                  <img src={(subj as any).thumbnail_url} alt={subj.title} className="w-full h-full" style={{ objectFit: "cover", objectPosition: "center" }} />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: `${bg}20` }}>
                                     <svg className="w-5 h-5" fill="none" stroke={bg} viewBox="0 0 24 24">
@@ -2363,7 +2404,7 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
           <div className="rounded-2xl overflow-hidden border border-gray-200 shadow-sm">
             <div className="relative h-32 sm:h-52 w-full">
               {selectedCourse.thumbnail_url ? (
-                <img src={selectedCourse.thumbnail_url} alt={selectedCourse.title} className="w-full h-full object-cover" />
+                <img src={selectedCourse.thumbnail_url} alt={selectedCourse.title} className="w-full h-full" style={{ objectFit: "cover", objectPosition: "center" }} />
               ) : (
                 <div className="w-full h-full" style={{
                   background: 'linear-gradient(135deg, #1f7a8c30 0%, #1f7a8c10 100%)'
@@ -2430,7 +2471,7 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
                       {/* Cover image */}
                       <div className="flex-shrink-0 w-20 h-20 sm:w-24 sm:h-24 lg:w-[100px] lg:h-[100px] bg-gray-100 rounded-xl overflow-hidden border border-gray-200">
                         {subject.thumbnail_url ? (
-                          <img src={subject.thumbnail_url} alt={subject.title} className="w-full h-full object-cover" />
+                          <img src={subject.thumbnail_url} alt={subject.title} className="w-full h-full" style={{ objectFit: "cover", objectPosition: "center" }} />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
                             <svg className="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2580,6 +2621,35 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
 
             {/* Right: Stats sidebar (30%) */}
             <div className="w-full lg:flex-[3] lg:min-w-0">
+              {/* Rankings Card */}
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-4">
+                <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                  <span className="text-sm font-semibold text-gray-900">Rankings</span>
+                  <span className="text-xs text-gray-400">by total quiz score</span>
+                </div>
+                <div className="divide-y divide-gray-100">
+                  {loadingRankings ? (
+                    <div className="py-4 flex justify-center">
+                      <svg className="w-4 h-4 text-gray-400 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
+                    </div>
+                  ) : courseRankings.length === 0 ? (
+                    <p className="text-xs text-gray-400 italic px-4 py-3">No quiz scores yet.</p>
+                  ) : (
+                    courseRankings.slice(0, 10).map((r, i) => {
+                      const isTop3 = i < 3
+                      const bg = i === 0 ? 'bg-yellow-50 border-yellow-200' : i === 1 ? 'bg-gray-50 border-gray-200' : i === 2 ? 'bg-amber-50 border-amber-200' : ''
+                      const numColor = i === 0 ? 'text-yellow-600' : i === 1 ? 'text-gray-500' : i === 2 ? 'text-amber-600' : 'text-gray-400'
+                      return (
+                        <div key={r.user_id} className={`flex items-center gap-3 px-4 py-2.5 ${isTop3 ? `${bg} border-l-2` : ''}`}>
+                          <span className={`text-xs font-bold w-5 text-center flex-shrink-0 ${numColor}`}>{i + 1}</span>
+                          <span className="flex-1 text-xs text-gray-700 truncate">{r.first_name} {r.last_name}</span>
+                          <span className="text-xs font-bold text-gray-900">{r.total_score}%</span>
+                        </div>
+                      )
+                    })
+                  )}
+                </div>
+              </div>
               {/* Enrolled Users & Instructors Card */}
               <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-4">
                 <div className="px-4 py-3 border-b border-gray-100">
@@ -2593,10 +2663,8 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-gray-500">Enrolled Users</p>
-                      <p className="text-sm font-bold text-gray-900">{courseEnrolledCount}</p>
-                    </div>
+                    <span className="flex-1 text-xs text-gray-500">Enrolled Users</span>
+                    <span className="text-sm font-bold text-gray-900">{courseEnrolledCount}</span>
                   </div>
                   {/* Instructors */}
                   <div className="flex items-center gap-3 px-4 py-3">
@@ -2605,10 +2673,8 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-gray-500">Assigned Instructors</p>
-                      <p className="text-sm font-bold text-gray-900">{courseInstructors.length}</p>
-                    </div>
+                    <span className="flex-1 text-xs text-gray-500">Assigned Instructors</span>
+                    <span className="text-sm font-bold text-gray-900">{courseInstructors.length}</span>
                   </div>
                 </div>
               </div>
@@ -2618,19 +2684,19 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
                 </div>
                 <div className="divide-y divide-gray-100">
                   <div className="flex items-center justify-between px-4 py-3">
-                    <span className="text-sm text-gray-500">Total</span>
+                    <span className="text-xs text-gray-500">Total</span>
                     <span className="text-sm font-bold text-gray-900">{subjects.length}</span>
                   </div>
                   <div className="flex items-center justify-between px-4 py-3">
-                    <span className="text-sm text-green-600">Active</span>
+                    <span className="text-xs text-green-600">Active</span>
                     <span className="text-sm font-bold text-green-700">{subjects.filter(s => s.status === 'active').length}</span>
                   </div>
                   <div className="flex items-center justify-between px-4 py-3">
-                    <span className="text-sm text-yellow-600">Draft</span>
+                    <span className="text-xs text-yellow-600">Draft</span>
                     <span className="text-sm font-bold text-yellow-700">{subjects.filter(s => s.status === 'draft').length}</span>
                   </div>
                   <div className="flex items-center justify-between px-4 py-3">
-                    <span className="text-sm text-red-500">Inactive</span>
+                    <span className="text-xs text-red-500">Inactive</span>
                     <span className="text-sm font-bold text-red-600">{subjects.filter(s => s.status === 'inactive').length}</span>
                   </div>
                 </div>
@@ -2848,7 +2914,7 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
                 <label className="block text-xs font-medium text-black mb-1">Cover Image</label>
                 {newCourse.thumbnail_url && (
                   <div className="mb-2 relative w-full h-28 rounded-lg overflow-hidden border border-gray-200">
-                    <img src={newCourse.thumbnail_url} alt="thumbnail" className="w-full h-full object-cover" />
+                    <img src={newCourse.thumbnail_url} alt="thumbnail" className="w-full h-full" style={{ objectFit: "cover", objectPosition: "center" }} />
                     <button type="button" onClick={() => setNewCourse(prev => ({ ...prev, thumbnail_url: '' }))}
                       className="absolute top-1 right-1 p-1 bg-white rounded-full shadow text-gray-500 hover:text-red-500">
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
@@ -2997,7 +3063,7 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
                 <label className="block text-xs font-medium text-black mb-1">Cover Image</label>
                 {newSubject.thumbnail_url && (
                   <div className="mb-2 relative w-full h-28 rounded-lg overflow-hidden border border-gray-200">
-                    <img src={newSubject.thumbnail_url} alt="thumbnail" className="w-full h-full object-cover" />
+                    <img src={newSubject.thumbnail_url} alt="thumbnail" className="w-full h-full" style={{ objectFit: "cover", objectPosition: "center" }} />
                     <button type="button" onClick={() => setNewSubject(prev => ({ ...prev, thumbnail_url: '' }))}
                       className="absolute top-1 right-1 p-1 bg-white rounded-full shadow text-gray-500 hover:text-red-500">
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
@@ -3146,7 +3212,7 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
                 <label className="block text-xs font-medium text-black mb-1">Cover Image</label>
                 {newSubject.thumbnail_url && (
                   <div className="mb-2 relative w-full h-28 rounded-lg overflow-hidden border border-gray-200">
-                    <img src={newSubject.thumbnail_url} alt="thumbnail" className="w-full h-full object-cover" />
+                    <img src={newSubject.thumbnail_url} alt="thumbnail" className="w-full h-full" style={{ objectFit: "cover", objectPosition: "center" }} />
                     <button type="button" onClick={() => setNewSubject(prev => ({ ...prev, thumbnail_url: '' }))}
                       className="absolute top-1 right-1 p-1 bg-white rounded-full shadow text-gray-500 hover:text-red-500">
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
@@ -3531,7 +3597,7 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
                 <label className="block text-xs font-medium text-black mb-1">Cover Image</label>
                 {newCourse.thumbnail_url && (
                   <div className="mb-2 relative w-full h-28 rounded-lg overflow-hidden border border-gray-200">
-                    <img src={newCourse.thumbnail_url} alt="thumbnail" className="w-full h-full object-cover" />
+                    <img src={newCourse.thumbnail_url} alt="thumbnail" className="w-full h-full" style={{ objectFit: "cover", objectPosition: "center" }} />
                     <button type="button" onClick={() => setNewCourse(prev => ({ ...prev, thumbnail_url: '' }))}
                       className="absolute top-1 right-1 p-1 bg-white rounded-full shadow text-gray-500 hover:text-red-500">
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
@@ -3838,6 +3904,9 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
     </div>
   )
 }
+
+
+
 
 
 

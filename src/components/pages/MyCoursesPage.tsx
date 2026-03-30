@@ -82,6 +82,8 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
 
   const [courseEnrolledCount, setCourseEnrolledCount] = useState(0)
   const [courseInstructorCount, setCourseInstructorCount] = useState(0)
+  const [courseRankings, setCourseRankings] = useState<Array<{ user_id: string; first_name: string; last_name: string; total_score: number }>>([])
+  const [loadingRankings, setLoadingRankings] = useState(false)
 
   useEffect(() => {
     if (user?.id) fetchEnrolledCourses()
@@ -149,6 +151,23 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
     const { data: subjectData } = await supabase.from('subjects').select('instructor_id').eq('course_id', courseId).not('instructor_id', 'is', null)
     const uniqueIds = Array.from(new Set((subjectData || []).map((s: { instructor_id: string }) => s.instructor_id).filter(Boolean)))
     setCourseInstructorCount(uniqueIds.length)
+    // Rankings
+    setLoadingRankings(true)
+    try {
+      const { data: gradesData } = await supabase.from('quiz_grades').select('user_id, percentage').eq('course_id', courseId)
+      if (gradesData && gradesData.length > 0) {
+        const map: Record<string, number> = {}
+        gradesData.forEach((g: { user_id: string; percentage: number }) => { map[g.user_id] = (map[g.user_id] || 0) + g.percentage })
+        const userIds = Object.keys(map)
+        const { data: profiles } = await supabase.from('profiles').select('id, first_name, last_name').in('id', userIds)
+        const ranked = userIds.map(uid => {
+          const p = (profiles || []).find((x: { id: string }) => x.id === uid)
+          return { user_id: uid, first_name: p?.first_name || '', last_name: p?.last_name || '', total_score: Math.round(map[uid]) }
+        }).sort((a, b) => b.total_score - a.total_score)
+        setCourseRankings(ranked)
+      } else { setCourseRankings([]) }
+    } catch { setCourseRankings([]) }
+    finally { setLoadingRankings(false) }
   }
 
   const [previewSubjects, setPreviewSubjects] = useState<Subject[]>([])
@@ -313,10 +332,10 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
                   const isSelected = previewCourse?.id === course.id
                   return (
                     <div key={course.id} onClick={() => setPreviewCourse(course)}
-                      className={`flex items-center gap-4 px-4 py-5 cursor-pointer border-b border-gray-100 transition-colors ${isSelected ? 'bg-gray-50' : 'hover:bg-gray-50'}`}>
+                      className={`flex items-center gap-4 px-4 py-5 cursor-pointer border-b border-gray-100 transition-all shadow-sm hover:shadow-md ${isSelected ? 'bg-gray-50' : 'hover:bg-gray-50'}`}>
                       <div className="flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border border-gray-200 bg-gray-100">
                         {course.thumbnail_url ? (
-                          <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover" />
+                          <img src={course.thumbnail_url} alt={course.title} className="w-full h-full" style={{ objectFit: "cover", objectPosition: "center" }} />
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-teal-50 to-teal-100 flex items-center justify-center">
                             <svg className="w-6 h-6 text-teal-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
@@ -361,7 +380,7 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
                     </div>
                     <div className="relative w-full" style={{ height: '200px' }}>
                       {c.thumbnail_url ? (
-                        <img src={c.thumbnail_url} alt={c.title} className="w-full h-full object-cover" />
+                        <img src={c.thumbnail_url} alt={c.title} className="w-full h-full" style={{ objectFit: "cover", objectPosition: "center" }} />
                       ) : (
                         <div className="w-full h-full bg-gradient-to-br from-teal-400 to-teal-600" />
                       )}
@@ -388,7 +407,7 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
                             <div key={subj.id} className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:bg-gray-50 transition-colors">
                               <div className="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden border border-gray-200 bg-gray-100">
                                 {subj.thumbnail_url ? (
-                                  <img src={subj.thumbnail_url} alt={subj.title} className="w-full h-full object-cover" />
+                                  <img src={subj.thumbnail_url} alt={subj.title} className="w-full h-full" style={{ objectFit: "cover", objectPosition: "center" }} />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: `${bg}20` }}>
                                     <svg className="w-5 h-5" fill="none" stroke={bg} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
@@ -428,7 +447,7 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
           <div className="rounded-2xl overflow-hidden border border-gray-200 shadow-sm">
             <div className="relative h-32 sm:h-52 w-full">
               {selectedCourse.thumbnail_url ? (
-                <img src={selectedCourse.thumbnail_url} alt={selectedCourse.title} className="w-full h-full object-cover" />
+                <img src={selectedCourse.thumbnail_url} alt={selectedCourse.title} className="w-full h-full" style={{ objectFit: "cover", objectPosition: "center" }} />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-teal-400 to-teal-600" />
               )}
@@ -484,7 +503,7 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
                               {/* Cover image */}
                               <div className="flex-shrink-0 w-20 h-20 sm:w-24 sm:h-24 lg:w-[100px] lg:h-[100px] bg-gray-100 rounded-xl overflow-hidden border border-gray-200 flex items-center justify-center">
                                 {subject.thumbnail_url ? (
-                                  <img src={subject.thumbnail_url} alt={subject.title} className="w-full h-full object-cover" />
+                                  <img src={subject.thumbnail_url} alt={subject.title} className="w-full h-full" style={{ objectFit: "cover", objectPosition: "center" }} />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center">
                                     <svg className="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
@@ -568,6 +587,33 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
             </div>
 
             <div className="w-full lg:flex-[3] lg:min-w-0 space-y-4">
+              {/* Rankings Card */}
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                  <span className="text-sm font-semibold text-gray-900">Rankings</span>
+                  <span className="text-xs text-gray-400">by total quiz score</span>
+                </div>
+                <div className="divide-y divide-gray-100">
+                  {loadingRankings ? (
+                    <div className="py-4 flex justify-center"><svg className="w-4 h-4 text-gray-400 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg></div>
+                  ) : courseRankings.length === 0 ? (
+                    <p className="text-xs text-gray-400 italic px-4 py-3">No quiz scores yet.</p>
+                  ) : (
+                    courseRankings.slice(0, 10).map((r, i) => {
+                      const isTop3 = i < 3
+                      const bg = i === 0 ? 'bg-yellow-50 border-yellow-200' : i === 1 ? 'bg-gray-50 border-gray-200' : 'bg-amber-50 border-amber-200'
+                      const numColor = i === 0 ? 'text-yellow-600' : i === 1 ? 'text-gray-500' : i === 2 ? 'text-amber-600' : 'text-gray-400'
+                      return (
+                        <div key={r.user_id} className={`flex items-center gap-3 px-4 py-2.5 ${isTop3 ? `${bg} border-l-2` : ''}`}>
+                          <span className={`text-xs font-bold w-5 text-center flex-shrink-0 ${numColor}`}>{i + 1}</span>
+                          <span className="flex-1 text-xs text-gray-700 truncate">{r.first_name} {r.last_name}</span>
+                          <span className="text-xs font-bold text-gray-900">{r.total_score}%</span>
+                        </div>
+                      )
+                    })
+                  )}
+                </div>
+              </div>
               <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                 <div className="px-4 py-3 border-b border-gray-100"><span className="text-sm font-semibold text-gray-900">People</span></div>
                 <div className="divide-y divide-gray-100">
@@ -575,13 +621,15 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
                     <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
                       <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                     </div>
-                    <div><p className="text-xs text-gray-500">Enrolled Users</p><p className="text-sm font-bold text-gray-900">{courseEnrolledCount}</p></div>
+                    <span className="flex-1 text-xs text-gray-500">Enrolled Users</span>
+                    <span className="text-sm font-bold text-gray-900">{courseEnrolledCount}</span>
                   </div>
                   <div className="flex items-center gap-3 px-4 py-3">
                     <div className="w-8 h-8 rounded-full bg-teal-50 flex items-center justify-center flex-shrink-0">
                       <svg className="w-4 h-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                     </div>
-                    <div><p className="text-xs text-gray-500">Assigned Instructors</p><p className="text-sm font-bold text-gray-900">{courseInstructorCount}</p></div>
+                    <span className="flex-1 text-xs text-gray-500">Assigned Instructors</span>
+                    <span className="text-sm font-bold text-gray-900">{courseInstructorCount}</span>
                   </div>
                 </div>
               </div>
@@ -589,10 +637,10 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
               <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                 <div className="px-4 py-3 border-b border-gray-100"><span className="text-sm font-semibold text-gray-900">Statistics</span></div>
                 <div className="divide-y divide-gray-100">
-                  <div className="flex items-center justify-between px-4 py-3"><span className="text-sm text-gray-500">Total</span><span className="text-sm font-bold text-gray-900">{subjects.length}</span></div>
-                  <div className="flex items-center justify-between px-4 py-3"><span className="text-sm text-green-600">Active</span><span className="text-sm font-bold text-green-700">{subjects.filter(s => s.status === 'active').length}</span></div>
-                  <div className="flex items-center justify-between px-4 py-3"><span className="text-sm text-yellow-600">Draft</span><span className="text-sm font-bold text-yellow-700">{subjects.filter(s => s.status === 'draft').length}</span></div>
-                  <div className="flex items-center justify-between px-4 py-3"><span className="text-sm text-red-500">Inactive</span><span className="text-sm font-bold text-red-600">{subjects.filter(s => s.status === 'inactive').length}</span></div>
+                  <div className="flex items-center justify-between px-4 py-3"><span className="text-xs text-gray-500">Total</span><span className="text-sm font-bold text-gray-900">{subjects.length}</span></div>
+                  <div className="flex items-center justify-between px-4 py-3"><span className="text-xs text-green-600">Active</span><span className="text-sm font-bold text-green-700">{subjects.filter(s => s.status === 'active').length}</span></div>
+                  <div className="flex items-center justify-between px-4 py-3"><span className="text-xs text-yellow-600">Draft</span><span className="text-sm font-bold text-yellow-700">{subjects.filter(s => s.status === 'draft').length}</span></div>
+                  <div className="flex items-center justify-between px-4 py-3"><span className="text-xs text-red-500">Inactive</span><span className="text-sm font-bold text-red-600">{subjects.filter(s => s.status === 'inactive').length}</span></div>
                 </div>
               </div>
               )}
@@ -611,15 +659,15 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
                     const totalDuration = allMods.reduce((sum, m) => sum + (m.duration_minutes || 0), 0)
                     return (
                       <>
-                        <div className="flex items-center gap-3"><svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg><span className="text-sm text-gray-600">{subjects.length} subject{subjects.length !== 1 ? 's' : ''}</span></div>
-                        {totalMods > 0 && <div className="flex items-center gap-3"><svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg><span className="text-sm text-gray-600">{totalMods} module{totalMods !== 1 ? 's' : ''}</span></div>}
-                        {videoMods > 0 && <div className="flex items-center gap-3"><svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" /></svg><span className="text-sm text-gray-600">{videoMods} video lesson{videoMods !== 1 ? 's' : ''}</span></div>}
-                        {articleMods > 0 && <div className="flex items-center gap-3"><svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg><span className="text-sm text-gray-600">{articleMods} article{articleMods !== 1 ? 's' : ''}</span></div>}
-                        {pdfMods > 0 && <div className="flex items-center gap-3"><svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg><span className="text-sm text-gray-600">{pdfMods} PDF document{pdfMods !== 1 ? 's' : ''}</span></div>}
-                        {slideMods > 0 && <div className="flex items-center gap-3"><svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" /></svg><span className="text-sm text-gray-600">{slideMods} presentation{slideMods !== 1 ? 's' : ''}</span></div>}
-                        {confMods > 0 && <div className="flex items-center gap-3"><svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" /></svg><span className="text-sm text-gray-600">{confMods} online session{confMods !== 1 ? 's' : ''}</span></div>}
-                        {totalDuration > 0 && <div className="flex items-center gap-3"><svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><span className="text-sm text-gray-600">{totalDuration >= 60 ? `${Math.floor(totalDuration / 60)}h ${totalDuration % 60 > 0 ? `${totalDuration % 60}m` : ''}`.trim() : `${totalDuration} min total`}</span></div>}
-                        <div className="flex items-center gap-3"><svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg><span className="text-sm text-gray-600 capitalize">{selectedCourse?.course_type?.replace(/_/g, ' ')} course</span></div>
+                        <div className="flex items-center gap-3"><svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg><span className="text-xs text-gray-600">{subjects.length} subject{subjects.length !== 1 ? 's' : ''}</span></div>
+                        {totalMods > 0 && <div className="flex items-center gap-3"><svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg><span className="text-xs text-gray-600">{totalMods} module{totalMods !== 1 ? 's' : ''}</span></div>}
+                        {videoMods > 0 && <div className="flex items-center gap-3"><svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" /></svg><span className="text-xs text-gray-600">{videoMods} video lesson{videoMods !== 1 ? 's' : ''}</span></div>}
+                        {articleMods > 0 && <div className="flex items-center gap-3"><svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg><span className="text-xs text-gray-600">{articleMods} article{articleMods !== 1 ? 's' : ''}</span></div>}
+                        {pdfMods > 0 && <div className="flex items-center gap-3"><svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg><span className="text-xs text-gray-600">{pdfMods} PDF document{pdfMods !== 1 ? 's' : ''}</span></div>}
+                        {slideMods > 0 && <div className="flex items-center gap-3"><svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" /></svg><span className="text-xs text-gray-600">{slideMods} presentation{slideMods !== 1 ? 's' : ''}</span></div>}
+                        {confMods > 0 && <div className="flex items-center gap-3"><svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" /></svg><span className="text-xs text-gray-600">{confMods} online session{confMods !== 1 ? 's' : ''}</span></div>}
+                        {totalDuration > 0 && <div className="flex items-center gap-3"><svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><span className="text-xs text-gray-600">{totalDuration >= 60 ? `${Math.floor(totalDuration / 60)}h ${totalDuration % 60 > 0 ? `${totalDuration % 60}m` : ''}`.trim() : `${totalDuration} min total`}</span></div>}
+                        <div className="flex items-center gap-3"><svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg><span className="text-xs text-gray-600 capitalize">{selectedCourse?.course_type?.replace(/_/g, ' ')} course</span></div>
                         <div className="flex items-center gap-3 opacity-40"><svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg><span className="text-sm text-gray-400">Activities <span className="text-xs italic">(coming soon)</span></span></div>
                         <div className="flex items-center gap-3 opacity-40"><svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg><span className="text-sm text-gray-400">Badges <span className="text-xs italic">(coming soon)</span></span></div>
                       </>
@@ -650,3 +698,6 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
     </div>
   )
 }
+
+
+
