@@ -516,16 +516,10 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
       {/* Main Chat Window */}
       <div className="bg-white rounded-xl w-full max-w-4xl h-[calc(100vh-2rem)] md:h-[600px] flex flex-col shadow-2xl">
         {/* Header */}
-        <div className="p-3 md:p-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-blue-500 to-purple-600 rounded-t-2xl">
+        <div className="p-3 md:p-4 border-b border-gray-200 flex items-center justify-between rounded-t-2xl" style={{ background: 'linear-gradient(to right, #0f4c5c, #1f7a8c)' }}>
           <div className="flex items-center gap-2 md:gap-3">
-            <div className="w-8 h-8 md:w-10 md:h-10 bg-white rounded-xl flex items-center justify-center">
-              <svg className="w-5 h-5 md:w-6 md:h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-              </svg>
-            </div>
             <div>
-              <h2 className="text-base md:text-lg font-semibold text-white">AI Coding Assistant</h2>
-              <p className="text-[10px] md:text-xs text-blue-100">Powered by {getModelDisplayName()}</p>
+              <h2 className="text-base md:text-lg font-semibold text-white">Slate AI Assistant</h2>
             </div>
           </div>
           <div className="flex gap-1 md:gap-2">
@@ -575,9 +569,9 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
                   <div className={`flex items-start gap-2 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}>
                     <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
                       message.role === 'user'
-                        ? 'bg-gradient-to-br from-blue-500 to-purple-600'
-                        : 'bg-gradient-to-br from-green-500 to-teal-600'
-                    }`}>
+                        ? ''
+                        : ''
+                    }`} style={{ background: message.role === 'user' ? 'linear-gradient(135deg, #0f4c5c, #1f7a8c)' : 'linear-gradient(135deg, #1f7a8c, #2a9d8f)' }}>
                       {message.role === 'user' ? (
                         <span className="text-white font-bold text-sm">
                           {user?.profile?.first_name?.charAt(0) || 'U'}
@@ -591,9 +585,9 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
                     <div className={`flex-1 ${message.role === 'user' ? 'text-right' : ''}`}>
                       <div className={`inline-block px-4 py-2 rounded-xl ${
                         message.role === 'user'
-                          ? 'bg-primary-500 text-white'
+                          ? 'text-white'
                           : 'bg-white border border-gray-200 text-gray-900 shadow-sm'
-                      }`}>
+                      }`} style={message.role === 'user' ? { backgroundColor: '#0f4c5c' } : {}}>
                         {message.image && (
                           <img 
                             src={message.image} 
@@ -628,7 +622,7 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
           {isLoading && (
             <div className="flex justify-start">
               <div className="flex items-start gap-2">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-green-500 to-teal-600 flex items-center justify-center">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #1f7a8c, #2a9d8f)' }}>
                   <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                   </svg>
@@ -656,7 +650,8 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
                   <img 
                     src={selectedImage} 
                     alt="Selected" 
-                    className="h-20 w-20 object-cover rounded-lg border-2 border-blue-500"
+                    className="h-20 w-20 object-cover rounded-lg border-2"
+                    style={{ borderColor: '#1f7a8c' }}
                   />
                   <button
                     onClick={() => setSelectedImage(null)}
@@ -715,7 +710,10 @@ export default function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
             <button
               onClick={sendMessage}
               disabled={(!inputMessage.trim() && !selectedImage && !selectedFile) || isLoading}
-              className="px-4 md:px-6 py-2 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-4 md:px-6 py-2 text-white rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              style={{ backgroundColor: '#0f4c5c' }}
+              onMouseEnter={(e) => !e.currentTarget.disabled && (e.currentTarget.style.backgroundColor = '#1f7a8c')}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#0f4c5c')}
             >
               {isLoading ? (
                 <ButtonLoading />

@@ -285,16 +285,16 @@ print("Even squares:", even_squares)`
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-0 sm:p-2 md:p-4">
       <div className="bg-white rounded-none sm:rounded-xl w-full h-full sm:h-[95vh] sm:max-w-7xl md:h-[90vh] flex flex-col shadow-2xl">
         {/* Header */}
-        <div className="p-2 sm:p-3 md:p-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-green-500 to-blue-600">
+        <div className="p-2 sm:p-3 md:p-4 border-b border-gray-200 flex items-center justify-between rounded-t-none sm:rounded-t-xl" style={{ background: 'linear-gradient(to right, #0f4c5c, #1f7a8c)' }}>
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 bg-white rounded-lg sm:rounded-xl flex items-center justify-center">
-              <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" style={{ color: '#0f4c5c' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
               </svg>
             </div>
             <div>
               <h2 className="text-sm sm:text-base md:text-lg font-semibold text-white">Slate Python IDE</h2>
-              <p className="text-[9px] sm:text-[10px] md:text-xs text-green-100">
+              <p className="text-[9px] sm:text-[10px] md:text-xs" style={{ color: '#b2d8df' }}>
                 {skulptReady ? 'Ready to code!' : 'Loading...'}
               </p>
             </div>
@@ -342,7 +342,8 @@ print("Even squares:", even_squares)`
               <button
                 onClick={runCode}
                 disabled={isRunning || !skulptReady}
-                className="px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 md:py-2 bg-primary-500 text-white rounded-md sm:rounded-lg hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 sm:gap-2 text-[10px] sm:text-xs md:text-sm"
+                className="px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 md:py-2 text-white rounded-md sm:rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 sm:gap-2 text-[10px] sm:text-xs md:text-sm"
+                style={{ backgroundColor: '#0f4c5c' }}
               >
                 {isRunning ? (
                   <>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { QuizConfig } from './QuizBuilder'
 import QuizPlayer from './QuizPlayer'
 
@@ -196,6 +196,106 @@ function InfoCard({ label, children, color }: {
   )
 }
 
+function ModuleTimer({ moduleId }: { moduleId: string }) {
+  const DURATION = 2 * 60 * 60
+  const storageKey = `module_timer_remaining_${moduleId}`
+
+  const [secondsLeft, setSecondsLeft] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem(storageKey)
+      if (saved) return Math.max(0, parseInt(saved, 10))
+    } catch {}
+    return DURATION
+  })
+
+  const [isActive, setIsActive] = useState(!document.hidden)
+  const [countdown, setCountdown] = useState<number | null>(null) // 3→2→1→null
+
+  // Visibility change — pause on hide, start 3s countdown on show
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.hidden) {
+        setIsActive(false)
+        setCountdown(null)
+      } else {
+        // Tab came back — start 3s countdown before resuming
+        setCountdown(3)
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [])
+
+  // Countdown 3→2→1→resume
+  useEffect(() => {
+    if (countdown === null) return
+    if (countdown === 0) {
+      setCountdown(null)
+      setIsActive(true)
+      return
+    }
+    const id = setTimeout(() => setCountdown(c => (c !== null ? c - 1 : null)), 1000)
+    return () => clearTimeout(id)
+  }, [countdown])
+
+  // Main countdown — only ticks when active and no countdown running
+  useEffect(() => {
+    if (!isActive || countdown !== null || secondsLeft <= 0) return
+    const id = setInterval(() => {
+      setSecondsLeft(s => {
+        const next = Math.max(0, s - 1)
+        try { localStorage.setItem(storageKey, String(next)) } catch {}
+        return next
+      })
+    }, 1000)
+    return () => clearInterval(id)
+  }, [isActive, countdown, secondsLeft])
+
+  const h = Math.floor(secondsLeft / 3600)
+  const m = Math.floor((secondsLeft % 3600) / 60)
+  const s = secondsLeft % 60
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const urgent = secondsLeft <= 300
+  const expired = secondsLeft === 0
+
+  // Countdown overlay — full-screen centered
+  if (countdown !== null) {
+    return (
+      <>
+        {/* Timer badge — paused */}
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-mono font-semibold shrink-0 bg-gray-100 border-gray-200 text-gray-400">
+          <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          {pad(h)}:{pad(m)}:{pad(s)} ⏸
+        </div>
+        {/* Full-screen countdown overlay */}
+        <div className="fixed inset-0 z-[60] bg-black/70 flex flex-col items-center justify-center gap-4">
+          <p className="text-white text-lg font-semibold">Resuming in</p>
+          <div className="w-24 h-24 rounded-full flex items-center justify-center text-5xl font-bold text-white border-4 border-white/40"
+            style={{ background: 'linear-gradient(135deg, #0f4c5c, #1f7a8c)' }}>
+            {countdown}
+          </div>
+        </div>
+      </>
+    )
+  }
+
+  return (
+    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-mono font-semibold shrink-0 ${
+      expired ? 'bg-red-50 border-red-200 text-red-600'
+      : urgent ? 'bg-amber-50 border-amber-200 text-amber-700'
+      : !isActive ? 'bg-gray-100 border-gray-200 text-gray-400'
+      : 'bg-gray-50 border-gray-200 text-gray-700'
+    }`}>
+      <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      {expired ? 'Time up' : !isActive ? `${pad(h)}:${pad(m)}:${pad(s)} ⏸` : `${pad(h)}:${pad(m)}:${pad(s)}`}
+    </div>
+  )
+}
+
 export default function LessonViewer({
   module, isOpen, onClose, inline = false, siblingModules = [], onNavigate,
   userId, userRole, subjectId, courseId
@@ -218,8 +318,9 @@ export default function LessonViewer({
   const body = (
     <div className="p-5">
       {/* Title row */}
-      <div className="mb-4">
+      <div className="mb-4 flex items-start justify-between gap-3">
         <h2 className="text-xl font-bold text-gray-900 leading-tight">{module.title}</h2>
+        <ModuleTimer moduleId={module.id} />
       </div>
 
       {/* Two-column layout */}
@@ -236,6 +337,7 @@ export default function LessonViewer({
         <div className="w-full lg:w-[40%] shrink-0 space-y-5">
           {quizConfig && (quizConfig.type === 'quiz' || quizConfig.type === 'exam') ? (
             <QuizPlayer
+              key={module.id}
               config={quizConfig}
               moduleId={module.id}
               subjectId={subjectId ?? module.subject_id}

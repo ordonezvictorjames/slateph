@@ -2490,14 +2490,28 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
                           )}
                         </div>
                         <div className="flex items-center justify-between mt-2 flex-wrap gap-1.5" onClick={(e) => e.stopPropagation()}>
-                          {/* Status badge */}
-                          <span className={`inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full border ${
-                            subject.status === 'active'
-                              ? 'text-white border-[#1f7a8c]'
-                              : 'bg-white text-[#1f7a8c] border-[#1f7a8c]'
-                          }`} style={subject.status === 'active' ? { backgroundColor: '#1f7a8c' } : {}}>
-                            {subject.status.charAt(0).toUpperCase() + subject.status.slice(1)}
-                          </span>
+                          {/* Left: status badge + join class */}
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className={`inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full border ${
+                              subject.status === 'active'
+                                ? 'text-white border-[#1f7a8c]'
+                                : 'bg-white text-[#1f7a8c] border-[#1f7a8c]'
+                            }`} style={subject.status === 'active' ? { backgroundColor: '#1f7a8c' } : {}}>
+                              {subject.status.charAt(0).toUpperCase() + subject.status.slice(1)}
+                            </span>
+                            {subject.online_class_link && (
+                              <a
+                                href={subject.online_class_link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full border border-blue-400 text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors"
+                              >
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" /></svg>
+                                Join Class
+                              </a>
+                            )}
+                          </div>
                           {/* Action buttons */}
                           <div className="flex items-center gap-1">
                             <button onClick={() => { setSelectedSubject(subject); fetchResources(subject.id); setShowAddModuleModal(true) }}
@@ -2586,7 +2600,7 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
                                       <button onClick={() => handleOpenTest(mod)}
                                         className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-full border border-[#1f7a8c] bg-white text-[#1f7a8c] hover:bg-[#e6f4f7] transition-colors" title="Create/Edit Test">
                                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
-                                        Create Test
+                                        {(() => { try { const p = mod.text_content ? JSON.parse(mod.text_content) : {}; return p.quiz_config ? 'Edit Test' : 'Create Test' } catch { return 'Create Test' } })()}
                                       </button>
                                       <button onClick={() => handleEditModule(mod)}
                                         className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-full border border-[#1f7a8c] bg-white text-[#1f7a8c] hover:bg-[#e6f4f7] transition-colors" title="Edit">
@@ -3701,7 +3715,7 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
           <div className="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-100 flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-semibold text-black">Create Test</h2>
+                <h2 className="text-xl font-semibold text-black">{testQuizConfig ? 'Edit Test' : 'Create Test'}</h2>
                 <p className="text-xs text-gray-500 mt-0.5">{testModule.title}</p>
               </div>
               <button onClick={() => { setShowTestModal(false); setTestModule(null); setTestQuizConfig(null) }}
@@ -3712,6 +3726,18 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
             <div className="p-6">
               <QuizBuilder value={testQuizConfig} onChange={setTestQuizConfig} />
               <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 mt-4">
+                {testQuizConfig && (
+                  <button type="button"
+                    onClick={async () => {
+                      if (!testModule) return
+                      if (!confirm('This will delete all student scores for this test so it can be retaken. Continue?')) return
+                      await supabase.from('quiz_grades').delete().eq('module_id', testModule.id)
+                      showSuccess('Scores cleared', 'Students can now retake the test.')
+                    }}
+                    className="px-4 py-2 text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors text-sm">
+                    Refresh Scores
+                  </button>
+                )}
                 <button type="button" onClick={() => { setShowTestModal(false); setTestModule(null); setTestQuizConfig(null) }}
                   className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
                   Cancel

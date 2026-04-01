@@ -96,6 +96,171 @@ interface CourseSchedule {
   }
 }
 
+// Infrastructure usage cards — developer only
+function InfraUsageCards() {
+  const [usage, setUsage] = useState<Record<string, any>>({})
+  const [loading, setLoading] = useState(true)
+  const [expanded, setExpanded] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch('/api/developer/supabase-usage')
+      .then(r => r.json())
+      .then(d => {
+        if (d && typeof d === 'object' && !d.error) setUsage(d)
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+  }, [])
+
+  const GB = 1073741824  // 1024^3
+  const MB = 1048576     // 1024^2
+
+  const fmt = (b: any) => {
+    const n = Number(b)
+    if (!b && b !== 0) return '—'
+    if (n >= GB) return (n / GB).toFixed(2) + ' GB'
+    if (n >= MB) return (n / MB).toFixed(1) + ' MB'
+    if (n >= 1024) return (n / 1024).toFixed(1) + ' KB'
+    return n + ' B'
+  }
+
+  const pct = (used: any, limit: number) => {
+    const n = Number(used)
+    if (!used && used !== 0) return 0
+    return Math.min(100, (n / limit) * 100)
+  }
+
+  const bar = (p: number) => p >= 90 ? 'bg-red-500' : p >= 70 ? 'bg-amber-400' : 'bg-green-400'
+
+  const eg = usage.egress || {}
+  const st = usage.storage || {}
+  const db = usage.db || {}
+
+  const egressPct = pct(eg.bytes, eg.limitBytes || 5 * GB)
+  const storagePct = pct(st.bytes, st.limitBytes || GB)
+  const dbPct = pct(db.bytes, db.limitBytes || 500 * MB)
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+        {[1,2,3].map(i => (
+          <div key={i} className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+            <div className="h-8 bg-gray-100 rounded animate-pulse mb-2" />
+            <div className="h-3 bg-gray-100 rounded animate-pulse w-3/4" />
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+      {/* Egress */}
+      <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-blue-50">
+            <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-gray-800">Egress</p>
+            <p className="text-xs text-gray-400">Bandwidth out / month</p>
+          </div>
+        </div>
+        <div className="flex items-end justify-between mb-1">
+          <span className="text-sm font-bold text-gray-900">{fmt(eg.bytes)}</span>
+          <span className="text-xs text-gray-400">/ 5 GB mo</span>
+        </div>
+        <div className="w-full bg-gray-100 rounded-full h-1.5 mb-1.5">
+          <div className={`${bar(egressPct)} h-1.5 rounded-full`} style={{ width: `${egressPct}%` }} />
+        </div>
+        <p className="text-xs text-gray-400">
+          Not available via API —{' '}
+          <a href="https://supabase.com/dashboard/project/wrzsvckzohhmdvyjjczb/reports/database" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-600">view in dashboard</a>
+        </p>
+      </div>
+
+      {/* File Storage */}
+      <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+        <button onClick={() => setExpanded(expanded === 'storage' ? null : 'storage')} className="w-full text-left">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-purple-50">
+              <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <p className="text-xs font-semibold text-gray-800">File Storage</p>
+              <p className="text-xs text-gray-400">Uploaded files &amp; media</p>
+            </div>
+            <svg className={`w-4 h-4 text-gray-400 transition-transform ${expanded === 'storage' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+          <div className="flex items-end justify-between mb-1">
+            <span className="text-sm font-bold text-gray-900">{fmt(st.bytes)}</span>
+            <span className="text-xs text-gray-400">/ 1 GB</span>
+          </div>
+          <div className="w-full bg-gray-100 rounded-full h-1.5 mb-1.5">
+            <div className={`${bar(storagePct)} h-1.5 rounded-full`} style={{ width: `${storagePct}%` }} />
+          </div>
+          <p className="text-xs text-gray-400">{storagePct.toFixed(1)}% used</p>
+        </button>
+        {expanded === 'storage' && st.buckets && st.buckets.length > 0 && (
+          <div className="mt-3 pt-3 border-t border-gray-100 space-y-1.5">
+            {st.buckets.map((b: any) => (
+              <div key={b.name} className="flex items-center justify-between text-xs">
+                <span className="text-gray-600">{b.name}</span>
+                <span className="text-gray-400">{fmt(b.bytes)} ({b.files} files)</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Database */}
+      <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+        <button onClick={() => setExpanded(expanded === 'db' ? null : 'db')} className="w-full text-left">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-green-50">
+              <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <ellipse cx="12" cy="5" rx="9" ry="3" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 12c0 1.66-4.03 3-9 3S3 13.66 3 12M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <p className="text-xs font-semibold text-gray-800">Database</p>
+              <p className="text-xs text-gray-400">Postgres storage</p>
+            </div>
+            <svg className={`w-4 h-4 text-gray-400 transition-transform ${expanded === 'db' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+          <div className="flex items-end justify-between mb-1">
+            <span className="text-sm font-bold text-gray-900">{fmt(db.bytes)}</span>
+            <span className="text-xs text-gray-400">/ 500 MB</span>
+          </div>
+          <div className="w-full bg-gray-100 rounded-full h-1.5 mb-1.5">
+            <div className={`${bar(dbPct)} h-1.5 rounded-full`} style={{ width: `${dbPct}%` }} />
+          </div>
+          <p className="text-xs text-gray-400">{dbPct.toFixed(1)}% used</p>
+        </button>
+        {expanded === 'db' && db.tables && db.tables.length > 0 && (
+          <div className="mt-3 pt-3 border-t border-gray-100 space-y-1.5 max-h-48 overflow-y-auto">
+            {db.tables.map((t: any) => (
+              <div key={t.name} className="flex items-center justify-between text-xs">
+                <span className="text-gray-600 truncate flex-1">{t.name}</span>
+                <span className="text-gray-400 ml-2">{fmt(t.bytes)} ({t.rows.toLocaleString()} rows)</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // Component for upcoming schedule list
 function UpcomingScheduleList() {
   const [schedules, setSchedules] = useState<CourseSchedule[]>([])
@@ -2036,6 +2201,10 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             {/* System Overview - Only for Admin/Developer */}
             {(userRole === 'admin' || userRole === 'developer') && (
             <>
+              {/* Infrastructure Usage — Developer only */}
+              {userRole === 'developer' && (
+                <InfraUsageCards />
+              )}
               {/* Mobile: compact totals */}
               <div className="sm:hidden grid grid-cols-2 gap-3">
                 <button

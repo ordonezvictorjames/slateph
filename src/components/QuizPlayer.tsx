@@ -66,7 +66,14 @@ export default function QuizPlayer({
   const [grades, setGrades]           = useState<GradeRow[]>([])
   const [loadingGrades, setLoadingGrades] = useState(false)
   const [gradesError, setGradesError] = useState<string | null>(null)
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [currentQ, setCurrentQ]       = useState(0)
+  const timerRef   = useRef<ReturnType<typeof setInterval> | null>(null)
+  const mountedRef = useRef(true)
+
+  useEffect(() => {
+    mountedRef.current = true
+    return () => { mountedRef.current = false }
+  }, [])
 
   const questions: Question[] = config.questions ?? []
   const sched       = scheduleStatus(config)
@@ -74,7 +81,7 @@ export default function QuizPlayer({
   // Student can start only if: open, within schedule, not already taken
   const canStart    = isStudent && config.is_open && withinSched && !alreadyTaken
 
-  // Check if student already submitted this quiz/exam
+  // Check if student already submitted this quiz/exam (respects max_tries)
   useEffect(() => {
     if (!isStudent || !userId) { setPhase('intro'); return }
     supabase
@@ -82,9 +89,14 @@ export default function QuizPlayer({
       .select('id')
       .eq('module_id', moduleId)
       .eq('user_id', userId)
-      .limit(1)
       .then(({ data }: { data: { id: string }[] | null }) => {
-        if (data && data.length > 0) setAlreadyTaken(true)
+        const tries = data?.length ?? 0
+        const maxTries = config.max_tries ?? 1
+        if (maxTries === 0) {
+          // unlimited — never block
+        } else if (tries >= maxTries) {
+          setAlreadyTaken(true)
+        }
         setPhase('intro')
       })
   }, [isStudent, userId, moduleId])
@@ -129,15 +141,22 @@ export default function QuizPlayer({
   }
 
   // Tab switch detection — auto-fail if student leaves during exam
+  // Note: we use pagehide to distinguish tab-switch from page refresh
   useEffect(() => {
     if (phase !== 'taking') return
+    let didUnload = false
+    function handlePageHide() { didUnload = true }
     function handleVisibilityChange() {
-      if (document.hidden) {
+      if (document.hidden && !didUnload && mountedRef.current && phase === 'taking') {
         submitQuiz()
       }
     }
+    window.addEventListener('pagehide', handlePageHide)
     document.addEventListener('visibilitychange', handleVisibilityChange)
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+    return () => {
+      window.removeEventListener('pagehide', handlePageHide)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
   }, [phase, answers])
 
   // Timer
@@ -157,6 +176,7 @@ export default function QuizPlayer({
     setSecondsLeft(config.time_minutes * 60)
     setScore(null)
     setStartedAt(Date.now())
+    setCurrentQ(0)
     setPhase('taking')
   }
 
@@ -392,7 +412,9 @@ export default function QuizPlayer({
       )}
       {alreadyTaken && (
         <p className="text-xs text-gray-500 border border-gray-200 rounded-lg px-3 py-2 text-center">
-          You have already submitted this {config.type}.
+          {(config.max_tries ?? 1) === 0
+            ? 'You have already submitted this ' + config.type + '.'
+            : `You have used all ${config.max_tries ?? 1} attempt${(config.max_tries ?? 1) !== 1 ? 's' : ''} for this ${config.type}.`}
         </p>
       )}
       {!isStudent && !isStaff && (
@@ -413,67 +435,146 @@ export default function QuizPlayer({
     </div>
   )
 
-  // ── TAKING — full-screen modal ─────────────────────────────
+  // ── TAKING — redesigned layout matching reference design ──
   if (phase === 'taking') {
-    const mins     = Math.floor(secondsLeft / 60)
-    const secs     = secondsLeft % 60
-    const urgent   = secondsLeft <= 60
-    const answered = Object.keys(answers).length
+    const mins   = Math.floor(secondsLeft / 60)
+    const secs   = secondsLeft % 60
+    const urgent = secondsLeft <= 60
+    const q      = questions[currentQ]
+    const progressPct = questions.length > 0 ? Math.round(((currentQ + 1) / questions.length) * 100) : 0
+    const answeredCount = Object.keys(answers).length
+
     return (
-      <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-2 sm:p-4">
         <div className="bg-white rounded-2xl w-full max-w-5xl h-[95vh] flex flex-col shadow-2xl overflow-hidden">
-          {/* Modal header */}
+          {/* Header */}
           <div className={`flex items-center justify-between px-5 py-3 border-b shrink-0 ${urgent ? 'bg-red-50 border-red-200' : 'bg-white border-gray-100'}`}>
-            <div>
-              <p className="text-xs font-semibold text-purple-700 uppercase tracking-wide">{config.type === 'exam' ? 'Exam' : 'Quiz'}</p>
-              <h2 className="text-sm font-bold text-gray-900">{config.title || config.type}</h2>
-            </div>
-            <div className={`font-mono font-bold text-lg ${urgent ? 'text-red-600' : 'text-gray-700'}`}>
-              {pad(mins)}:{pad(secs)}
-              <span className="text-xs font-normal text-gray-400 ml-3">{answered}/{questions.length} answered</span>
+            <h2 className="text-base font-bold text-gray-900">{config.title || (config.type === 'exam' ? 'Exam' : 'Quiz')}</h2>
+            <div className="flex items-center gap-4">
+              <div className={`font-mono font-bold text-lg ${urgent ? 'text-red-600' : 'text-gray-700'}`}>
+                {pad(mins)}:{pad(secs)}
+              </div>
+              <span className="text-xs text-gray-400">{answeredCount}/{questions.length} answered</span>
             </div>
           </div>
-          {/* Anti-cheat warning */}
-          <div className="px-5 py-2 bg-amber-50 border-b border-amber-100 shrink-0">
+
+          {/* Anti-cheat */}
+          <div className="px-5 py-1.5 bg-amber-50 border-b border-amber-100 shrink-0">
             <p className="text-xs text-amber-700">Switching tabs or windows will automatically submit your {config.type}.</p>
           </div>
 
-          {/* Questions — copy/paste disabled */}
-          <div className="flex-1 overflow-y-auto p-5 space-y-4 select-none"
-            onCopy={e => e.preventDefault()}
-            onCut={e => e.preventDefault()}
-            onContextMenu={e => e.preventDefault()}
-          >
-            {questions.map((q, qi) => (
-              <div key={q.id} className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
-                <p className="text-sm font-medium text-gray-900">
-                  <span className="text-purple-600 font-bold mr-1">{qi + 1}.</span>
+          {/* Body */}
+          <div className="flex-1 flex overflow-hidden">
+            {/* Left: question area */}
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {/* Progress bar */}
+              <div className="px-6 pt-4 pb-2 shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 bg-gray-200 rounded-full h-2">
+                    <div
+                      className="h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${progressPct}%`, backgroundColor: '#0f4c5c' }}
+                    />
+                  </div>
+                  <span className="text-xs text-gray-500 shrink-0">{progressPct}%</span>
+                </div>
+              </div>
+
+              {/* Question */}
+              <div className="flex-1 overflow-y-auto px-6 py-4 select-none"
+                onCopy={e => e.preventDefault()}
+                onCut={e => e.preventDefault()}
+                onContextMenu={e => e.preventDefault()}
+              >
+                <p className="text-sm font-semibold text-gray-900 mb-4">
+                  <span className="font-bold" style={{ color: '#0f4c5c' }}>Question {currentQ + 1}/{questions.length}: </span>
                   {q.text || <span className="italic text-gray-400">No question text</span>}
                 </p>
+
                 <div className="space-y-2">
-                  {q.choices.map((c, ci) => {
+                  {q.choices.map((c) => {
                     const selected = answers[q.id] === c.id
                     return (
                       <button key={c.id} type="button" onClick={() => pick(q.id, c.id)}
-                        className={`w-full text-left flex items-center gap-3 px-3 py-2 rounded-lg border text-sm transition-colors ${selected ? 'bg-purple-50 border-purple-400 text-purple-800' : 'border-gray-200 hover:bg-gray-50 text-gray-700'}`}>
-                        <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 text-xs font-bold ${selected ? 'border-purple-500 bg-purple-500 text-white' : 'border-gray-300'}`}>
-                          {selected ? '✓' : String.fromCharCode(65 + ci)}
-                        </span>
-                        {c.text || <span className="italic text-gray-400">Choice {ci + 1}</span>}
+                        className={`w-full text-left px-4 py-3 rounded-lg border text-sm transition-colors ${
+                          selected
+                            ? 'border-[#0f4c5c] bg-[#e6f4f7] text-[#0f4c5c] font-medium'
+                            : 'border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-700'
+                        }`}>
+                        {c.text || <span className="italic text-gray-400">Choice</span>}
                       </button>
                     )
                   })}
                 </div>
               </div>
-            ))}
-          </div>
 
-          {/* Footer */}
-          <div className="px-5 py-4 border-t border-gray-100 shrink-0">
-            <button onClick={submitQuiz}
-              className="w-full py-2.5 bg-purple-600 text-white text-sm font-semibold rounded-lg hover:bg-purple-700 transition-colors">
-              Submit {config.type === 'exam' ? 'Exam' : 'Quiz'}
-            </button>
+              {/* Prev / Next / Submit */}
+              <div className="px-6 py-4 border-t border-gray-100 shrink-0 flex items-center justify-between gap-3">
+                <button
+                  onClick={() => setCurrentQ(q => Math.max(0, q - 1))}
+                  disabled={currentQ === 0}
+                  className="px-5 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  Previous
+                </button>
+                {currentQ < questions.length - 1 ? (
+                  <button
+                    onClick={() => setCurrentQ(q => Math.min(questions.length - 1, q + 1))}
+                    className="px-5 py-2 rounded-lg text-sm font-semibold text-white transition-colors"
+                    style={{ backgroundColor: '#0f4c5c' }}
+                  >
+                    Next
+                  </button>
+                ) : (
+                  <button
+                    onClick={submitQuiz}
+                    className="px-5 py-2 rounded-lg text-sm font-semibold text-white transition-colors"
+                    style={{ backgroundColor: '#0f4c5c' }}
+                  >
+                    Submit {config.type === 'exam' ? 'Exam' : 'Quiz'}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Right sidebar */}
+            <div className="w-52 shrink-0 border-l border-gray-100 flex flex-col overflow-hidden bg-gray-50">
+              {/* Score summary */}
+              <div className="p-4 border-b border-gray-100 text-center bg-white">
+                <p className="text-2xl font-bold text-gray-900">
+                  {answeredCount > 0 ? Math.round((answeredCount / questions.length) * 100) : 0}%
+                </p>
+                <p className="text-xs text-gray-500 mt-0.5">{answeredCount} of {questions.length} answered</p>
+              </div>
+
+              {/* Question navigator */}
+              <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
+                {questions.map((qn, idx) => {
+                  const isAnswered = !!answers[qn.id]
+                  const isCurrent  = idx === currentQ
+                  return (
+                    <button
+                      key={qn.id}
+                      onClick={() => setCurrentQ(idx)}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium border transition-colors flex items-center gap-2 ${
+                        isCurrent
+                          ? 'border-[#0f4c5c] bg-white text-[#0f4c5c]'
+                          : isAnswered
+                          ? 'border-green-200 bg-green-50 text-green-700'
+                          : 'border-gray-200 bg-white text-gray-500'
+                      }`}
+                    >
+                      {isAnswered && !isCurrent && (
+                        <svg className="w-3.5 h-3.5 text-green-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+                        </svg>
+                      )}
+                      <span className="truncate">Question {idx + 1}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
           </div>
         </div>
       </div>

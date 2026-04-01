@@ -25,6 +25,7 @@ export interface QuizConfig {
   available_from?: string
   available_until?: string
   instructions?: string
+  max_tries?: number // 0 = unlimited
 }
 
 export const emptyQuizConfig = (): QuizConfig => ({
@@ -36,6 +37,7 @@ export const emptyQuizConfig = (): QuizConfig => ({
   available_from: '',
   instructions: '',
   available_until: '',
+  max_tries: 1,
 })
 
 function newQuestion(): Question {
@@ -168,10 +170,10 @@ export default function QuizBuilder({ value, onChange }: Props) {
                 className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c]" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-black mb-1">Questions</label>
-              <div className="px-2 py-1.5 text-sm border border-gray-200 rounded-md bg-gray-50 text-gray-600">
-                {cfg.questions.length} added
-              </div>
+              <label className="block text-xs font-medium text-black mb-1">Max tries <span className="text-gray-400 font-normal">(0 = unlimited)</span></label>
+              <input type="number" min={0} value={cfg.max_tries ?? 1}
+                onChange={e => update({ max_tries: Math.max(0, parseInt(e.target.value) || 0) })}
+                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c]" />
             </div>
           </div>
 

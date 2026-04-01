@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { Loading } from '@/components/ui/loading'
 import LessonViewer from '@/components/LessonViewer'
+import QuizBuilder, { QuizConfig } from '@/components/QuizBuilder'
 
 interface Course {
   id: string
@@ -84,10 +85,108 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
   const [courseInstructorCount, setCourseInstructorCount] = useState(0)
   const [courseRankings, setCourseRankings] = useState<Array<{ user_id: string; first_name: string; last_name: string; total_score: number }>>([])
   const [loadingRankings, setLoadingRankings] = useState(false)
+  // Track opened/completed modules per student (persisted in localStorage)
+  const [completedModules, setCompletedModules] = useState<Set<string>>(new Set())
+  // Test modal state (admin/developer/instructor)
+  const [showTestModal, setShowTestModal] = useState(false)
+  const [testModule, setTestModule] = useState<Module | null>(null)
+  const [testQuizConfig, setTestQuizConfig] = useState<QuizConfig | null>(null)
+  const [savingTest, setSavingTest] = useState(false)
+
+  // Module progress: { [moduleId]: { timeSpentSeconds: number, quizSubmitted: boolean } }
+  const [moduleProgress, setModuleProgress] = useState<Record<string, { timeSpentSeconds: number; quizSubmitted: boolean }>>({})
+
+  const REQUIRED_READ_SECONDS = 2 * 60 * 60 // 2 hours
+
+  // Helper: check if a module has a quiz/exam embedded
+  const moduleHasQuiz = (mod: Module): boolean => {
+    if (!mod.text_content) return false
+    try {
+      const parsed = JSON.parse(mod.text_content)
+      return parsed.quiz_config?.type === 'quiz' || parsed.quiz_config?.type === 'exam'
+    } catch { return false }
+  }
+
+  // Helper: check if a module is fully completed
+  const isModuleCompleted = (mod: Module): boolean => {
+    const prog = moduleProgress[mod.id]
+    const timeOk = (prog?.timeSpentSeconds ?? 0) >= REQUIRED_READ_SECONDS
+    const quizRequired = moduleHasQuiz(mod)
+    const quizOk = !quizRequired || (prog?.quizSubmitted ?? false)
+    return timeOk && quizOk
+  }
+
+  // Save progress to localStorage
+  const saveProgress = (updated: Record<string, { timeSpentSeconds: number; quizSubmitted: boolean }>) => {
+    if (!user?.id) return
+    try { localStorage.setItem(`module_progress_${user.id}`, JSON.stringify(updated)) } catch {}
+  }
+
+  // Called by LessonViewer when active time accumulates
+  const handleTimeUpdate = (moduleId: string, seconds: number) => {
+    setModuleProgress(prev => {
+      const updated = { ...prev, [moduleId]: { ...prev[moduleId], timeSpentSeconds: seconds, quizSubmitted: prev[moduleId]?.quizSubmitted ?? false } }
+      saveProgress(updated)
+      // If now completed, mark in completedModules
+      const mod = Object.values(subjectModules).flat().find(m => m.id === moduleId)
+      if (mod) {
+        const prog = updated[moduleId]
+        const timeOk = prog.timeSpentSeconds >= REQUIRED_READ_SECONDS
+        const quizRequired = moduleHasQuiz(mod)
+        const quizOk = !quizRequired || prog.quizSubmitted
+        if (timeOk && quizOk) {
+          setCompletedModules(cp => {
+            const next = new Set(cp)
+            next.add(moduleId)
+            try { localStorage.setItem(`completed_modules_${user!.id}`, JSON.stringify(Array.from(next))) } catch {}
+            return next
+          })
+        }
+      }
+      return updated
+    })
+  }
+
+  // Called by QuizPlayer when quiz is submitted
+  const handleQuizSubmitted = (moduleId: string) => {
+    setModuleProgress(prev => {
+      const updated = { ...prev, [moduleId]: { timeSpentSeconds: prev[moduleId]?.timeSpentSeconds ?? 0, quizSubmitted: true } }
+      saveProgress(updated)
+      const mod = Object.values(subjectModules).flat().find(m => m.id === moduleId)
+      if (mod) {
+        const prog = updated[moduleId]
+        const timeOk = prog.timeSpentSeconds >= REQUIRED_READ_SECONDS
+        if (timeOk) {
+          setCompletedModules(cp => {
+            const next = new Set(cp)
+            next.add(moduleId)
+            try { localStorage.setItem(`completed_modules_${user!.id}`, JSON.stringify(Array.from(next))) } catch {}
+            return next
+          })
+        }
+      }
+      return updated
+    })
+  }
 
   useEffect(() => {
     if (user?.id) fetchEnrolledCourses()
   }, [user])
+
+  // Load completed modules from localStorage for this student
+  useEffect(() => {
+    if (!user?.id || !isStudent) return
+    const key = `completed_modules_${user.id}`
+    try {
+      const saved = localStorage.getItem(key)
+      if (saved) setCompletedModules(new Set(JSON.parse(saved)))
+    } catch {}
+    const progKey = `module_progress_${user.id}`
+    try {
+      const saved = localStorage.getItem(progKey)
+      if (saved) setModuleProgress(JSON.parse(saved))
+    } catch {}
+  }, [user?.id, isStudent])
 
   // Auto-select course when navigated from dashboard
   useEffect(() => {
@@ -206,7 +305,7 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
     fetchCourseOverview(course.id)
     try {
       const { data } = await supabase.from('modules').select('*').eq('subject_id', subjectId).order('order_index', { ascending: true })
-      setSubjectModules({ [subjectId]: data || [] })
+      if (data) updateSubjectModules(subjectId, data)
     } finally {
       setSubjectModulesLoading(new Set())
     }
@@ -226,7 +325,51 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
 
   const handleBackToCourses = () => { setCurrentView('courses'); setSelectedCourse(null); setSelectedModule(null) }
   const handleBackToSubjects = () => { setCurrentView('subjects'); setSelectedModule(null) }
-  const handleStartLesson = (mod: Module) => { setSelectedModule(mod); setCurrentView('lesson') }
+  const handleStartLesson = (mod: Module) => {
+    setSelectedModule(mod)
+    setCurrentView('lesson')
+    // Mark module as completed (opened) for sequential unlocking
+    if (isStudent && user?.id) {
+      setCompletedModules(prev => {
+        const next = new Set(prev)
+        next.add(mod.id)
+        try { localStorage.setItem(`completed_modules_${user.id}`, JSON.stringify(Array.from(next))) } catch {}
+        return next
+      })
+    }
+  }
+
+  const handleOpenTest = (mod: Module) => {
+    setTestModule(mod)
+    let parsed: any = {}
+    try { parsed = mod.text_content ? JSON.parse(mod.text_content) : {} } catch { parsed = {} }
+    let quizConfig = null
+    try { quizConfig = parsed.quiz_config ? (typeof parsed.quiz_config === 'string' ? JSON.parse(parsed.quiz_config) : parsed.quiz_config) : null } catch { quizConfig = null }
+    setTestQuizConfig(quizConfig)
+    setShowTestModal(true)
+  }
+
+  const updateSubjectModules = (subjectId: string, data: Module[]) => {
+    setSubjectModules(prev => ({ ...prev, [subjectId]: data }))
+  }
+
+  const handleSaveTest = async () => {
+    if (!testModule) return
+    setSavingTest(true)
+    try {
+      let parsed: any = {}
+      try { parsed = testModule.text_content ? JSON.parse(testModule.text_content) : {} } catch { parsed = {} }
+      const updated = { ...parsed, quiz_config: testQuizConfig || null }
+      const { error } = await supabase.from('modules').update({ text_content: JSON.stringify(updated) }).eq('id', testModule.id)
+      if (error) { alert('Failed to save test: ' + error.message); return }
+      if (testModule.subject_id) {
+        const { data } = await supabase.from('modules').select('*').eq('subject_id', testModule.subject_id).order('order_index', { ascending: true })
+        if (data) updateSubjectModules(testModule.subject_id, data)
+      }
+      setShowTestModal(false); setTestModule(null); setTestQuizConfig(null)
+    } catch { alert('Failed to save test.') }
+    finally { setSavingTest(false) }
+  }
 
   const toggleSubjectExpand = async (subject: Subject) => {
     if (!isAdmin && subject.status !== 'active') return
@@ -240,7 +383,7 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
       if (!subjectModules[subject.id]) {
         setSubjectModulesLoading(prev => new Set(prev).add(subject.id))
         const { data } = await supabase.from('modules').select('*').eq('subject_id', subject.id).order('order_index', { ascending: true })
-        setSubjectModules(prev => ({ ...prev, [subject.id]: data || [] }))
+        if (data) updateSubjectModules(subject.id, data)
         setSubjectModulesLoading(prev => { const s = new Set(prev); s.delete(subject.id); return s })
       }
     }
@@ -519,11 +662,25 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
                                   )}
                                 </div>
                                 <div className="flex items-center justify-between mt-2 flex-wrap gap-1.5">
-                                  <span className={`inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full border ${
-                                    subject.status === 'active' ? 'text-white border-[#1f7a8c]' : 'bg-white text-[#1f7a8c] border-[#1f7a8c]'
-                                  }`} style={subject.status === 'active' ? { backgroundColor: '#1f7a8c' } : {}}>
-                                    {subject.status.charAt(0).toUpperCase() + subject.status.slice(1)}
-                                  </span>
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className={`inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full border ${
+                                      subject.status === 'active' ? 'text-white border-[#1f7a8c]' : 'bg-white text-[#1f7a8c] border-[#1f7a8c]'
+                                    }`} style={subject.status === 'active' ? { backgroundColor: '#1f7a8c' } : {}}>
+                                      {subject.status.charAt(0).toUpperCase() + subject.status.slice(1)}
+                                    </span>
+                                    {subject.online_class_link && (
+                                      <a
+                                        href={subject.online_class_link}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full border border-blue-400 text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors"
+                                      >
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" /></svg>
+                                        Join Class
+                                      </a>
+                                    )}
+                                  </div>
                                   {isLocked && (
                                     <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
                                   )}
@@ -545,12 +702,22 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
                                   <p className="text-xs text-gray-400 italic py-2 text-center">No modules yet.</p>
                                 ) : (
                                   <div className="space-y-1.5 overflow-y-auto" style={{ maxHeight: '420px' }}>
-                                    {mods.map((mod, idx) => (
-                                      <div key={mod.id} onClick={() => handleStartLesson(mod)}
-                                        className="flex gap-3 p-3 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer">
-                                        {/* Module number */}
-                                        <div className="flex-shrink-0 self-center w-10 h-10 sm:w-12 sm:h-12 bg-[#e6f4f7] rounded-lg border border-[#b3dce5] flex items-center justify-center">
-                                          <span className="text-base font-bold" style={{ color: '#006d77' }}>{idx + 1}</span>
+                                    {mods.map((mod, idx) => {
+                                      // Sequential locking: first module always open, rest locked until previous is completed
+                                      const isModLocked = isStudent && idx > 0 && !completedModules.has(mods[idx - 1].id)
+                                      return (
+                                      <div key={mod.id}
+                                        onClick={() => !isModLocked && handleStartLesson(mod)}
+                                        className={`flex gap-3 p-3 bg-white border rounded-xl transition-colors ${isModLocked ? 'border-gray-100 opacity-60 cursor-not-allowed' : 'border-gray-200 hover:bg-gray-50 cursor-pointer'}`}>
+                                        {/* Module number / lock icon */}
+                                        <div className={`flex-shrink-0 self-center w-10 h-10 sm:w-12 sm:h-12 rounded-lg border flex items-center justify-center ${isModLocked ? 'bg-gray-100 border-gray-200' : 'bg-[#e6f4f7] border-[#b3dce5]'}`}>
+                                          {isModLocked ? (
+                                            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                                          ) : completedModules.has(mod.id) ? (
+                                            <svg className="w-4 h-4" style={{ color: '#006d77' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                                          ) : (
+                                            <span className="text-base font-bold" style={{ color: '#006d77' }}>{idx + 1}</span>
+                                          )}
                                         </div>
                                         {/* Right: title, description, status at bottom */}
                                         <div className="flex-1 min-w-0 flex flex-col justify-between">
@@ -558,6 +725,12 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
                                             <p className="text-sm font-semibold text-gray-900 leading-snug">{mod.title}</p>
                                             {mod.description && mod.description !== mod.title && (
                                               <p className="text-xs text-gray-500 mt-0.5 line-clamp-3 leading-relaxed">{mod.description}</p>
+                                            )}
+                                            {isModLocked && (
+                                              <p className="text-[10px] text-amber-600 mt-1 flex items-center gap-1">
+                                                <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                Complete <span className="font-semibold">&ldquo;{mods[idx - 1].title}&rdquo;</span> to unlock
+                                              </p>
                                             )}
                                           </div>
                                           <div className="flex items-center justify-between mt-2 flex-wrap gap-1.5">
@@ -568,11 +741,23 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
                                                 {mod.status.charAt(0).toUpperCase() + mod.status.slice(1)}
                                               </span>
                                             )}
-                                            <svg className="w-4 h-4 text-[#1f7a8c] flex-shrink-0 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                                            {!isStudent && (
+                                              <button
+                                                onClick={(e) => { e.stopPropagation(); handleOpenTest(mod) }}
+                                                className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold rounded-full border border-[#1f7a8c] bg-white text-[#1f7a8c] hover:bg-[#e6f4f7] transition-colors"
+                                              >
+                                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+                                                {(() => { try { const p = mod.text_content ? JSON.parse(mod.text_content) : {}; return p.quiz_config ? 'Edit Test' : 'Create Test' } catch { return 'Create Test' } })()}
+                                              </button>
+                                            )}
+                                            {!isModLocked && (
+                                              <svg className="w-4 h-4 text-[#1f7a8c] flex-shrink-0 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                                            )}
                                           </div>
                                         </div>
                                       </div>
-                                    ))}
+                                      )
+                                    })}
                                   </div>
                                 )}
                               </div>
@@ -694,6 +879,55 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
           subjectId={selectedModule.subject_id}
           courseId={selectedCourse?.id}
         />
+      )}
+
+      {/* Create / Edit Test Modal */}
+      {showTestModal && testModule && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">{testQuizConfig ? 'Edit Test' : 'Create Test'}</h2>
+                <p className="text-xs text-gray-500 mt-0.5">{testModule.title}</p>
+              </div>
+              <button onClick={() => { setShowTestModal(false); setTestModule(null); setTestQuizConfig(null) }}
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div className="p-6">
+              <QuizBuilder value={testQuizConfig} onChange={setTestQuizConfig} />
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 mt-4">
+                {testQuizConfig && (
+                  <button type="button"
+                    onClick={async () => {
+                      if (!testModule) return
+                      if (!confirm('This will delete all student scores for this test so it can be retaken. Continue?')) return
+                      await supabase.from('quiz_grades').delete().eq('module_id', testModule.id)
+                      // Re-fetch modules to keep state fresh
+                      if (testModule.subject_id) {
+                        const { data } = await supabase.from('modules').select('*').eq('subject_id', testModule.subject_id).order('order_index', { ascending: true })
+                        if (data) updateSubjectModules(testModule.subject_id, data)
+                      }
+                      alert('Scores cleared. Students can now retake the test.')
+                    }}
+                    className="px-4 py-2 text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors text-sm">
+                    Refresh Scores
+                  </button>
+                )}
+                <button type="button" onClick={() => { setShowTestModal(false); setTestModule(null); setTestQuizConfig(null) }}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+                  Cancel
+                </button>
+                <button type="button" onClick={handleSaveTest} disabled={savingTest}
+                  className="px-4 py-2 text-white rounded-lg transition-colors disabled:opacity-50"
+                  style={{ backgroundColor: '#0f4c5c' }}>
+                  {savingTest ? 'Saving...' : 'Save Test'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
