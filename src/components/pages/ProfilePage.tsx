@@ -111,6 +111,10 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [showAddFriendModal, setShowAddFriendModal] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+
+  // Badges state
+  const [userBadges, setUserBadges] = useState<{ badge_type: string; course_id: string }[]>([])
+  const [loadingBadges, setLoadingBadges] = useState(false)
   
   const supabase = createClient()
 
@@ -126,6 +130,26 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
       setProfileUser(user)
     }
   }, [displayUserId, isOwnProfile, user])
+
+  // Fetch badges
+  useEffect(() => {
+    if (displayUserId) fetchBadges()
+  }, [displayUserId])
+
+  const fetchBadges = async () => {
+    try {
+      setLoadingBadges(true)
+      const { data } = await supabase
+        .from('user_badges')
+        .select('badge_type, course_id')
+        .eq('user_id', displayUserId)
+      setUserBadges(data || [])
+    } catch {
+      setUserBadges([])
+    } finally {
+      setLoadingBadges(false)
+    }
+  }
 
   // Fetch posts
   useEffect(() => {
@@ -1347,15 +1371,49 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900">Badges</h3>
-                  <span className="text-sm text-gray-500">0</span>
+                  <span className="text-sm text-gray-500">{userBadges.length}</span>
                 </div>
-                <div className="text-center py-8">
-                  <svg className="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                  </svg>
-                  <p className="text-sm text-gray-500">No badges earned</p>
-                  <p className="text-xs text-gray-400 mt-1">Complete achievements to earn badges</p>
-                </div>
+                {loadingBadges ? (
+                  <div className="text-center py-6 text-gray-400 text-sm">Loading...</div>
+                ) : userBadges.length === 0 ? (
+                  <div className="text-center py-8">
+                    <svg className="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                    </svg>
+                    <p className="text-sm text-gray-500">No badges earned yet</p>
+                    <p className="text-xs text-gray-400 mt-1">Complete courses to earn badges</p>
+                  </div>
+                ) : (() => {
+                  const allBadgeDefs = [
+                    { key: 'bronze',   label: 'Bronze',   img: '/Bronze.png' },
+                    { key: 'silver',   label: 'Silver',   img: '/Silver.png' },
+                    { key: 'gold',     label: 'Gold',     img: '/Gold.png' },
+                    { key: 'modules',  label: 'Modules',  img: '/Modules.png' },
+                    { key: 'subjects', label: 'Subjects', img: '/Subjects.png' },
+                    { key: 'courses',  label: 'Courses',  img: '/Courses.png' },
+                    { key: 'cobot',    label: 'Cobot',    img: '/Cobot.png' },
+                  ]
+                  const countMap: Record<string, number> = {}
+                  userBadges.forEach(b => { countMap[b.badge_type] = (countMap[b.badge_type] || 0) + 1 })
+                  const earned = allBadgeDefs.filter(b => (countMap[b.key] || 0) > 0)
+                  return (
+                    <div className="grid grid-cols-6 gap-1">
+                      {earned.map(b => (
+                        <div key={b.key} className="flex flex-col items-center gap-0.5">
+                          <img src={b.img} alt={b.label} className="w-10 h-10 object-contain" />
+                          <span className="text-[9px] font-medium text-gray-600 text-center leading-tight">{b.label}</span>
+                          <span className="text-[9px] font-bold text-center leading-tight" style={{ color: '#1f7a8c' }}>×{countMap[b.key]}</span>
+                        </div>
+                      ))}
+                      {Array.from({ length: Math.max(0, 6 - earned.length) }).map((_, i) => (
+                        <div key={`ph-${i}`} className="flex flex-col items-center gap-0.5">
+                          <div className="w-10 h-10 rounded-full bg-gray-100 border-2 border-dashed border-gray-200" />
+                          <span className="text-[9px] text-gray-300 leading-tight">—</span>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                })()}
               </div>
             </div>
           )}

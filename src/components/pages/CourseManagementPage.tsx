@@ -2635,35 +2635,68 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
 
             {/* Right: Stats sidebar (30%) */}
             <div className="w-full lg:flex-[3] lg:min-w-0">
-              {/* Rankings Card */}
+              {/* Your Badges */}
+              {(() => {
+                const courseCount = courses.length || 1
+                const subjectCount = statistics.totalSubjects || courseCount
+                const moduleCount = statistics.totalModules || courseCount
+                const badgeList = [
+                  { label: 'Bronze',   img: '/Bronze.png',  count: courseCount },
+                  { label: 'Silver',   img: '/Silver.png',  count: courseCount },
+                  { label: 'Gold',     img: '/Gold.png',    count: courseCount },
+                  { label: 'Modules',  img: '/Modules.png', count: moduleCount },
+                  { label: 'Subjects', img: '/Subjects.png',count: subjectCount },
+                  { label: 'Courses',  img: '/Courses.png', count: courseCount },
+                ]
+                return (
+                  <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-4">
+                    <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                      <span className="text-sm font-semibold text-gray-900">Your Badges</span>
+                      <span className="text-xs text-gray-400">All unlocked</span>
+                    </div>
+                    <div className="px-3 py-3 grid grid-cols-6 gap-1">
+                      {badgeList.map(b => (
+                        <div key={b.label} className="flex flex-col items-center gap-0.5">
+                          <img src={b.img} alt={b.label} className="w-8 h-8 object-contain" />
+                          <span className="text-[9px] font-medium text-gray-600 text-center leading-tight">{b.label}</span>
+                          <span className="text-[9px] font-bold text-center leading-tight" style={{ color: '#1f7a8c' }}>×{b.count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })()}
+
+              {/* Available Badges */}
               <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-4">
                 <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-                  <span className="text-sm font-semibold text-gray-900">Rankings</span>
-                  <span className="text-xs text-gray-400">by total quiz score</span>
+                  <span className="text-sm font-semibold text-gray-900">Available Badges</span>
+                  <span className="text-xs text-gray-400">This course</span>
                 </div>
-                <div className="divide-y divide-gray-100">
-                  {loadingRankings ? (
-                    <div className="py-4 flex justify-center">
-                      <svg className="w-4 h-4 text-gray-400 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
+                <div className="px-3 py-3 grid grid-cols-6 gap-1">
+                  {[
+                    { label: 'Bronze',   img: '/Bronze.png',   desc: '50% completion' },
+                    { label: 'Silver',   img: '/Silver.png',   desc: '75% completion' },
+                    { label: 'Gold',     img: '/Gold.png',     desc: '100% + quiz' },
+                    { label: 'Modules',  img: '/Modules.png',  desc: '1st module done' },
+                    { label: 'Subjects', img: '/Subjects.png', desc: '1st subject done' },
+                    { label: 'Courses',  img: '/Courses.png',  desc: '1st course done' },
+                    ...(selectedCourse?.title?.toLowerCase().includes('cobot')
+                      ? [{ label: 'Cobot', img: '/Cobot.png', desc: 'Cobot mastery' }]
+                      : []),
+                  ].map(b => (
+                    <div key={b.label} className="relative flex flex-col items-center gap-0.5 group cursor-default">
+                      <img src={b.img} alt={b.label} className="w-8 h-8 object-contain" />
+                      <span className="text-[9px] font-medium text-gray-600 text-center leading-tight">{b.label}</span>
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:flex flex-col items-center z-10 pointer-events-none">
+                        <div className="bg-gray-900 text-white text-[10px] rounded px-2 py-1 whitespace-nowrap leading-tight">{b.desc}</div>
+                        <div className="w-1.5 h-1.5 bg-gray-900 rotate-45 -mt-0.5" />
+                      </div>
                     </div>
-                  ) : courseRankings.length === 0 ? (
-                    <p className="text-xs text-gray-400 italic px-4 py-3">No quiz scores yet.</p>
-                  ) : (
-                    courseRankings.slice(0, 10).map((r, i) => {
-                      const isTop3 = i < 3
-                      const bg = i === 0 ? 'bg-yellow-50 border-yellow-200' : i === 1 ? 'bg-gray-50 border-gray-200' : i === 2 ? 'bg-amber-50 border-amber-200' : ''
-                      const numColor = i === 0 ? 'text-yellow-600' : i === 1 ? 'text-gray-500' : i === 2 ? 'text-amber-600' : 'text-gray-400'
-                      return (
-                        <div key={r.user_id} className={`flex items-center gap-3 px-4 py-2.5 ${isTop3 ? `${bg} border-l-2` : ''}`}>
-                          <span className={`text-xs font-bold w-5 text-center flex-shrink-0 ${numColor}`}>{i + 1}</span>
-                          <span className="flex-1 text-xs text-gray-700 truncate">{r.first_name} {r.last_name}</span>
-                          <span className="text-xs font-bold text-gray-900">{r.total_score}%</span>
-                        </div>
-                      )
-                    })
-                  )}
+                  ))}
                 </div>
               </div>
+
               {/* Enrolled Users & Instructors Card */}
               <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-4">
                 <div className="px-4 py-3 border-b border-gray-100">
