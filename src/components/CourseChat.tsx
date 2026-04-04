@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -21,7 +21,6 @@ interface CourseChatMessage {
 interface Course {
   id: string
   title: string
-  description: string
 }
 
 interface LoungeChat {
@@ -150,7 +149,7 @@ export default function CourseChat({ isOpen, onClose, onNavigateToProfile }: Cou
         // Admin can access all courses
         const { data, error } = await supabase
           .from('courses')
-          .select('id, title, description')
+          .select('id, title')
           .eq('status', 'active')
           .order('title')
 
@@ -175,7 +174,7 @@ export default function CourseChat({ isOpen, onClose, onNavigateToProfile }: Cou
           const courseIds = Array.from(new Set(subjectData.map((s: any) => s.course_id).filter(Boolean)))
           const { data: courseData, error: courseError } = await supabase
             .from('courses')
-            .select('id, title, description')
+            .select('id, title')
             .in('id', courseIds)
             .eq('status', 'active')
             .order('title')
@@ -191,7 +190,7 @@ export default function CourseChat({ isOpen, onClose, onNavigateToProfile }: Cou
         // Developers see all active courses (same as admin)
         const { data, error } = await supabase
           .from('courses')
-          .select('id, title, description')
+          .select('id, title')
           .eq('status', 'active')
           .order('title')
 
@@ -216,7 +215,7 @@ export default function CourseChat({ isOpen, onClose, onNavigateToProfile }: Cou
           const courseIds = Array.from(new Set(enrollData.map((e: any) => e.course_id).filter(Boolean)))
           const { data: courseData, error: courseError } = await supabase
             .from('courses')
-            .select('id, title, description')
+            .select('id, title')
             .in('id', courseIds)
             .eq('status', 'active')
             .order('title')
@@ -498,7 +497,6 @@ export default function CourseChat({ isOpen, onClose, onNavigateToProfile }: Cou
                       }`}
                     >
                       <div className="font-medium text-sm text-gray-900 truncate">{course.title}</div>
-                      <div className="text-xs text-gray-500 truncate mt-1">{course.description}</div>
                     </button>
                   ))
                 )}
@@ -549,7 +547,6 @@ export default function CourseChat({ isOpen, onClose, onNavigateToProfile }: Cou
                     }`}
                   >
                     <div className="font-medium text-sm text-gray-900 truncate">{course.title}</div>
-                    <div className="text-xs text-gray-500 truncate mt-1">{course.description}</div>
                   </button>
                 ))
               )}

@@ -139,11 +139,43 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
   const fetchBadges = async () => {
     try {
       setLoadingBadges(true)
-      const { data } = await supabase
-        .from('user_badges')
-        .select('badge_type, course_id')
-        .eq('user_id', displayUserId)
-      setUserBadges(data || [])
+
+      // First get the profile role to check if developer/admin
+      let role = ''
+      if (isOwnProfile) {
+        role = user?.profile?.role || ''
+      } else {
+        const { data: profileData } = await supabase.from('profiles').select('role').eq('id', displayUserId).single()
+        role = profileData?.role || ''
+      }
+
+      const isAdminOrDev = role === 'admin' || role === 'developer'
+
+      if (isAdminOrDev) {
+        // Synthesize all badges with counts from actual DB totals
+        const [c, s, m] = await Promise.all([
+          supabase.from('courses').select('id', { count: 'exact', head: true }),
+          supabase.from('subjects').select('id', { count: 'exact', head: true }),
+          supabase.from('modules').select('id', { count: 'exact', head: true }),
+        ])
+        const nc = c.count || 1
+        const ns = s.count || 1
+        const nm = m.count || 1
+        // Build synthetic badge rows
+        const synthetic: { badge_type: string; course_id: string }[] = []
+        const types = [
+          { type: 'bronze', n: nc }, { type: 'silver', n: nc }, { type: 'gold', n: nc },
+          { type: 'courses', n: nc }, { type: 'subjects', n: ns }, { type: 'modules', n: nm },
+          { type: 'cobot', n: nc },
+        ]
+        types.forEach(({ type, n }) => {
+          for (let i = 0; i < n; i++) synthetic.push({ badge_type: type, course_id: `synthetic-${i}` })
+        })
+        setUserBadges(synthetic)
+      } else {
+        const { data } = await supabase.from('user_badges').select('badge_type, course_id').eq('user_id', displayUserId)
+        setUserBadges(data || [])
+      }
     } catch {
       setUserBadges([])
     } finally {
@@ -396,8 +428,9 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
       })
 
       if (error) {
-        console.error('Error sending friend request:', error)
-        throw error
+        console.error('Error sending friend request:', error?.message || error?.code || JSON.stringify(error), error)
+        showError('Error', error?.message || 'Could not send friend request. Please try again.')
+        return
       }
 
       console.log('Friend request response:', data)
@@ -1097,7 +1130,7 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
                       )}
                     </div>
                   </div>
-                  
+
                   {/* Action Buttons */}
                   <div className="flex justify-center md:justify-end gap-2">
                     {!isOwnProfile && user?.id ? (

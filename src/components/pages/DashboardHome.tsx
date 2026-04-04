@@ -101,6 +101,9 @@ function InfraUsageCards() {
   const [usage, setUsage] = useState<Record<string, any>>({})
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState<string | null>(null)
+  const [wsChannels, setWsChannels] = useState(0)
+  const [onlineUsers, setOnlineUsers] = useState(0)
+  const supabaseWs = createClient()
 
   useEffect(() => {
     fetch('/api/developer/supabase-usage')
@@ -110,6 +113,29 @@ function InfraUsageCards() {
         setLoading(false)
       })
       .catch(() => setLoading(false))
+  }, [])
+
+  // Count active WebSocket channels from this client + estimate total
+  useEffect(() => {
+    const countChannels = () => {
+      const channels = (supabaseWs as any).getChannels?.() || []
+      setWsChannels(channels.length)
+    }
+    countChannels()
+    const interval = setInterval(countChannels, 5000)
+    return () => clearInterval(interval)
+  }, [])
+
+  // Count online users from user_presence table
+  useEffect(() => {
+    const fetchOnline = async () => {
+      const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+      const { count } = await supabaseWs.from('user_presence').select('*', { count: 'exact', head: true }).gte('last_seen', fiveMinAgo)
+      setOnlineUsers(count || 0)
+    }
+    fetchOnline()
+    const interval = setInterval(fetchOnline, 15000)
+    return () => clearInterval(interval)
   }, [])
 
   const GB = 1073741824  // 1024^3
@@ -142,8 +168,8 @@ function InfraUsageCards() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-        {[1,2,3].map(i => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+        {[1,2,3,4].map(i => (
           <div key={i} className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
             <div className="h-8 bg-gray-100 rounded animate-pulse mb-2" />
             <div className="h-3 bg-gray-100 rounded animate-pulse w-3/4" />
@@ -154,7 +180,7 @@ function InfraUsageCards() {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
       {/* Egress */}
       <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
         <div className="flex items-center gap-2 mb-3">
@@ -257,6 +283,57 @@ function InfraUsageCards() {
           </div>
         )}
       </div>
+
+      {/* WebSocket Connections */}
+      {(() => {
+        const CHANNELS_PER_USER = 7
+        const FREE_LIMIT = 200
+        const estimatedTotal = onlineUsers * CHANNELS_PER_USER
+        const wsPct = Math.min(100, (estimatedTotal / FREE_LIMIT) * 100)
+        const wsBar = wsPct >= 90 ? 'bg-red-500' : wsPct >= 70 ? 'bg-amber-400' : 'bg-green-400'
+        const statusColor = wsPct >= 90 ? 'text-red-600' : wsPct >= 70 ? 'text-amber-600' : 'text-green-600'
+        const statusLabel = wsPct >= 90 ? 'Critical' : wsPct >= 70 ? 'Warning' : 'Healthy'
+        return (
+          <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-teal-50">
+                <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-gray-800">WebSocket Channels</p>
+                <p className="text-xs text-gray-400">Supabase Realtime</p>
+              </div>
+            </div>
+            <div className="flex items-end justify-between mb-1">
+              <span className="text-sm font-bold text-gray-900">~{estimatedTotal}</span>
+              <span className="text-xs text-gray-400">/ {FREE_LIMIT} limit</span>
+            </div>
+            <div className="w-full bg-gray-100 rounded-full h-1.5 mb-2">
+              <div className={`${wsBar} h-1.5 rounded-full transition-all`} style={{ width: `${wsPct}%` }} />
+            </div>
+            <div className="space-y-1">
+              <div className="flex justify-between text-xs">
+                <span className="text-gray-500">Online users</span>
+                <span className="font-medium text-gray-700">{onlineUsers}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-gray-500">Channels/user</span>
+                <span className="font-medium text-gray-700">{CHANNELS_PER_USER}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-gray-500">This client</span>
+                <span className="font-medium text-gray-700">{wsChannels} open</span>
+              </div>
+              <div className="flex justify-between text-xs pt-1 border-t border-gray-100">
+                <span className="text-gray-500">Status</span>
+                <span className={`font-semibold ${statusColor}`}>{statusLabel} ({wsPct.toFixed(0)}%)</span>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }
@@ -277,7 +354,6 @@ function UpcomingScheduleList() {
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'course_schedules' },
         () => {
-          console.log('Schedules changed, refreshing...')
           fetchUpcomingSchedules()
         }
       )
@@ -926,60 +1002,18 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
     
     fetchDashboardData()
 
-    // Set up real-time subscriptions for courses
-    const coursesSubscription = supabase
-      .channel('courses-changes')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'courses' },
-        () => {
-          console.log('Courses changed, refreshing...')
-          fetchDashboardData()
-        }
-      )
-      .subscribe()
-
-    // Set up real-time subscriptions for subjects
-    const subjectsSubscription = supabase
-      .channel('subjects-changes')
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'subjects' },
-        () => {
-          console.log('Subjects changed, refreshing...')
-          fetchDashboardData()
-        }
-      )
-      .subscribe()
-
-    // Set up real-time subscriptions for profiles (for trainee count)
-    const profilesSubscription = supabase
-      .channel('profiles-changes')
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'profiles' },
-        () => {
-          console.log('Profiles changed, refreshing...')
-          fetchDashboardData()
-        }
-      )
-      .subscribe()
-
-    // Set up real-time subscriptions for course schedules
-    const schedulesSubscription = supabase
-      .channel('dashboard-schedules-changes')
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'course_schedules' },
-        () => {
-          console.log('Schedules changed, refreshing...')
-          fetchDashboardData()
-        }
-      )
+    // Single consolidated channel for all dashboard data
+    const dashboardSubscription = supabase
+      .channel('dashboard-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'courses' }, () => fetchDashboardData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'subjects' }, () => fetchDashboardData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => fetchDashboardData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'course_schedules' }, () => fetchDashboardData())
       .subscribe()
 
     // Cleanup subscriptions on unmount
     return () => {
-      supabase.removeChannel(coursesSubscription)
-      supabase.removeChannel(subjectsSubscription)
-      supabase.removeChannel(profilesSubscription)
-      supabase.removeChannel(schedulesSubscription)
+      supabase.removeChannel(dashboardSubscription)
     }
   }, [user?.id])
 
