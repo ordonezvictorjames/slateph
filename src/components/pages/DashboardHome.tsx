@@ -546,7 +546,7 @@ function UpcomingScheduleList() {
                     <span className="text-xs text-gray-500">
                       {formatDate(schedule.start_date)} - {formatDate(schedule.end_date)}
                     </span>
-                    <span className="text-xs text-gray-400">?</span>
+                    <span className="text-xs text-gray-400">|</span>
                     <span className="text-xs text-gray-500">
                       {formatTime(schedule.start_date)}
                     </span>
@@ -743,7 +743,7 @@ function RecentActivityList({ role }: { role: string }) {
               <span className="text-xs text-gray-500">
                 {activity.user?.first_name} {activity.user?.last_name}
               </span>
-              <span className="text-xs text-gray-400">?</span>
+              <span className="text-xs text-gray-400">|</span>
               <span className="text-xs text-gray-500">
                 {formatTimeAgo(activity.created_at)}
               </span>
