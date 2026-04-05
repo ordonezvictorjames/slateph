@@ -501,7 +501,7 @@ function UpcomingScheduleList() {
   if (schedules.length === 0) {
     return (
       <div className="space-y-2">
-        {[1, 2].map((i) => (
+        {[1, 2, 3].map((i) => (
           <div key={i} className="flex items-center gap-3 p-2.5 rounded-lg bg-gray-50">
             <div className="w-2 h-8 rounded-full bg-gray-200 flex-shrink-0" />
             <div className="flex-1 space-y-1.5">
@@ -1625,7 +1625,6 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
               )}
             </div>
             {/* Today's Events + Upcoming Schedule moved to main content area */}
-            </div>{/* end hidden xl:block */}
 
             {/* All Users Card - Desktop only, all roles */}
             <div className="hidden xl:block bg-white rounded-xl shadow-sm overflow-hidden">
@@ -1734,9 +1733,8 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             </div>
             )}
 
-            {/* Today's Events + Upcoming Schedule - 2-col row above courses (desktop) */}
-            <div className="hidden sm:grid grid-cols-2 gap-4">
-              {/* Today's Events */}
+            {/* Today's Events + Upcoming Schedule + Tasks - 3-col row above courses (desktop) */}
+            <div className="hidden sm:grid grid-cols-3 gap-4">              {/* Today's Events */}
               <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
@@ -1751,7 +1749,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 </div>
                 {getTodaysEvents().length === 0 ? (
                   <div className="space-y-2">
-                    {[1, 2].map((i) => (
+                    {[1, 2, 3].map((i) => (
                       <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-gray-50">
                         <div className="w-2 h-6 rounded-full bg-gray-200 flex-shrink-0" />
                         <div className="flex-1 space-y-1">
@@ -1794,8 +1792,55 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 </div>
                 <UpcomingScheduleList />
               </div>
-            </div>
 
+              {/* Tasks Card - moved here from System Overview */}
+              {(userRole === 'admin' || userRole === 'developer') && (
+                <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex flex-col">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-gray-200 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-gray-800">Tasks</p>
+                        <p className="text-xs text-gray-400">Pending items</p>
+                      </div>
+                    </div>
+                    <button onClick={() => onNavigate('tasks')} className="text-gray-400 hover:text-gray-700">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5 flex-1">
+                    <div onClick={() => onNavigate('tasks')} className="flex flex-col items-center justify-center p-2 rounded-lg border border-orange-200 cursor-pointer hover:bg-orange-50 text-center">
+                      <span className="text-sm font-bold text-orange-600">{pendingTasks.unenrolledtrainees}</span>
+                      <span className="text-[10px] text-gray-500 leading-tight mt-0.5">Unenrolled Trainees</span>
+                    </div>
+                    <div onClick={() => onNavigate('tasks')} className="flex flex-col items-center justify-center p-2 rounded-lg border border-blue-200 cursor-pointer hover:bg-blue-50 text-center">
+                      <span className="text-sm font-bold text-blue-600">{pendingTasks.unassignedtrainees}</span>
+                      <span className="text-[10px] text-gray-500 leading-tight mt-0.5">Unassigned Instructors</span>
+                    </div>
+                    <div onClick={() => onNavigate('tasks')} className="flex flex-col items-center justify-center p-2 rounded-lg border border-purple-200 cursor-pointer hover:bg-purple-50 text-center">
+                      <span className="text-sm font-bold text-purple-600">{pendingTasks.pendingFeatureRequests}</span>
+                      <span className="text-[10px] text-gray-500 leading-tight mt-0.5">Feature Requests</span>
+                    </div>
+                    <div onClick={() => onNavigate('tasks')} className="flex flex-col items-center justify-center p-2 rounded-lg border border-red-200 cursor-pointer hover:bg-red-50 text-center">
+                      <span className="text-sm font-bold text-red-600">{pendingTasks.passwordResets}</span>
+                      <span className="text-[10px] text-gray-500 leading-tight mt-0.5">Password Resets</span>
+                    </div>
+                    <div onClick={() => onNavigate('tasks')} className="flex flex-col items-center justify-center p-2 rounded-lg border border-yellow-200 cursor-pointer hover:bg-yellow-50 text-center">
+                      <span className="text-sm font-bold text-yellow-600">{pendingTasks.bugReports}</span>
+                      <span className="text-[10px] text-gray-500 leading-tight mt-0.5">Bug Reports</span>
+                    </div>
+                    <div onClick={() => onNavigate('tasks')} className="flex flex-col items-center justify-center p-2 rounded-lg border border-indigo-200 cursor-pointer hover:bg-indigo-50 text-center">
+                      <span className="text-sm font-bold text-indigo-600">{pendingTasks.guestUsers}</span>
+                      <span className="text-[10px] text-gray-500 leading-tight mt-0.5">Guest Users</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
             {/* All Courses -- split for students/instructors, full list for others */}
             {(() => {
               const isStudentOrInstructor = userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student' || userRole === 'scholar' || userRole === 'instructor'
@@ -2074,53 +2119,11 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                   <p className="text-[10px] text-gray-400 mt-1">Tap to view activity logs</p>
                 </button>
               </div>
-              {/* Desktop: full cards - 3 column grid */}
-              <div className="hidden sm:grid grid-cols-3 gap-4">
-                {/* Tasks Card - col 1 */}
+              {/* Desktop: full cards - 2 column grid (Tasks moved above) */}
+              <div className="hidden sm:grid grid-cols-2 gap-4">
                 <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex flex-col">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-gray-200 rounded-lg flex items-center justify-center">
-                        <svg className="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                        </svg>
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold text-gray-800">Tasks</p>
-                        <p className="text-xs text-gray-400">Pending items</p>
-                      </div>
-                    </div>
-                    <button onClick={() => onNavigate('tasks')} className="text-gray-400 hover:text-gray-700">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                    </button>
-                  </div>
-                  <div className="space-y-1.5 flex-1">
-                    {[
-                      ...(userRole === 'developer' && pendingTasks.pendingFeatureRequests > 0 ? [{ label: `${pendingTasks.pendingFeatureRequests} Pending Request${pendingTasks.pendingFeatureRequests > 1 ? 's' : ''}`, sub: 'Feature requests', count: pendingTasks.pendingFeatureRequests, color: 'text-purple-600 bg-purple-100', border: 'border-purple-200' }] : []),
-                      ...(userRole === 'developer' && pendingTasks.ongoingFeatureRequests > 0 ? [{ label: `${pendingTasks.ongoingFeatureRequests} Ongoing Task${pendingTasks.ongoingFeatureRequests > 1 ? 's' : ''}`, sub: 'In progress', count: pendingTasks.ongoingFeatureRequests, color: 'text-green-600 bg-green-100', border: 'border-green-200' }] : []),
-                      ...(pendingTasks.unenrolledtrainees > 0 ? [{ label: `${pendingTasks.unenrolledtrainees} Unenrolled`, sub: 'Students', count: pendingTasks.unenrolledtrainees, color: 'text-orange-600 bg-orange-100', border: 'border-orange-200' }] : [{ label: 'Unenrolled Students', sub: 'All enrolled', count: 0, color: 'text-gray-400 bg-white', border: 'border-dashed border-gray-200' }]),
-                      ...(pendingTasks.bugReports > 0 ? [{ label: `${pendingTasks.bugReports} Bug Report${pendingTasks.bugReports > 1 ? 's' : ''}`, sub: 'To fix', count: pendingTasks.bugReports, color: 'text-yellow-600 bg-yellow-100', border: 'border-yellow-200' }] : []),
-                      ...(pendingTasks.passwordResets > 0 ? [{ label: `${pendingTasks.passwordResets} Password Reset${pendingTasks.passwordResets > 1 ? 's' : ''}`, sub: 'Pending', count: pendingTasks.passwordResets, color: 'text-red-600 bg-red-100', border: 'border-red-200' }] : [{ label: 'Password Resets', sub: 'None pending', count: 0, color: 'text-gray-400 bg-white', border: 'border-dashed border-gray-200' }]),
-                      ...(pendingTasks.unassignedtrainees > 0 ? [{ label: `${pendingTasks.unassignedtrainees} Unassigned`, sub: 'Instructors', count: pendingTasks.unassignedtrainees, color: 'text-blue-600 bg-blue-100', border: 'border-blue-200' }] : [{ label: 'Unassigned Instructors', sub: 'All assigned', count: 0, color: 'text-gray-400 bg-white', border: 'border-dashed border-gray-200' }]),
-                      ...(pendingTasks.guestUsers > 0 ? [{ label: `${pendingTasks.guestUsers} Guest User${pendingTasks.guestUsers > 1 ? 's' : ''}`, sub: 'Need role', count: pendingTasks.guestUsers, color: 'text-indigo-600 bg-indigo-100', border: 'border-indigo-200' }] : [{ label: 'Guest Users', sub: 'None awaiting', count: 0, color: 'text-gray-400 bg-white', border: 'border-dashed border-gray-200' }]),
-                    ].map((t, i) => (
-                      <div key={i} onClick={() => t.count > 0 && onNavigate('tasks')}
-                        className={`flex items-center gap-2 p-2 rounded-lg border ${t.border} ${t.count > 0 ? 'cursor-pointer hover:opacity-80' : 'opacity-60'}`}>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-xs font-semibold text-gray-900 truncate">{t.label}</div>
-                          <div className="text-[10px] text-gray-500">{t.sub}</div>
-                        </div>
-                        <span className={`inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold rounded-full flex-shrink-0 ${t.color}`}>{t.count}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Courses Card - col 2 */}
-                <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
-                  
                   {/* Header */}
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center justify-between mb-3 flex-shrink-0">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 bg-gray-200 rounded-lg flex items-center justify-center">
                         <svg className="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2136,84 +2139,31 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                     </button>
                   </div>
-                  {/* Stats Grid */}
-                  <div className="grid grid-cols-3 gap-2">
-                    {/* Total Courses */}
-                    <div className="bg-gray-50 rounded-lg p-2">
-                      <div className="flex flex-col items-center text-center">
-                        <div className="w-7 h-7 bg-gray-200 rounded-md flex items-center justify-center mb-1">
-                          <svg className="w-3.5 h-3.5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                          </svg>
-                        </div>
-                        <div className="text-sm font-bold mb-0" style={{ color: '#1f7a8c' }}>{stats.totalCourses}</div>
-                        <div className="text-xs font-medium text-gray-600">Courses</div>
-                      </div>
+                  {/* Stats Grid - 2 col x 3 rows */}
+                  <div className="grid grid-cols-2 gap-1.5 flex-1">
+                    <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-gray-50 text-center flex-1">
+                      <span className="text-sm font-bold" style={{ color: '#1f7a8c' }}>{stats.totalCourses}</span>
+                      <span className="text-[10px] text-gray-500 mt-0.5">Courses</span>
                     </div>
-
-                    {/* Total Subjects */}
-                    <div className="bg-gray-50 rounded-lg p-2">
-                      <div className="flex flex-col items-center text-center">
-                        <div className="w-7 h-7 bg-gray-200 rounded-md flex items-center justify-center mb-1">
-                          <svg className="w-3.5 h-3.5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                        </div>
-                        <div className="text-sm font-bold mb-0" style={{ color: '#1f7a8c' }}>{stats.totalSubjects}</div>
-                        <div className="text-xs font-medium text-gray-600">Subjects</div>
-                      </div>
+                    <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-gray-50 text-center flex-1">
+                      <span className="text-sm font-bold" style={{ color: '#1f7a8c' }}>{stats.totalSubjects}</span>
+                      <span className="text-[10px] text-gray-500 mt-0.5">Subjects</span>
                     </div>
-
-                    {/* Total Modules */}
-                    <div className="bg-gray-50 rounded-lg p-2">
-                      <div className="flex flex-col items-center text-center">
-                        <div className="w-7 h-7 bg-gray-200 rounded-md flex items-center justify-center mb-1">
-                          <svg className="w-3.5 h-3.5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                          </svg>
-                        </div>
-                        <div className="text-sm font-bold mb-0" style={{ color: '#1f7a8c' }}>{stats.totalModules}</div>
-                        <div className="text-xs font-medium text-gray-600">Modules</div>
-                      </div>
+                    <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-gray-50 text-center flex-1">
+                      <span className="text-sm font-bold" style={{ color: '#1f7a8c' }}>{stats.totalModules}</span>
+                      <span className="text-[10px] text-gray-500 mt-0.5">Modules</span>
                     </div>
-
-                    {/* Quizzes */}
-                    <div className="bg-gray-50 rounded-lg p-2">
-                      <div className="flex flex-col items-center text-center">
-                        <div className="w-7 h-7 bg-gray-200 rounded-md flex items-center justify-center mb-1">
-                          <svg className="w-3.5 h-3.5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        </div>
-                        <div className="text-sm font-bold mb-0" style={{ color: '#1f7a8c' }}>{stats.totalQuizzes}</div>
-                        <div className="text-xs font-medium text-gray-600">Quizzes</div>
-                      </div>
+                    <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-gray-50 text-center flex-1">
+                      <span className="text-sm font-bold" style={{ color: '#1f7a8c' }}>{stats.totalQuizzes}</span>
+                      <span className="text-[10px] text-gray-500 mt-0.5">Quizzes</span>
                     </div>
-
-                    {/* Activities */}
-                    <div className="bg-gray-50 rounded-lg p-2">
-                      <div className="flex flex-col items-center text-center">
-                        <div className="w-7 h-7 bg-gray-200 rounded-md flex items-center justify-center mb-1">
-                          <svg className="w-3.5 h-3.5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                          </svg>
-                        </div>
-                        <div className="text-sm font-bold mb-0" style={{ color: '#1f7a8c' }}>{stats.totalActivities}</div>
-                        <div className="text-xs font-medium text-gray-600">Activities</div>
-                      </div>
+                    <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-gray-50 text-center flex-1">
+                      <span className="text-sm font-bold" style={{ color: '#1f7a8c' }}>{stats.totalActivities}</span>
+                      <span className="text-[10px] text-gray-500 mt-0.5">Activities</span>
                     </div>
-
-                    {/* Exams */}
-                    <div className="bg-gray-50 rounded-lg p-2">
-                      <div className="flex flex-col items-center text-center">
-                        <div className="w-7 h-7 bg-gray-200 rounded-md flex items-center justify-center mb-1">
-                          <svg className="w-3.5 h-3.5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                        </div>
-                        <div className="text-sm font-bold mb-0" style={{ color: '#1f7a8c' }}>{stats.totalExams}</div>
-                        <div className="text-xs font-medium text-gray-600">Exams</div>
-                      </div>
+                    <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-gray-50 text-center flex-1">
+                      <span className="text-sm font-bold" style={{ color: '#1f7a8c' }}>{stats.totalExams}</span>
+                      <span className="text-[10px] text-gray-500 mt-0.5">Exams</span>
                     </div>
                   </div>
                 </div>
@@ -2231,7 +2181,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                       </div>
                       <div>
                         <h3 className="text-xs font-semibold text-gray-900">Users</h3>
-                        <p className="text-sm font-semibold" style={{ color: '#1f7a8c' }}>{stats.totalUsers} total</p>
+                        <p className="text-xs text-gray-400">{stats.totalUsers} total</p>
                       </div>
                     </div>
                     <button
@@ -2244,38 +2194,40 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                     </button>
                   </div>
 
-                  {/* Role breakdown list */}
-                  <div className="space-y-3">                    {[
-                      { label: 'SHS Students',     value: userStats.totalSHSStudents,     color: 'bg-green-500' },
-                      { label: 'JHS Students',     value: userStats.totalJHSStudents,     color: 'bg-yellow-500' },
-                      { label: 'College Students', value: userStats.totalCollegeStudents, color: 'bg-orange-500' },
-                      { label: 'Scholars',         value: userStats.totalScholars,        color: 'bg-purple-500' },
-                      { label: 'Instructors',      value: userStats.totalInstructors,     color: 'bg-blue-500' },
-                      { label: 'Admin',            value: userStats.totalAdmins,          color: 'bg-red-500' },
-                      { label: 'Developer',        value: userStats.totalDevelopers,      color: 'bg-indigo-500' },
-                      { label: 'Guests',           value: userStats.totalGuests,          color: 'bg-gray-400' },
-                    ].map(({ label, value, color }) => {
-                      const total = userStats.totalSHSStudents + userStats.totalJHSStudents + userStats.totalCollegeStudents + userStats.totalScholars + userStats.totalInstructors + userStats.totalAdmins + userStats.totalDevelopers + userStats.totalGuests
-                      const rawPct = total > 0 ? (value / total) * 100 : 0
-                      const pct = value > 0 && rawPct < 1 ? 1 : Math.round(rawPct)
-                      const displayPct = total > 0 && value > 0 ? (rawPct < 1 ? '<1' : Math.round(rawPct).toString()) : '0'
-                      return (
-                        <div key={label}>
-                          <div className="flex items-center justify-between mb-1">
-                            <div className="flex items-center">
-                              <span className="text-xs text-gray-700">{label}</span>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <span className="text-xs text-gray-400">{displayPct}%</span>
-                              <span className="text-xs font-bold w-6 text-right" style={{ color: '#1f7a8c' }}>{value}</span>
-                            </div>
-                          </div>
-                          <div className="h-1.5 bg-white rounded-full overflow-hidden">
-                            <div className={`h-full rounded-full transition-all duration-500`} style={{ width: `${pct}%`, backgroundColor: '#1f7a8c' }} />
-                          </div>
-                        </div>
-                      )
-                    })}
+                  {/* Role grid - 2 col x 4 rows */}
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-green-50 text-center">
+                      <span className="text-sm font-bold text-green-700">{userStats.totalSHSStudents}</span>
+                      <span className="text-[10px] text-gray-500 mt-0.5">SHS Students</span>
+                    </div>
+                    <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-yellow-50 text-center">
+                      <span className="text-sm font-bold text-yellow-700">{userStats.totalJHSStudents}</span>
+                      <span className="text-[10px] text-gray-500 mt-0.5">JHS Students</span>
+                    </div>
+                    <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-orange-50 text-center">
+                      <span className="text-sm font-bold text-orange-700">{userStats.totalCollegeStudents}</span>
+                      <span className="text-[10px] text-gray-500 mt-0.5">College Students</span>
+                    </div>
+                    <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-purple-50 text-center">
+                      <span className="text-sm font-bold text-purple-700">{userStats.totalScholars}</span>
+                      <span className="text-[10px] text-gray-500 mt-0.5">Scholars</span>
+                    </div>
+                    <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-blue-50 text-center">
+                      <span className="text-sm font-bold text-blue-700">{userStats.totalInstructors}</span>
+                      <span className="text-[10px] text-gray-500 mt-0.5">Instructors</span>
+                    </div>
+                    <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-red-50 text-center">
+                      <span className="text-sm font-bold text-red-700">{userStats.totalAdmins}</span>
+                      <span className="text-[10px] text-gray-500 mt-0.5">Admin</span>
+                    </div>
+                    <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-indigo-50 text-center">
+                      <span className="text-sm font-bold text-indigo-700">{userStats.totalDevelopers}</span>
+                      <span className="text-[10px] text-gray-500 mt-0.5">Developer</span>
+                    </div>
+                    <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-gray-50 text-center">
+                      <span className="text-sm font-bold text-gray-600">{userStats.totalGuests}</span>
+                      <span className="text-[10px] text-gray-500 mt-0.5">Guests</span>
+                    </div>
                   </div>
 
 
