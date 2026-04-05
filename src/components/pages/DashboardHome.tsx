@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -96,7 +96,7 @@ interface CourseSchedule {
   }
 }
 
-// Infrastructure usage cards — developer only
+// Infrastructure usage cards -- developer only
 function InfraUsageCards() {
   const [usage, setUsage] = useState<Record<string, any>>({})
   const [loading, setLoading] = useState(true)
@@ -143,7 +143,7 @@ function InfraUsageCards() {
 
   const fmt = (b: any) => {
     const n = Number(b)
-    if (!b && b !== 0) return '—'
+    if (!b && b !== 0) return '--'
     if (n >= GB) return (n / GB).toFixed(2) + ' GB'
     if (n >= MB) return (n / MB).toFixed(1) + ' MB'
     if (n >= 1024) return (n / 1024).toFixed(1) + ' KB'
@@ -202,87 +202,105 @@ function InfraUsageCards() {
           <div className={`${bar(egressPct)} h-1.5 rounded-full`} style={{ width: `${egressPct}%` }} />
         </div>
         <p className="text-xs text-gray-400">
-          Not available via API —{' '}
+          Not available via API --{' '}
           <a href="https://supabase.com/dashboard/project/wrzsvckzohhmdvyjjczb/reports/database" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-600">view in dashboard</a>
         </p>
       </div>
 
-      {/* File Storage */}
-      <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
-        <button onClick={() => setExpanded(expanded === 'storage' ? null : 'storage')} className="w-full text-left">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-purple-50">
-              <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-              </svg>
-            </div>
-            <div className="flex-1">
-              <p className="text-xs font-semibold text-gray-800">File Storage</p>
-              <p className="text-xs text-gray-400">Uploaded files &amp; media</p>
-            </div>
-            <svg className={`w-4 h-4 text-gray-400 transition-transform ${expanded === 'storage' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </div>
-          <div className="flex items-end justify-between mb-1">
-            <span className="text-sm font-bold text-gray-900">{fmt(st.bytes)}</span>
-            <span className="text-xs text-gray-400">/ 1 GB</span>
-          </div>
-          <div className="w-full bg-gray-100 rounded-full h-1.5 mb-1.5">
-            <div className={`${bar(storagePct)} h-1.5 rounded-full`} style={{ width: `${storagePct}%` }} />
-          </div>
-          <p className="text-xs text-gray-400">{storagePct.toFixed(1)}% used</p>
-        </button>
-        {expanded === 'storage' && st.buckets && st.buckets.length > 0 && (
-          <div className="mt-3 pt-3 border-t border-gray-100 space-y-1.5">
-            {st.buckets.map((b: any) => (
-              <div key={b.name} className="flex items-center justify-between text-xs">
-                <span className="text-gray-600">{b.name}</span>
-                <span className="text-gray-400">{fmt(b.bytes)} ({b.files} files)</span>
+      {/* File Storage - flip card */}
+      {(() => {
+        const isFlipped = expanded === 'storage'
+        return (
+          <div className="cursor-pointer" style={{ perspective: '1000px', height: '160px' }} onClick={() => setExpanded(isFlipped ? null : 'storage')}>
+            <div style={{ position: 'relative', width: '100%', height: '100%', transformStyle: 'preserve-3d', transition: 'transform 0.5s ease', transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)' }}>
+              <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm absolute inset-0" style={{ backfaceVisibility: 'hidden' }}>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-purple-50">
+                    <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-gray-800">File Storage</p>
+                    <p className="text-xs text-gray-400">Uploaded files &amp; media</p>
+                  </div>
+                </div>
+                <div className="flex items-end justify-between mb-1">
+                  <span className="text-sm font-bold text-gray-900">{fmt(st.bytes)}</span>
+                  <span className="text-xs text-gray-400">/ 1 GB</span>
+                </div>
+                <div className="w-full bg-gray-100 rounded-full h-1.5 mb-1.5">
+                  <div className={`${bar(storagePct)} h-1.5 rounded-full`} style={{ width: `${storagePct}%` }} />
+                </div>
+                <p className="text-xs text-gray-400">{storagePct.toFixed(1)}% used - tap to see buckets</p>
               </div>
-            ))}
+              <div className="bg-purple-50 rounded-xl p-4 border border-purple-100 shadow-sm absolute inset-0 overflow-y-auto" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
+                <p className="text-xs font-semibold text-purple-800 mb-2">Buckets</p>
+                {st.buckets && st.buckets.length > 0 ? (
+                  <div className="space-y-1.5">
+                    {st.buckets.map((b: any) => (
+                      <div key={b.name} className="flex items-center justify-between text-xs">
+                        <span className="text-gray-700 truncate flex-1">{b.name}</span>
+                        <span className="text-gray-500 ml-2 shrink-0">{fmt(b.bytes)} ({b.files} files)</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-400 italic">No bucket data</p>
+                )}
+              </div>
+            </div>
           </div>
-        )}
-      </div>
+        )
+      })()}
 
-      {/* Database */}
-      <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
-        <button onClick={() => setExpanded(expanded === 'db' ? null : 'db')} className="w-full text-left">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-green-50">
-              <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <ellipse cx="12" cy="5" rx="9" ry="3" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 12c0 1.66-4.03 3-9 3S3 13.66 3 12M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5" />
-              </svg>
-            </div>
-            <div className="flex-1">
-              <p className="text-xs font-semibold text-gray-800">Database</p>
-              <p className="text-xs text-gray-400">Postgres storage</p>
-            </div>
-            <svg className={`w-4 h-4 text-gray-400 transition-transform ${expanded === 'db' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </div>
-          <div className="flex items-end justify-between mb-1">
-            <span className="text-sm font-bold text-gray-900">{fmt(db.bytes)}</span>
-            <span className="text-xs text-gray-400">/ 500 MB</span>
-          </div>
-          <div className="w-full bg-gray-100 rounded-full h-1.5 mb-1.5">
-            <div className={`${bar(dbPct)} h-1.5 rounded-full`} style={{ width: `${dbPct}%` }} />
-          </div>
-          <p className="text-xs text-gray-400">{dbPct.toFixed(1)}% used</p>
-        </button>
-        {expanded === 'db' && db.tables && db.tables.length > 0 && (
-          <div className="mt-3 pt-3 border-t border-gray-100 space-y-1.5 max-h-48 overflow-y-auto">
-            {db.tables.map((t: any) => (
-              <div key={t.name} className="flex items-center justify-between text-xs">
-                <span className="text-gray-600 truncate flex-1">{t.name}</span>
-                <span className="text-gray-400 ml-2">{fmt(t.bytes)} ({t.rows.toLocaleString()} rows)</span>
+      {/* Database - flip card */}
+      {(() => {
+        const isFlipped = expanded === 'db'
+        return (
+          <div className="cursor-pointer" style={{ perspective: '1000px', height: '160px' }} onClick={() => setExpanded(isFlipped ? null : 'db')}>
+            <div style={{ position: 'relative', width: '100%', height: '100%', transformStyle: 'preserve-3d', transition: 'transform 0.5s ease', transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)' }}>
+              <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm absolute inset-0" style={{ backfaceVisibility: 'hidden' }}>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-green-50">
+                    <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <ellipse cx="12" cy="5" rx="9" ry="3" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 12c0 1.66-4.03 3-9 3S3 13.66 3 12M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-gray-800">Database</p>
+                    <p className="text-xs text-gray-400">Postgres storage</p>
+                  </div>
+                </div>
+                <div className="flex items-end justify-between mb-1">
+                  <span className="text-sm font-bold text-gray-900">{fmt(db.bytes)}</span>
+                  <span className="text-xs text-gray-400">/ 500 MB</span>
+                </div>
+                <div className="w-full bg-gray-100 rounded-full h-1.5 mb-1.5">
+                  <div className={`${bar(dbPct)} h-1.5 rounded-full`} style={{ width: `${dbPct}%` }} />
+                </div>
+                <p className="text-xs text-gray-400">{dbPct.toFixed(1)}% used - tap to see tables</p>
               </div>
-            ))}
+              <div className="bg-green-50 rounded-xl p-4 border border-green-100 shadow-sm absolute inset-0 overflow-y-auto" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
+                <p className="text-xs font-semibold text-green-800 mb-2">Tables</p>
+                {db.tables && db.tables.length > 0 ? (
+                  <div className="space-y-1.5">
+                    {db.tables.map((t: any) => (
+                      <div key={t.name} className="flex items-center justify-between text-xs">
+                        <span className="text-gray-700 truncate flex-1">{t.name}</span>
+                        <span className="text-gray-500 ml-2 shrink-0">{fmt(t.bytes)} ({t.rows.toLocaleString()} rows)</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-400 italic">No table data</p>
+                )}
+              </div>
+            </div>
           </div>
-        )}
-      </div>
+        )
+      })()}
 
       {/* WebSocket Connections */}
       {(() => {
@@ -426,7 +444,7 @@ function UpcomingScheduleList() {
         }
       }
 
-      // course_colors are passed as a prop — no need to fetch here
+      // course_colors are passed as a prop -- no need to fetch here
 
     } catch (error) {
       console.error('Error fetching upcoming schedules:', error)
@@ -467,7 +485,7 @@ function UpcomingScheduleList() {
       <div className="space-y-2.5">
         {[1, 2, 3].map((i) => (
           <div key={i} className="animate-pulse p-3 bg-white rounded-lg">
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-gray-200 rounded-lg"></div>
               <div className="flex-1">
                 <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
@@ -801,7 +819,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
   // Helper function to get button background color
   const getButtonBg = () => '#1f7a8c' // Primary teal color
 
-  // Format role for display � preserves acronyms like JHS, SHS
+  // Format role for display  preserves acronyms like JHS, SHS
   const formatRole = (role: string) => {
     const labels: Record<string, string> = {
       jhs_student: 'JHS Student',
@@ -1184,7 +1202,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
         }
       }
 
-      // Fetch course colors (table may not exist yet — fail silently)
+      // Fetch course colors (table may not exist yet -- fail silently)
       const { data: colorsData, error: colorsError } = await supabase
         .from('course_colors')
         .select('*')
@@ -1521,7 +1539,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                   </svg>
                 </button>
-                {/* Avatar + name + chevron — clickable */}
+                {/* Avatar + name + chevron -- clickable */}
                 <button
                   onClick={() => setShowProfileDropdown(!showProfileDropdown)}
                   className="flex items-center gap-2 hover:opacity-80 transition-opacity"
@@ -1678,7 +1696,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
             {/* Recent Activity - Desktop only, all roles */}
             <div className="hidden xl:block bg-white rounded-lg p-6 transition-all duration-300">
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-bold text-gray-800">Recent Activity</h3>
                 <button 
                   onClick={() => onNavigate('system-tracker')}
@@ -1776,7 +1794,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             </div>
             )}
 
-            {/* All Courses — split for students/instructors, full list for others */}
+            {/* All Courses -- split for students/instructors, full list for others */}
             {(() => {
               const isStudentOrInstructor = userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student' || userRole === 'scholar' || userRole === 'instructor'
               const myCourses = isStudentOrInstructor ? allCourses.filter(c => c.is_user_enrolled) : []
@@ -1885,7 +1903,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
               )
             })()}
 
-            {/* Mobile: schedule summary cards — all roles */}
+            {/* Mobile: schedule summary cards -- all roles */}
             {/* Admin/Developer: 2x2 grid with Recent Activity, Today's Events, Tasks, Upcoming */}
             {(userRole === 'admin' || userRole === 'developer') && (
               <div className="sm:hidden grid grid-cols-2 gap-3">
@@ -1946,7 +1964,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
               </div>
             )}
 
-            {/* Mobile: Today's Events + Upcoming — for non-admin/developer roles */}
+            {/* Mobile: Today's Events + Upcoming -- for non-admin/developer roles */}
             {!(userRole === 'admin' || userRole === 'developer') && (
               <div className="sm:hidden grid grid-cols-2 gap-3">
                 <button onClick={() => onNavigate('schedule')} className="bg-white rounded-xl p-3 text-left shadow-sm">
@@ -1981,7 +1999,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
               <div className="hidden sm:block rounded-xl p-4 bg-white space-y-4">
               <div className="rounded-xl p-4 transition-all duration-300 shadow-sm" style={{ backgroundColor: '#FFFFFF' }}>
                 <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center gap-2">
                     <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center">
                       <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
@@ -2235,7 +2253,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             {/* System Overview - Only for Admin/Developer */}
             {(userRole === 'admin' || userRole === 'developer') && (
             <>
-              {/* Infrastructure Usage — Developer only */}
+              {/* Infrastructure Usage -- Developer only */}
               {userRole === 'developer' && (
                 <InfraUsageCards />
               )}
@@ -2310,110 +2328,144 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                   <p className="text-[10px] text-gray-400 mt-1">Tap to view activity logs</p>
                 </button>
               </div>
-              {/* Desktop: full cards */}
-              <div className="hidden sm:grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Courses Card - Redesigned */}
-                <div className="group relative bg-white rounded-2xl p-8 transition-all duration-300 overflow-hidden">
+              {/* Desktop: full cards - 3 column grid */}
+              <div className="hidden sm:grid grid-cols-3 gap-4">
+                {/* Tasks Card - col 1 */}
+                <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex flex-col">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-gray-200 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-gray-800">Tasks</p>
+                        <p className="text-xs text-gray-400">Pending items</p>
+                      </div>
+                    </div>
+                    <button onClick={() => onNavigate('tasks')} className="text-gray-400 hover:text-gray-700">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                    </button>
+                  </div>
+                  <div className="space-y-1.5 flex-1">
+                    {[
+                      ...(userRole === 'developer' && pendingTasks.pendingFeatureRequests > 0 ? [{ label: `${pendingTasks.pendingFeatureRequests} Pending Request${pendingTasks.pendingFeatureRequests > 1 ? 's' : ''}`, sub: 'Feature requests', count: pendingTasks.pendingFeatureRequests, color: 'text-purple-600 bg-purple-100', border: 'border-purple-200' }] : []),
+                      ...(userRole === 'developer' && pendingTasks.ongoingFeatureRequests > 0 ? [{ label: `${pendingTasks.ongoingFeatureRequests} Ongoing Task${pendingTasks.ongoingFeatureRequests > 1 ? 's' : ''}`, sub: 'In progress', count: pendingTasks.ongoingFeatureRequests, color: 'text-green-600 bg-green-100', border: 'border-green-200' }] : []),
+                      ...(pendingTasks.unenrolledtrainees > 0 ? [{ label: `${pendingTasks.unenrolledtrainees} Unenrolled`, sub: 'Students', count: pendingTasks.unenrolledtrainees, color: 'text-orange-600 bg-orange-100', border: 'border-orange-200' }] : [{ label: 'Unenrolled Students', sub: 'All enrolled', count: 0, color: 'text-gray-400 bg-white', border: 'border-dashed border-gray-200' }]),
+                      ...(pendingTasks.bugReports > 0 ? [{ label: `${pendingTasks.bugReports} Bug Report${pendingTasks.bugReports > 1 ? 's' : ''}`, sub: 'To fix', count: pendingTasks.bugReports, color: 'text-yellow-600 bg-yellow-100', border: 'border-yellow-200' }] : []),
+                      ...(pendingTasks.passwordResets > 0 ? [{ label: `${pendingTasks.passwordResets} Password Reset${pendingTasks.passwordResets > 1 ? 's' : ''}`, sub: 'Pending', count: pendingTasks.passwordResets, color: 'text-red-600 bg-red-100', border: 'border-red-200' }] : [{ label: 'Password Resets', sub: 'None pending', count: 0, color: 'text-gray-400 bg-white', border: 'border-dashed border-gray-200' }]),
+                      ...(pendingTasks.unassignedtrainees > 0 ? [{ label: `${pendingTasks.unassignedtrainees} Unassigned`, sub: 'Instructors', count: pendingTasks.unassignedtrainees, color: 'text-blue-600 bg-blue-100', border: 'border-blue-200' }] : [{ label: 'Unassigned Instructors', sub: 'All assigned', count: 0, color: 'text-gray-400 bg-white', border: 'border-dashed border-gray-200' }]),
+                      ...(pendingTasks.guestUsers > 0 ? [{ label: `${pendingTasks.guestUsers} Guest User${pendingTasks.guestUsers > 1 ? 's' : ''}`, sub: 'Need role', count: pendingTasks.guestUsers, color: 'text-indigo-600 bg-indigo-100', border: 'border-indigo-200' }] : [{ label: 'Guest Users', sub: 'None awaiting', count: 0, color: 'text-gray-400 bg-white', border: 'border-dashed border-gray-200' }]),
+                    ].map((t, i) => (
+                      <div key={i} onClick={() => t.count > 0 && onNavigate('tasks')}
+                        className={`flex items-center gap-2 p-2 rounded-lg border ${t.border} ${t.count > 0 ? 'cursor-pointer hover:opacity-80' : 'opacity-60'}`}>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-semibold text-gray-900 truncate">{t.label}</div>
+                          <div className="text-[10px] text-gray-500">{t.sub}</div>
+                        </div>
+                        <span className={`inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold rounded-full flex-shrink-0 ${t.color}`}>{t.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Courses Card - col 2 */}
+                <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
                   
                   {/* Header */}
-                  <div className="flex items-center justify-between mb-8">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center">
-                        <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-gray-200 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                         </svg>
                       </div>
                       <div>
-                        <h3 className="text-sm font-bold text-gray-900">Courses</h3>
-                        <p className="text-sm font-semibold" style={{ color: '#1f7a8c' }}>{stats.totalModules} total content</p>
+                        <p className="text-xs font-semibold text-gray-900">Courses</p>
+                        <p className="text-xs text-gray-400">{stats.totalModules} total content</p>
                       </div>
                     </div>
-                    <button 
-                      onClick={() => onNavigate('course-management')}
-                      className="w-10 h-10 bg-white/80 hover:bg-white rounded-xl flex items-center justify-center text-gray-600 hover:text-blue-600 transition-all duration-200"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
+                    <button onClick={() => onNavigate('course-management')} className="text-gray-400 hover:text-gray-700">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                     </button>
                   </div>
-
                   {/* Stats Grid */}
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-3 gap-2">
                     {/* Total Courses */}
-                    <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-white/50 hover:bg-white/90 transition-all duration-200">
+                    <div className="bg-gray-50 rounded-lg p-2">
                       <div className="flex flex-col items-center text-center">
-                        <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center mb-3">
-                          <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-7 h-7 bg-gray-200 rounded-md flex items-center justify-center mb-1">
+                          <svg className="w-3.5 h-3.5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                           </svg>
                         </div>
-                        <div className="text-2xl font-bold mb-1" style={{ color: '#1f7a8c' }}>{stats.totalCourses}</div>
+                        <div className="text-sm font-bold mb-0" style={{ color: '#1f7a8c' }}>{stats.totalCourses}</div>
                         <div className="text-xs font-medium text-gray-600">Courses</div>
                       </div>
                     </div>
 
                     {/* Total Subjects */}
-                    <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-white/50 hover:bg-white/90 transition-all duration-200">
+                    <div className="bg-gray-50 rounded-lg p-2">
                       <div className="flex flex-col items-center text-center">
-                        <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center mb-3">
-                          <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-7 h-7 bg-gray-200 rounded-md flex items-center justify-center mb-1">
+                          <svg className="w-3.5 h-3.5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                           </svg>
                         </div>
-                        <div className="text-2xl font-bold mb-1" style={{ color: '#1f7a8c' }}>{stats.totalSubjects}</div>
+                        <div className="text-sm font-bold mb-0" style={{ color: '#1f7a8c' }}>{stats.totalSubjects}</div>
                         <div className="text-xs font-medium text-gray-600">Subjects</div>
                       </div>
                     </div>
 
                     {/* Total Modules */}
-                    <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-white/50 hover:bg-white/90 transition-all duration-200">
+                    <div className="bg-gray-50 rounded-lg p-2">
                       <div className="flex flex-col items-center text-center">
-                        <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center mb-3">
-                          <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-7 h-7 bg-gray-200 rounded-md flex items-center justify-center mb-1">
+                          <svg className="w-3.5 h-3.5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                           </svg>
                         </div>
-                        <div className="text-2xl font-bold mb-1" style={{ color: '#1f7a8c' }}>{stats.totalModules}</div>
+                        <div className="text-sm font-bold mb-0" style={{ color: '#1f7a8c' }}>{stats.totalModules}</div>
                         <div className="text-xs font-medium text-gray-600">Modules</div>
                       </div>
                     </div>
 
                     {/* Quizzes */}
-                    <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-white/50 hover:bg-white/90 transition-all duration-200">
+                    <div className="bg-gray-50 rounded-lg p-2">
                       <div className="flex flex-col items-center text-center">
-                        <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center mb-3">
-                          <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-7 h-7 bg-gray-200 rounded-md flex items-center justify-center mb-1">
+                          <svg className="w-3.5 h-3.5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                         </div>
-                        <div className="text-2xl font-bold mb-1" style={{ color: '#1f7a8c' }}>{stats.totalQuizzes}</div>
+                        <div className="text-sm font-bold mb-0" style={{ color: '#1f7a8c' }}>{stats.totalQuizzes}</div>
                         <div className="text-xs font-medium text-gray-600">Quizzes</div>
                       </div>
                     </div>
 
                     {/* Activities */}
-                    <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-white/50 hover:bg-white/90 transition-all duration-200">
+                    <div className="bg-gray-50 rounded-lg p-2">
                       <div className="flex flex-col items-center text-center">
-                        <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center mb-3">
-                          <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-7 h-7 bg-gray-200 rounded-md flex items-center justify-center mb-1">
+                          <svg className="w-3.5 h-3.5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                           </svg>
                         </div>
-                        <div className="text-2xl font-bold mb-1" style={{ color: '#1f7a8c' }}>{stats.totalActivities}</div>
+                        <div className="text-sm font-bold mb-0" style={{ color: '#1f7a8c' }}>{stats.totalActivities}</div>
                         <div className="text-xs font-medium text-gray-600">Activities</div>
                       </div>
                     </div>
 
                     {/* Exams */}
-                    <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-white/50 hover:bg-white/90 transition-all duration-200">
+                    <div className="bg-gray-50 rounded-lg p-2">
                       <div className="flex flex-col items-center text-center">
-                        <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center mb-3">
-                          <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-7 h-7 bg-gray-200 rounded-md flex items-center justify-center mb-1">
+                          <svg className="w-3.5 h-3.5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                           </svg>
                         </div>
-                        <div className="text-2xl font-bold mb-1" style={{ color: '#1f7a8c' }}>{stats.totalExams}</div>
+                        <div className="text-sm font-bold mb-0" style={{ color: '#1f7a8c' }}>{stats.totalExams}</div>
                         <div className="text-xs font-medium text-gray-600">Exams</div>
                       </div>
                     </div>
@@ -2421,24 +2473,24 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 </div>
 
                 {/* Users Card - Redesigned */}
-                <div className="group relative bg-white rounded-2xl p-8 transition-all duration-300 overflow-hidden">
+                <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
 
                   {/* Header */}
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center">
-                        <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-gray-200 rounded-lg flex items-center justify-center">
+                        <svg className="w-3.5 h-3.5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
                         </svg>
                       </div>
                       <div>
-                        <h3 className="text-sm font-bold text-gray-900">Users</h3>
+                        <h3 className="text-xs font-semibold text-gray-900">Users</h3>
                         <p className="text-sm font-semibold" style={{ color: '#1f7a8c' }}>{stats.totalUsers} total</p>
                       </div>
                     </div>
                     <button
                       onClick={() => onNavigate('user-management')}
-                      className="w-10 h-10 bg-gray-50 hover:bg-white rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-800 transition-all duration-200"
+                      className="text-gray-400 hover:text-gray-700"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -2465,11 +2517,11 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                         <div key={label}>
                           <div className="flex items-center justify-between mb-1">
                             <div className="flex items-center">
-                              <span className="text-sm font-medium text-gray-700">{label}</span>
+                              <span className="text-xs text-gray-700">{label}</span>
                             </div>
                             <div className="flex items-center space-x-2">
                               <span className="text-xs text-gray-400">{displayPct}%</span>
-                              <span className="text-sm font-bold w-8 text-right" style={{ color: '#1f7a8c' }}>{value}</span>
+                              <span className="text-xs font-bold w-6 text-right" style={{ color: '#1f7a8c' }}>{value}</span>
                             </div>
                           </div>
                           <div className="h-1.5 bg-white rounded-full overflow-hidden">

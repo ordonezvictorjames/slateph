@@ -229,7 +229,7 @@ export default function OnlineUsers({ onNavigateToProfile }: OnlineUsersProps = 
             )}
           </div>
           <div className="flex items-center justify-between">
-            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${getRoleColor(u.role)}`}>
+            <span className="inline-flex items-center text-[10px] font-medium text-gray-500">
               {getRoleLabel(u.role)}
             </span>
             {u.last_seen && (
