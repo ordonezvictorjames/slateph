@@ -1624,67 +1624,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 </div>
               )}
             </div>
-            {/* Today's Events + Upcoming Schedule - equal height */}
-            {/* Desktop: full cards */}
-            <div className="hidden xl:block space-y-4">
-            {/* Today's Events Card - Sidebar */}
-            <div className="bg-white rounded-xl p-4" style={{ minHeight: '160px' }}>
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: '#e6f4f7' }}>
-                    <svg className="w-4 h-4" fill="none" stroke="#0f4c5c" strokeWidth={2} viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <span className="text-sm font-bold text-gray-900">Today's Events</span>
-                </div>
-                <button onClick={() => onNavigate('schedule')} className="text-xs font-medium hover:opacity-80" style={{ color: '#0f4c5c' }}>See All</button>
-              </div>
-              {getTodaysEvents().length === 0 ? (
-                <div className="space-y-2">
-                  {[1, 2].map((i) => (
-                    <div key={i} className="flex items-center gap-3 p-2.5 rounded-lg bg-gray-50">
-                      <div className="w-2 h-8 rounded-full bg-gray-200 flex-shrink-0" />
-                      <div className="flex-1 space-y-1.5">
-                        <div className="h-2.5 bg-gray-200 rounded w-3/4" />
-                        <div className="h-2 bg-white rounded w-1/2" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {getTodaysEvents().slice(0, 2).map((schedule) => {
-                    const color = getCourseColor(schedule.course_id)
-                    return (
-                      <div key={schedule.id} className="flex items-start gap-3 p-2 rounded-lg bg-gray-50">
-                        <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ background: color?.color_hex || '#0f4c5c' }} />
-                        <div className="min-w-0">
-                          <p className="text-xs font-semibold text-gray-900 truncate">{schedule.title}</p>
-                          <p className="text-[10px] text-gray-400 mt-0.5">{schedule.course?.title}</p>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* Upcoming Schedule Card - Sidebar */}
-            <div className="bg-white rounded-xl p-4" style={{ minHeight: '160px' }}>
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: '#e6f4f7' }}>
-                    <svg className="w-4 h-4" fill="none" stroke="#0f4c5c" strokeWidth={2} viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <span className="text-sm font-bold text-gray-900">Upcoming Schedule</span>
-                </div>
-                <button onClick={() => onNavigate('schedule')} className="text-xs font-medium hover:opacity-80" style={{ color: '#0f4c5c' }}>See All</button>
-              </div>
-              <UpcomingScheduleList />
-            </div>
+            {/* Today's Events + Upcoming Schedule moved to main content area */}
             </div>{/* end hidden xl:block */}
 
             {/* All Users Card - Desktop only, all roles */}
@@ -1792,6 +1732,104 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 </div>
               </div>
             </div>
+            )}
+
+            {/* Today's Events + Upcoming Schedule + Tasks -- 3-col row above courses (desktop) */}
+            {(userRole === 'admin' || userRole === 'developer') && (
+              <div className="hidden sm:grid grid-cols-3 gap-4">
+                {/* Today's Events */}
+                <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: '#e6f4f7' }}>
+                        <svg className="w-4 h-4" fill="none" stroke="#0f4c5c" strokeWidth={2} viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <span className="text-xs font-semibold text-gray-900">Today's Events</span>
+                    </div>
+                    <button onClick={() => onNavigate('schedule')} className="text-xs font-medium hover:opacity-80" style={{ color: '#0f4c5c' }}>See All</button>
+                  </div>
+                  {getTodaysEvents().length === 0 ? (
+                    <div className="space-y-2">
+                      {[1, 2].map((i) => (
+                        <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-gray-50">
+                          <div className="w-2 h-6 rounded-full bg-gray-200 flex-shrink-0" />
+                          <div className="flex-1 space-y-1"><div className="h-2 bg-gray-200 rounded w-3/4" /><div className="h-1.5 bg-gray-100 rounded w-1/2" /></div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {getTodaysEvents().slice(0, 3).map((schedule) => {
+                        const color = getCourseColor(schedule.course_id)
+                        return (
+                          <div key={schedule.id} className="flex items-start gap-2 p-2 rounded-lg bg-gray-50">
+                            <div className="w-2 h-2 rounded-full mt-1 flex-shrink-0" style={{ background: color?.color_hex || '#0f4c5c' }} />
+                            <div className="min-w-0">
+                              <p className="text-xs font-semibold text-gray-900 truncate">{schedule.title}</p>
+                              <p className="text-[10px] text-gray-400">{schedule.course?.title}</p>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Upcoming Schedule */}
+                <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: '#e6f4f7' }}>
+                        <svg className="w-4 h-4" fill="none" stroke="#0f4c5c" strokeWidth={2} viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <span className="text-xs font-semibold text-gray-900">Upcoming Schedule</span>
+                    </div>
+                    <button onClick={() => onNavigate('schedule')} className="text-xs font-medium hover:opacity-80" style={{ color: '#0f4c5c' }}>See All</button>
+                  </div>
+                  <UpcomingScheduleList />
+                </div>
+
+                {/* Tasks */}
+                <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex flex-col">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-gray-200">
+                        <svg className="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                        </svg>
+                      </div>
+                      <span className="text-xs font-semibold text-gray-800">Tasks</span>
+                    </div>
+                    <button onClick={() => onNavigate('tasks')} className="text-gray-400 hover:text-gray-700">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                    </button>
+                  </div>
+                  <div className="space-y-1.5 flex-1">
+                    {[
+                      ...(userRole === 'developer' && pendingTasks.pendingFeatureRequests > 0 ? [{ label: `${pendingTasks.pendingFeatureRequests} Pending Request${pendingTasks.pendingFeatureRequests > 1 ? 's' : ''}`, sub: 'Feature requests', count: pendingTasks.pendingFeatureRequests, color: 'text-purple-600 bg-purple-100', border: 'border-purple-200' }] : []),
+                      ...(userRole === 'developer' && pendingTasks.ongoingFeatureRequests > 0 ? [{ label: `${pendingTasks.ongoingFeatureRequests} Ongoing Task${pendingTasks.ongoingFeatureRequests > 1 ? 's' : ''}`, sub: 'In progress', count: pendingTasks.ongoingFeatureRequests, color: 'text-green-600 bg-green-100', border: 'border-green-200' }] : []),
+                      ...(pendingTasks.unenrolledtrainees > 0 ? [{ label: `${pendingTasks.unenrolledtrainees} Unenrolled`, sub: 'Students', count: pendingTasks.unenrolledtrainees, color: 'text-orange-600 bg-orange-100', border: 'border-orange-200' }] : [{ label: 'Unenrolled Students', sub: 'All enrolled', count: 0, color: 'text-gray-400 bg-white', border: 'border-dashed border-gray-200' }]),
+                      ...(pendingTasks.bugReports > 0 ? [{ label: `${pendingTasks.bugReports} Bug Report${pendingTasks.bugReports > 1 ? 's' : ''}`, sub: 'To fix', count: pendingTasks.bugReports, color: 'text-yellow-600 bg-yellow-100', border: 'border-yellow-200' }] : []),
+                      ...(pendingTasks.passwordResets > 0 ? [{ label: `${pendingTasks.passwordResets} Password Reset${pendingTasks.passwordResets > 1 ? 's' : ''}`, sub: 'Pending', count: pendingTasks.passwordResets, color: 'text-red-600 bg-red-100', border: 'border-red-200' }] : [{ label: 'Password Resets', sub: 'None pending', count: 0, color: 'text-gray-400 bg-white', border: 'border-dashed border-gray-200' }]),
+                      ...(pendingTasks.unassignedtrainees > 0 ? [{ label: `${pendingTasks.unassignedtrainees} Unassigned`, sub: 'Instructors', count: pendingTasks.unassignedtrainees, color: 'text-blue-600 bg-blue-100', border: 'border-blue-200' }] : [{ label: 'Unassigned Instructors', sub: 'All assigned', count: 0, color: 'text-gray-400 bg-white', border: 'border-dashed border-gray-200' }]),
+                      ...(pendingTasks.guestUsers > 0 ? [{ label: `${pendingTasks.guestUsers} Guest User${pendingTasks.guestUsers > 1 ? 's' : ''}`, sub: 'Need role', count: pendingTasks.guestUsers, color: 'text-indigo-600 bg-indigo-100', border: 'border-indigo-200' }] : [{ label: 'Guest Users', sub: 'None awaiting', count: 0, color: 'text-gray-400 bg-white', border: 'border-dashed border-gray-200' }]),
+                    ].map((t, i) => (
+                      <div key={i} onClick={() => t.count > 0 && onNavigate('tasks')}
+                        className={`flex items-center gap-2 p-2 rounded-lg border ${t.border} ${t.count > 0 ? 'cursor-pointer hover:opacity-80' : 'opacity-60'}`}>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-semibold text-gray-900 truncate">{t.label}</div>
+                          <div className="text-[10px] text-gray-500">{t.sub}</div>
+                        </div>
+                        <span className={`inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold rounded-full flex-shrink-0 ${t.color}`}>{t.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             )}
 
             {/* All Courses -- split for students/instructors, full list for others */}
