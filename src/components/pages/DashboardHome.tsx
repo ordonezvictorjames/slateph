@@ -546,7 +546,7 @@ function UpcomingScheduleList() {
                     <span className="text-xs text-gray-500">
                       {formatDate(schedule.start_date)} - {formatDate(schedule.end_date)}
                     </span>
-                    <span className="text-xs text-gray-400">?</span>
+                    <span className="text-xs text-gray-400">|</span>
                     <span className="text-xs text-gray-500">
                       {formatTime(schedule.start_date)}
                     </span>
@@ -743,7 +743,7 @@ function RecentActivityList({ role }: { role: string }) {
               <span className="text-xs text-gray-500">
                 {activity.user?.first_name} {activity.user?.last_name}
               </span>
-              <span className="text-xs text-gray-400">?</span>
+              <span className="text-xs text-gray-400">|</span>
               <span className="text-xs text-gray-500">
                 {formatTimeAgo(activity.created_at)}
               </span>
@@ -1624,67 +1624,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 </div>
               )}
             </div>
-            {/* Today's Events + Upcoming Schedule - equal height */}
-            {/* Desktop: full cards */}
-            <div className="hidden xl:block space-y-4">
-            {/* Today's Events Card - Sidebar */}
-            <div className="bg-white rounded-xl p-4" style={{ minHeight: '160px' }}>
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: '#e6f4f7' }}>
-                    <svg className="w-4 h-4" fill="none" stroke="#0f4c5c" strokeWidth={2} viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <span className="text-sm font-bold text-gray-900">Today's Events</span>
-                </div>
-                <button onClick={() => onNavigate('schedule')} className="text-xs font-medium hover:opacity-80" style={{ color: '#0f4c5c' }}>See All</button>
-              </div>
-              {getTodaysEvents().length === 0 ? (
-                <div className="space-y-2">
-                  {[1, 2].map((i) => (
-                    <div key={i} className="flex items-center gap-3 p-2.5 rounded-lg bg-gray-50">
-                      <div className="w-2 h-8 rounded-full bg-gray-200 flex-shrink-0" />
-                      <div className="flex-1 space-y-1.5">
-                        <div className="h-2.5 bg-gray-200 rounded w-3/4" />
-                        <div className="h-2 bg-white rounded w-1/2" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {getTodaysEvents().slice(0, 2).map((schedule) => {
-                    const color = getCourseColor(schedule.course_id)
-                    return (
-                      <div key={schedule.id} className="flex items-start gap-3 p-2 rounded-lg bg-gray-50">
-                        <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ background: color?.color_hex || '#0f4c5c' }} />
-                        <div className="min-w-0">
-                          <p className="text-xs font-semibold text-gray-900 truncate">{schedule.title}</p>
-                          <p className="text-[10px] text-gray-400 mt-0.5">{schedule.course?.title}</p>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* Upcoming Schedule Card - Sidebar */}
-            <div className="bg-white rounded-xl p-4" style={{ minHeight: '160px' }}>
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: '#e6f4f7' }}>
-                    <svg className="w-4 h-4" fill="none" stroke="#0f4c5c" strokeWidth={2} viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <span className="text-sm font-bold text-gray-900">Upcoming Schedule</span>
-                </div>
-                <button onClick={() => onNavigate('schedule')} className="text-xs font-medium hover:opacity-80" style={{ color: '#0f4c5c' }}>See All</button>
-              </div>
-              <UpcomingScheduleList />
-            </div>
+            {/* Today's Events + Upcoming Schedule moved to main content area */}
             </div>{/* end hidden xl:block */}
 
             {/* All Users Card - Desktop only, all roles */}
@@ -1793,6 +1733,68 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
               </div>
             </div>
             )}
+
+            {/* Today's Events + Upcoming Schedule - 2-col row above courses (desktop) */}
+            <div className="hidden sm:grid grid-cols-2 gap-4">
+              {/* Today's Events */}
+              <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: '#e6f4f7' }}>
+                      <svg className="w-4 h-4" fill="none" stroke="#0f4c5c" strokeWidth={2} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <span className="text-xs font-semibold text-gray-900">Today's Events</span>
+                  </div>
+                  <button onClick={() => onNavigate('schedule')} className="text-xs font-medium hover:opacity-80" style={{ color: '#0f4c5c' }}>See All</button>
+                </div>
+                {getTodaysEvents().length === 0 ? (
+                  <div className="space-y-2">
+                    {[1, 2].map((i) => (
+                      <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-gray-50">
+                        <div className="w-2 h-6 rounded-full bg-gray-200 flex-shrink-0" />
+                        <div className="flex-1 space-y-1">
+                          <div className="h-2 bg-gray-200 rounded w-3/4" />
+                          <div className="h-1.5 bg-gray-100 rounded w-1/2" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {getTodaysEvents().slice(0, 3).map((schedule) => {
+                      const evtColor = getCourseColor(schedule.course_id)
+                      return (
+                        <div key={schedule.id} className="flex items-start gap-2 p-2 rounded-lg bg-gray-50">
+                          <div className="w-2 h-2 rounded-full mt-1 flex-shrink-0" style={{ background: evtColor ? evtColor.color_hex : '#0f4c5c' }} />
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold text-gray-900 truncate">{schedule.title}</p>
+                            <p className="text-[10px] text-gray-400">{schedule.course ? schedule.course.title : ''}</p>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Upcoming Schedule */}
+              <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: '#e6f4f7' }}>
+                      <svg className="w-4 h-4" fill="none" stroke="#0f4c5c" strokeWidth={2} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <span className="text-xs font-semibold text-gray-900">Upcoming Schedule</span>
+                  </div>
+                  <button onClick={() => onNavigate('schedule')} className="text-xs font-medium hover:opacity-80" style={{ color: '#0f4c5c' }}>See All</button>
+                </div>
+                <UpcomingScheduleList />
+              </div>
+            </div>
 
             {/* All Courses -- split for students/instructors, full list for others */}
             {(() => {
