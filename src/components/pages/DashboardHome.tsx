@@ -180,7 +180,7 @@ function InfraUsageCards() {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4 items-stretch">
       {/* Egress */}
       <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
         <div className="flex items-center gap-2 mb-3">
@@ -203,7 +203,7 @@ function InfraUsageCards() {
         </div>
         <p className="text-xs text-gray-400">
           Not available via API --{' '}
-          <a href="https://supabase.com/dashboard/project/wrzsvckzohhmdvyjjczb/reports/database" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-600">view in dashboard</a>
+          <a href="https://supabase.com/dashboard/org/bphssajaybffrmfwwjlt/usage" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-600">view in dashboard</a>
         </p>
       </div>
 
@@ -211,7 +211,7 @@ function InfraUsageCards() {
       {(() => {
         const isFlipped = expanded === 'storage'
         return (
-          <div className="cursor-pointer" style={{ perspective: '1000px', height: '160px' }} onClick={() => setExpanded(isFlipped ? null : 'storage')}>
+          <div className="cursor-pointer h-full" style={{ perspective: '1000px' }} onClick={() => setExpanded(isFlipped ? null : 'storage')}>
             <div style={{ position: 'relative', width: '100%', height: '100%', transformStyle: 'preserve-3d', transition: 'transform 0.5s ease', transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)' }}>
               <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm absolute inset-0" style={{ backfaceVisibility: 'hidden' }}>
                 <div className="flex items-center gap-2 mb-3">
@@ -258,7 +258,7 @@ function InfraUsageCards() {
       {(() => {
         const isFlipped = expanded === 'db'
         return (
-          <div className="cursor-pointer" style={{ perspective: '1000px', height: '160px' }} onClick={() => setExpanded(isFlipped ? null : 'db')}>
+          <div className="cursor-pointer h-full" style={{ perspective: '1000px' }} onClick={() => setExpanded(isFlipped ? null : 'db')}>
             <div style={{ position: 'relative', width: '100%', height: '100%', transformStyle: 'preserve-3d', transition: 'transform 0.5s ease', transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)' }}>
               <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm absolute inset-0" style={{ backfaceVisibility: 'hidden' }}>
                 <div className="flex items-center gap-2 mb-3">
@@ -519,15 +519,15 @@ function UpcomingScheduleList() {
       {schedules.map((schedule) => {
         const courseColor = null as CourseColor | null
         return (
-          <div key={schedule.id} className="flex items-start space-x-3 p-3 bg-white rounded-lg border border-[#DCFCE7] transition-all">
+          <div key={schedule.id} className="flex items-start space-x-2 p-2 bg-white rounded-lg border border-[#DCFCE7] transition-all">
             <div 
-              className="w-8 h-8 rounded-lg mt-0.5 flex items-center justify-center flex-shrink-0"
+              className="w-6 h-6 rounded-lg mt-0.5 flex items-center justify-center flex-shrink-0"
               style={{ 
                 backgroundColor: courseColor?.color_hex ? `${courseColor.color_hex}20` : '#BBF7D0'
               }}
             >
               <div 
-                className="w-2.5 h-2.5 rounded-full"
+                className="w-2 h-2 rounded-full"
                 style={{ 
                   backgroundColor: courseColor?.color_hex || '#22C55E' 
                 }}
@@ -536,25 +536,25 @@ function UpcomingScheduleList() {
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <h4 className="text-sm font-bold text-black truncate">
+                  <h4 className="text-xs font-semibold text-black truncate">
                     {schedule.title}
                   </h4>
-                  <p className="text-xs text-gray-600 mt-0.5">
-                    {schedule.course?.title} ? Batch {schedule.batch_number}
+                  <p className="text-[10px] text-gray-600 mt-0.5">
+                    {schedule.course ? schedule.course.title : ''}
                   </p>
-                  <div className="flex items-center space-x-2 mt-1">
-                    <span className="text-xs text-gray-500">
+                  <div className="flex items-center space-x-1.5 mt-0.5">
+                    <span className="text-[10px] text-gray-500">
                       {formatDate(schedule.start_date)} - {formatDate(schedule.end_date)}
                     </span>
-                    <span className="text-xs text-gray-400">|</span>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-[10px] text-gray-400">|</span>
+                    <span className="text-[10px] text-gray-500">
                       {formatTime(schedule.start_date)}
                     </span>
                   </div>
                 </div>
-                <div className="text-right ml-2">
+                <div className="text-right ml-1.5">
                   <span 
-                    className="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full"
+                    className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-semibold rounded-full"
                     style={{
                       backgroundColor: courseColor?.color_hex ? `${courseColor.color_hex}20` : '#DCFCE7',
                       color: courseColor?.color_hex || '#22C55E'
@@ -718,7 +718,7 @@ function RecentActivityList({ role }: { role: string }) {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
           </svg>
         </div>
-        <p className="text-sm text-gray-500">No recent activity</p>
+        <p className="text-xs text-gray-500">No recent activity</p>
       </div>
     )
   }
@@ -728,23 +728,22 @@ function RecentActivityList({ role }: { role: string }) {
       {activities.map((activity) => (
         <div
           key={activity.id}
-          className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
+          className="flex items-start space-x-2 p-2 rounded-lg hover:bg-gray-50 transition-colors"
         >
-          <div className={`flex-shrink-0 w-10 h-10 rounded-lg border flex items-center justify-center ${getActivityColor(activity.activity_type)}`}>
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className={`flex-shrink-0 w-7 h-7 rounded-lg border flex items-center justify-center ${getActivityColor(activity.activity_type)}`}>
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               {getActivityIcon(activity.activity_type)}
             </svg>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm text-gray-900 line-clamp-2">
+            <p className="text-xs text-gray-900 line-clamp-2">
               {activity.description}
             </p>
-            <div className="flex items-center space-x-2 mt-1">
-              <span className="text-xs text-gray-500">
-                {activity.user?.first_name} {activity.user?.last_name}
+            <div className="flex items-center space-x-1.5 mt-0.5">
+              <span className="text-[10px] text-gray-500">{activity.user?.first_name} {activity.user?.last_name}
               </span>
-              <span className="text-xs text-gray-400">|</span>
-              <span className="text-xs text-gray-500">
+              <span className="text-[10px] text-gray-400">|</span>
+              <span className="text-[10px] text-gray-500">
                 {formatTimeAgo(activity.created_at)}
               </span>
             </div>
@@ -1626,6 +1625,59 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             </div>
             {/* Today's Events + Upcoming Schedule moved to main content area */}
 
+            {/* Calendar + Clock Card - Desktop only */}
+            <div className="hidden xl:block bg-white rounded-xl shadow-sm overflow-hidden">
+              <div className="p-4">
+                {/* Clock */}
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <p className="text-2xl font-bold text-gray-900 leading-none tabular-nums">
+                      {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
+                    </p>
+                  </div>
+                  <button onClick={() => onNavigate('schedule')} className="text-xs font-medium hover:opacity-80" style={{ color: '#0f4c5c' }}>Schedule</button>
+                </div>
+
+                {/* Calendar header */}
+                <div className="flex items-center justify-between mb-2">
+                  <button onClick={() => navigateMonth('prev')} className="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                  </button>
+                  <span className="text-xs font-semibold text-gray-800">{getMonthYear()}</span>
+                  <button onClick={() => navigateMonth('next')} className="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                  </button>
+                </div>
+
+                {/* Day labels */}
+                <div className="grid grid-cols-7 mb-1">
+                  {['Su','Mo','Tu','We','Th','Fr','Sa'].map(d => (
+                    <div key={d} className="text-center text-[10px] font-medium text-gray-400 py-0.5">{d}</div>
+                  ))}
+                </div>
+
+                {/* Calendar days */}
+                <div className="grid grid-cols-7 gap-0.5">
+                  {getCalendarData().map((day, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => day.hasEvent && onNavigate('schedule')}
+                      className={`relative flex items-center justify-center h-7 w-full rounded text-[11px] font-medium transition-colors
+                        ${day.isToday ? 'text-white' : day.isCurrentMonth ? 'text-gray-700 hover:bg-gray-100' : 'text-gray-300'}
+                        ${day.hasEvent && !day.isToday ? 'font-bold' : ''}
+                      `}
+                      style={day.isToday ? { backgroundColor: '#0f4c5c' } : {}}
+                    >
+                      {day.day}
+                      {day.hasEvent && !day.isToday && (
+                        <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full" style={{ backgroundColor: '#1f7a8c' }} />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             {/* All Users Card - Desktop only, all roles */}
             <div className="hidden xl:block bg-white rounded-xl shadow-sm overflow-hidden">
               <div className="overflow-y-auto scrollbar-autohide" style={{ maxHeight: '380px' }}>
@@ -1634,9 +1686,9 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             </div>
 
             {/* Recent Activity - Desktop only, all roles */}
-            <div className="hidden xl:block bg-white rounded-lg p-6 transition-all duration-300">
+            <div className="hidden xl:block bg-white rounded-lg p-4 transition-all duration-300">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold text-gray-800">Recent Activity</h3>
+                <h3 className="text-xs font-semibold text-gray-800">Recent Activity</h3>
                 <button 
                   onClick={() => onNavigate('system-tracker')}
                   className="text-gray-400 hover:text-gray-600"
@@ -1735,8 +1787,8 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
             {/* Today's Events + Upcoming Schedule + Tasks - 3-col row above courses (desktop) */}
             <div className="hidden sm:grid grid-cols-3 gap-4">              {/* Today's Events */}
-              <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
-                <div className="flex items-center justify-between mb-3">
+              <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex flex-col">
+                <div className="flex items-center justify-between mb-3 flex-shrink-0">
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: '#e6f4f7' }}>
                       <svg className="w-4 h-4" fill="none" stroke="#0f4c5c" strokeWidth={2} viewBox="0 0 24 24">
@@ -1748,9 +1800,9 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                   <button onClick={() => onNavigate('schedule')} className="text-xs font-medium hover:opacity-80" style={{ color: '#0f4c5c' }}>See All</button>
                 </div>
                 {getTodaysEvents().length === 0 ? (
-                  <div className="space-y-2">
+                  <div className="flex flex-col gap-2 flex-1">
                     {[1, 2, 3].map((i) => (
-                      <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-gray-50">
+                      <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-gray-50 flex-1">
                         <div className="w-2 h-6 rounded-full bg-gray-200 flex-shrink-0" />
                         <div className="flex-1 space-y-1">
                           <div className="h-2 bg-gray-200 rounded w-3/4" />
@@ -1760,11 +1812,11 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                     ))}
                   </div>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="flex flex-col gap-2 flex-1">
                     {getTodaysEvents().slice(0, 3).map((schedule) => {
                       const evtColor = getCourseColor(schedule.course_id)
                       return (
-                        <div key={schedule.id} className="flex items-start gap-2 p-2 rounded-lg bg-gray-50">
+                        <div key={schedule.id} className="flex items-start gap-2 p-2 rounded-lg bg-gray-50 flex-1">
                           <div className="w-2 h-2 rounded-full mt-1 flex-shrink-0" style={{ background: evtColor ? evtColor.color_hex : '#0f4c5c' }} />
                           <div className="min-w-0">
                             <p className="text-xs font-semibold text-gray-900 truncate">{schedule.title}</p>

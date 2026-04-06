@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
@@ -132,7 +132,7 @@ export default function SchedulePage() {
         console.error('Error fetching schedules:', error.message, error.code, error.details)
         return
       }
-      setSchedules(data || [])
+      setSchedules((data || []).map((s: any) => ({ ...s, course_title: s.course?.title ?? '', course_type: s.course?.course_type ?? '' })))
     } else {
       // Students and instructors: get their enrolled schedule IDs first
       const { data: enrollments, error: enrollError } = await supabase
@@ -164,7 +164,7 @@ export default function SchedulePage() {
         console.error('Error fetching schedules:', error.message, error.code, error.details)
         return
       }
-      setSchedules(data || [])
+      setSchedules((data || []).map((s: any) => ({ ...s, course_title: s.course?.title ?? '', course_type: s.course?.course_type ?? '' })))
     }
   }
 
@@ -218,9 +218,6 @@ export default function SchedulePage() {
         section: newSchedule.section || null,
         cluster: shsCluster || null,
         strand: newSchedule.strand || null,
-        batch: newSchedule.batch || null,
-        batch_number: 1,
-        status: 'scheduled',
         created_by: user?.id
       }
 
@@ -343,7 +340,6 @@ export default function SchedulePage() {
         section: newSchedule.section || null,
         cluster: shsCluster || null,
         strand: newSchedule.strand || null,
-        batch: newSchedule.batch || null,
       }
 
       const { error } = await supabase
@@ -472,6 +468,18 @@ export default function SchedulePage() {
     if (type === 'trainee') return 'Student'
     if (type === 'tesda_scholar') return 'Scholar'
     return 'Both'
+  }
+
+  const getEnrollmentTypeLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      jhs_student: 'JHS Student',
+      shs_student: 'SHS Student',
+      college_student: 'College Student',
+      tesda_scholar: 'TESDA Scholar',
+      trainee: 'Trainee',
+      both: 'All Students',
+    }
+    return labels[type] ?? type
   }
 
   const getCourseColor = (courseId: string) => {
@@ -646,6 +654,7 @@ export default function SchedulePage() {
                           <div className="flex-1 min-w-0">
                             <div className="text-sm font-semibold text-black line-clamp-1">{s.title}</div>
                             <div className="text-xs text-gray-600 mt-0.5">{s.course_title}</div>
+                            <div className="text-xs text-gray-500 mt-0.5">{getEnrollmentTypeLabel(s.enrollment_type)}</div>
                             <div className="text-xs text-gray-500 mt-1">{timeStr}</div>
                           </div>
                         </div>
@@ -708,7 +717,8 @@ export default function SchedulePage() {
                               <div className="flex items-start justify-between">
                                 <div className="flex-1">
                                   <h4 className="text-sm font-semibold text-black truncate">{s.title}</h4>
-                                  <p className="text-xs text-gray-600 mt-0.5">{s.course_title} • Batch {s.batch_number}</p>
+                                  <p className="text-xs text-gray-600 mt-0.5">{s.course_title}</p>
+                                  <p className="text-xs text-gray-500 mt-0.5">{getEnrollmentTypeLabel(s.enrollment_type)}</p>
                                   <div className="flex items-center space-x-2 mt-1">
                                     <span className="text-xs text-gray-500">{fmtDate(s.start_date)} - {fmtDate(s.end_date)}</span>
                                     <span className="text-xs text-gray-400">•</span>
@@ -922,7 +932,7 @@ export default function SchedulePage() {
                                 {s.course_title && <div className="text-xs text-gray-500 truncate">{s.course_title}</div>}
                               </div>
                               <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                                <span className="text-xs font-semibold" style={{ color }}>Batch {s.batch_number}</span>
+
                                 {(user?.profile?.role === 'admin' || user?.profile?.role === 'developer') && (
                                 <div className="hidden group-hover:flex items-center gap-1 mt-1">
                                   <button
@@ -1151,15 +1161,6 @@ export default function SchedulePage() {
                 )}
 
                 {/* TESDA Scholar: Batch */}
-                {newSchedule.enrollment_type === 'tesda_scholar' && (
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Batch</label>
-                    <select required value={newSchedule.batch} onChange={(e) => setNewSchedule(prev => ({ ...prev, batch: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
-                      <option value="">Select batch</option>
-                      {BATCHES.map(b => <option key={b} value={b}>{b}</option>)}
-                    </select>
-                  </div>
-                )}
               </div>
 
               <div className="flex justify-end space-x-4 mt-8">
@@ -1430,10 +1431,6 @@ export default function SchedulePage() {
                   <span className="font-medium">{scheduleToDelete.course_title}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Batch:</span>
-                  <span className="font-medium">Batch {scheduleToDelete.batch_number}</span>
-                </div>
-                <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Duration:</span>
                   <span className="font-medium">{formatDateRange(scheduleToDelete.start_date, scheduleToDelete.end_date)}</span>
                 </div>
@@ -1506,7 +1503,6 @@ export default function SchedulePage() {
                             className="w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold text-white shadow-md"
                             style={{ backgroundColor: color }}
                           >
-                            {schedule.batch_number}
                           </div>
                           <div>
                             <h3 className="font-bold text-gray-900 text-lg">{schedule.title}</h3>
