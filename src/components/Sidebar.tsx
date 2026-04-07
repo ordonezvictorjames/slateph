@@ -241,9 +241,21 @@ export default function Sidebar({ currentPage, onPageChange, hideHamburger = fal
       roles: ['shs_student', 'jhs_student', 'college_student', 'scholar'],
       items: [
         { 
+          id: 'courses' as PageType, 
+          icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>, 
+          label: 'Courses', 
+          roles: ['shs_student', 'jhs_student', 'college_student', 'scholar'] 
+        },
+        { 
           id: 'my-courses' as PageType, 
           icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>, 
-          label: 'My Courses', 
+          label: 'Learning Hub', 
+          roles: ['shs_student', 'jhs_student', 'college_student', 'scholar'] 
+        },
+        { 
+          id: 'activities' as PageType, 
+          icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>, 
+          label: 'Activities', 
           roles: ['shs_student', 'jhs_student', 'college_student', 'scholar'] 
         },
         { 
@@ -303,9 +315,21 @@ export default function Sidebar({ currentPage, onPageChange, hideHamburger = fal
       roles: ['instructor'],
       items: [
         { 
+          id: 'courses' as PageType, 
+          icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>, 
+          label: 'Courses', 
+          roles: ['instructor'] 
+        },
+        { 
           id: 'my-courses' as PageType, 
           icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>, 
-          label: 'My Courses', 
+          label: 'Learning Hub', 
+          roles: ['instructor'] 
+        },
+        { 
+          id: 'activities' as PageType, 
+          icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>, 
+          label: 'Activities', 
           roles: ['instructor'] 
         },
         { 

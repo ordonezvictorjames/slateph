@@ -134,7 +134,6 @@ export default function SchedulePage() {
       }
       setSchedules((data || []).map((s: any) => ({ ...s, course_title: s.course?.title ?? '', course_type: s.course?.course_type ?? '' })))
     } else {
-      // Students and instructors: get their enrolled schedule IDs first
       const { data: enrollments, error: enrollError } = await supabase
         .from('schedule_enrollments')
         .select('schedule_id')
@@ -142,29 +141,69 @@ export default function SchedulePage() {
 
       if (enrollError) {
         console.error('Error fetching enrollments:', enrollError.message, enrollError.code)
-        // Table may not exist yet — show empty
         setSchedules([])
         return
       }
 
-      const scheduleIds = (enrollments || []).map((e: { schedule_id: string }) => e.schedule_id)
-
-      if (scheduleIds.length === 0) {
-        setSchedules([])
-        return
+      const enrolledIds = new Set((enrollments || []).map((e: { schedule_id: string }) => e.schedule_id))
+      const profile = user?.profile as any
+      const role = profile?.role
+      const roleToEnrollmentType: Record<string, string> = {
+        jhs_student: 'jhs_student',
+        shs_student: 'shs_student',
+        college_student: 'college_student',
+        scholar: 'tesda_scholar',
+        instructor: 'instructor',
       }
+      const enrollmentType = roleToEnrollmentType[role] ?? role
 
-      const { data, error } = await supabase
+      // Fetch all schedules for this enrollment_type, then filter client-side
+      const { data: allTypeSchedules } = await supabase
         .from('course_schedules')
         .select('*, course:courses(title, course_type)')
-        .in('id', scheduleIds)
+        .eq('enrollment_type', enrollmentType)
+        .in('status', ['scheduled', 'active'])
         .order('start_date', { ascending: true })
 
-      if (error) {
-        console.error('Error fetching schedules:', error.message, error.code, error.details)
-        return
+      const profileMatches = (allTypeSchedules || []).filter((s: any) => {
+        if (role === 'jhs_student' || role === 'shs_student') {
+          const gradeMatch = !profile?.grade || !s.grade || s.grade === String(profile.grade) ||
+            (s.grade_levels && s.grade_levels.includes(Number(profile.grade)))
+          const sectionMatch = !profile?.section || !s.section || s.section === profile.section ||
+            (s.sections && s.sections.includes(profile.section))
+          const strandMatch = role !== 'shs_student' || !profile?.strand || !s.strand || s.strand === profile.strand ||
+            (s.strands && s.strands.includes(profile.strand))
+          return gradeMatch && sectionMatch && strandMatch
+        } else if (role === 'college_student') {
+          return !profile?.section || !s.section || s.section === profile.section ||
+            (s.sections && s.sections.includes(profile.section))
+        } else if (role === 'scholar') {
+          const batchLabel = profile?.batch_number ? `Batch ${profile.batch_number}` : null
+          return !batchLabel || !s.batch || s.batch === batchLabel ||
+            (s.batch_numbers && s.batch_numbers.includes(Number(profile.batch_number)))
+        }
+        return true
+      })
+
+      // Fetch explicitly enrolled schedules
+      let enrolledData: any[] = []
+      if (enrolledIds.size > 0) {
+        const { data } = await supabase
+          .from('course_schedules')
+          .select('*, course:courses(title, course_type)')
+          .in('id', Array.from(enrolledIds))
+          .order('start_date', { ascending: true })
+        enrolledData = data || []
       }
-      setSchedules((data || []).map((s: any) => ({ ...s, course_title: s.course?.title ?? '', course_type: s.course?.course_type ?? '' })))
+
+      // Merge and deduplicate
+      const seen = new Set<string>()
+      const merged: any[] = []
+      for (const s of [...enrolledData, ...profileMatches]) {
+        if (!seen.has(s.id)) { seen.add(s.id); merged.push(s) }
+      }
+      merged.sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime())
+      setSchedules(merged.map((s: any) => ({ ...s, course_title: s.course?.title ?? '', course_type: s.course?.course_type ?? '' })))
     }
   }
 
@@ -1161,6 +1200,15 @@ export default function SchedulePage() {
                 )}
 
                 {/* TESDA Scholar: Batch */}
+                {newSchedule.enrollment_type === 'tesda_scholar' && (
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Batch</label>
+                    <select required value={newSchedule.batch} onChange={(e) => setNewSchedule(prev => ({ ...prev, batch: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent">
+                      <option value="">Select batch</option>
+                      {BATCHES.map(b => <option key={b} value={b}>{b}</option>)}
+                    </select>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end space-x-4 mt-8">

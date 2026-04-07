@@ -26,8 +26,10 @@ import AIAssistantPage from '@/components/pages/AIAssistantPage'
 import LibraryPage from '@/components/pages/LibraryPage'
 import BadgesPage from '@/components/pages/BadgesPage'
 import GradesPage from '@/components/pages/GradesPage'
+import CoursesPage from '@/components/pages/CoursesPage'
+import ActivitiesPage from '@/components/pages/ActivitiesPage'
 
-export type PageType = 'dashboard' | 'user-management' | 'course-management' | 'my-courses' | 'schedule' | 'analytics' | 'profile' | 'settings' | 'system-tracker' | 'code-generator' | 'feature-requests' | 'tasks' | 'games' | 'activity' | 'ai-assistant' | 'library' | 'badges' | 'grades'
+export type PageType = 'dashboard' | 'user-management' | 'course-management' | 'my-courses' | 'courses' | 'activities' | 'schedule' | 'analytics' | 'profile' | 'settings' | 'system-tracker' | 'code-generator' | 'feature-requests' | 'tasks' | 'games' | 'activity' | 'ai-assistant' | 'library' | 'badges' | 'grades'
 
 export default function Dashboard() {
   const { signOut, user } = useAuth()
@@ -75,6 +77,8 @@ export default function Dashboard() {
       case 'user-management': return userRole === 'instructor' ? <MyStudentsPage /> : <UserManagementPage onNavigateToProfile={navigateToProfile} />
       case 'course-management': return <CourseManagementPage initialCourseId={initialCourseId} />
       case 'my-courses': return <MyCoursesPage initialCourseId={initialCourseId} />
+      case 'courses': return <CoursesPage />
+      case 'activities': return <ActivitiesPage />
       case 'schedule': return <SchedulePage />
       case 'analytics': return <AnalyticsPage />
       case 'profile': return <ProfilePage userId={profileUserId} onNavigateToProfile={navigateToProfile} />

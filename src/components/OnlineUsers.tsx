@@ -197,35 +197,35 @@ export default function OnlineUsers({ onNavigateToProfile }: OnlineUsersProps = 
           onNavigateToProfile(u.id === user?.id ? undefined : u.id)
         }
       }}
-      className="w-full p-3 hover:bg-gray-50 transition-colors text-left"
+      className="w-full px-3 py-2 hover:bg-gray-50 transition-colors text-left"
     >
-      <div className="flex items-center space-x-3">
+      <div className="flex items-center space-x-2">
         <div className="relative flex-shrink-0">
           {u.avatar_url ? (
             u.avatar_url.length <= 2 ? (
-              <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-lg">
+              <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center text-sm">
                 {u.avatar_url}
               </div>
             ) : (
               <img
                 src={u.avatar_url}
                 alt={`${u.first_name} ${u.last_name}`}
-                className="w-10 h-10 rounded-full object-cover"
+                className="w-7 h-7 rounded-full object-cover"
               />
             )
           ) : (
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm">
+            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-xs">
               {u.first_name.charAt(0)}{u.last_name.charAt(0)}
             </div>
           )}
-          <div className={`absolute bottom-0 right-0 w-3 h-3 ${isOnline ? 'bg-green-500' : 'bg-gray-400'} border-2 border-white rounded-full`}></div>
+          <div className={`absolute bottom-0 right-0 w-2 h-2 ${isOnline ? 'bg-green-500' : 'bg-gray-400'} border border-white rounded-full`}></div>
         </div>
         
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-bold text-gray-900 truncate">
+          <div className="text-xs font-semibold truncate" style={{ color: '#0f4c5c' }}>
             {u.first_name} {u.last_name}
             {u.id === user?.id && (
-              <span className="ml-1 text-xs text-gray-500">(You)</span>
+              <span className="ml-1 text-[10px] text-gray-500">(You)</span>
             )}
           </div>
           <div className="flex items-center justify-between">
@@ -233,7 +233,7 @@ export default function OnlineUsers({ onNavigateToProfile }: OnlineUsersProps = 
               {getRoleLabel(u.role)}
             </span>
             {u.last_seen && (
-              <span className="text-xs text-gray-500 ml-2">
+              <span className="text-[10px] text-gray-500 ml-2">
                 {formatLastSeen(u.last_seen)}
               </span>
             )}

@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -395,39 +395,68 @@ function UpcomingScheduleList() {
       const isAdminOrDev = role === 'admin' || role === 'developer'
 
       if (!isAdminOrDev && user?.id) {
-        const { data: enrollments, error: enrollError } = await supabase
+        const profile = user?.profile as any
+        const roleToEnrollmentType: Record<string, string> = {
+          jhs_student: 'jhs_student',
+          shs_student: 'shs_student',
+          college_student: 'college_student',
+          scholar: 'tesda_scholar',
+          instructor: 'instructor',
+        }
+        const enrollmentType = roleToEnrollmentType[role ?? ''] ?? role
+
+        // Fetch explicitly enrolled schedules
+        const { data: enrollments } = await supabase
           .from('schedule_enrollments')
           .select('schedule_id')
           .eq('user_id', user.id)
 
-        if (enrollError) {
-          setSchedules([])
-          setLoading(false)
-          return
+        const enrolledIds = new Set(((enrollments || []) as { schedule_id: string }[]).map(e => e.schedule_id))
+
+        let enrolledData: any[] = []
+        if (enrolledIds.size > 0) {
+          const { data } = await supabase
+            .from('course_schedules')
+            .select('*, course:courses(title, course_type)')
+            .in('id', Array.from(enrolledIds))
+            .gte('start_date', tomorrowStr)
+            .in('status', ['scheduled', 'active'])
+            .order('start_date', { ascending: true })
+          enrolledData = data || []
         }
 
-        const scheduleIds: string[] = (enrollments || []).map((e: { schedule_id: string }) => e.schedule_id)
-
-        if (scheduleIds.length === 0) {
-          setSchedules([])
-          setLoading(false)
-          return
-        }
-
-        const { data: schedulesData, error: schedulesError } = await supabase
+        // Fetch profile-matching schedules
+        const { data: allTypeSchedules } = await supabase
           .from('course_schedules')
           .select('*, course:courses(title, course_type)')
-          .in('id', scheduleIds)
+          .eq('enrollment_type', enrollmentType)
           .gte('start_date', tomorrowStr)
           .in('status', ['scheduled', 'active'])
           .order('start_date', { ascending: true })
-          .limit(2)
 
-        if (schedulesError) {
-          console.error('Error fetching schedules:', schedulesError)
-        } else {
-          setSchedules(schedulesData || [])
+        const profileMatches = (allTypeSchedules || []).filter((s: any) => {
+          if (role === 'jhs_student' || role === 'shs_student') {
+            const gradeMatch = !profile?.grade || !s.grade || s.grade === String(profile.grade) || (s.grade_levels && s.grade_levels.includes(Number(profile.grade)))
+            const sectionMatch = !profile?.section || !s.section || s.section === profile.section || (s.sections && s.sections.includes(profile.section))
+            const strandMatch = role !== 'shs_student' || !profile?.strand || !s.strand || s.strand === profile.strand || (s.strands && s.strands.includes(profile.strand))
+            return gradeMatch && sectionMatch && strandMatch
+          } else if (role === 'college_student') {
+            return !profile?.section || !s.section || s.section === profile.section || (s.sections && s.sections.includes(profile.section))
+          } else if (role === 'scholar') {
+            const batchLabel = profile?.batch_number ? `Batch ${profile.batch_number}` : null
+            return !batchLabel || !s.batch || s.batch === batchLabel || (s.batch_numbers && s.batch_numbers.includes(Number(profile.batch_number)))
+          }
+          return true
+        })
+
+        // Merge, deduplicate, limit
+        const seen = new Set<string>()
+        const merged: any[] = []
+        for (const s of [...enrolledData, ...profileMatches]) {
+          if (!seen.has(s.id)) { seen.add(s.id); merged.push(s) }
         }
+        merged.sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime())
+        setSchedules(merged.slice(0, 2))
       } else {
         const { data: schedulesData, error: schedulesError } = await supabase
           .from('course_schedules')
@@ -812,6 +841,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
     bugReports: 0,
     guestUsers: 0
   })
+  const [pendingQuizzes, setPendingQuizzes] = useState<{ id: string; title: string; course_title: string; quiz_type: string; available_from?: string }[]>([])
   const supabase = createClient()
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -1230,32 +1260,73 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
           setCourseSchedules(schedulesData || [])
         }
       } else {
-        const { data: enrollments, error: enrollError } = await supabase
+        const profile = user?.profile as any
+        const roleToEnrollmentType: Record<string, string> = {
+          jhs_student: 'jhs_student',
+          shs_student: 'shs_student',
+          college_student: 'college_student',
+          scholar: 'tesda_scholar',
+          instructor: 'instructor',
+        }
+        const enrollmentType = roleToEnrollmentType[userRole] ?? userRole
+
+        // Fetch explicitly enrolled schedules
+        const { data: enrollments } = await supabase
           .from('schedule_enrollments')
           .select('schedule_id')
           .eq('user_id', user?.id)
 
-        if (enrollError) {
-          setCourseSchedules([])
-        } else {
-          const ids = (enrollments || []).map((e: { schedule_id: string }) => e.schedule_id)
-          if (ids.length === 0) {
-            setCourseSchedules([])
-          } else {
-            const { data: schedulesData, error: schedulesError } = await supabase
-              .from('course_schedules')
-              .select('*, course:courses(title, course_type)')
-              .in('id', ids)
-              .in('status', ['scheduled', 'active'])
-              .order('start_date', { ascending: true })
+        const enrolledIds = new Set((enrollments || []).map((e: { schedule_id: string }) => e.schedule_id))
 
-            if (schedulesError) {
-              console.error('Error fetching course schedules:', schedulesError)
-            } else {
-              setCourseSchedules(schedulesData || [])
-            }
+        // Fetch all schedules matching enrollment_type (client-side filter for grade/section/strand/batch)
+        const { data: allTypeSchedules } = await supabase
+          .from('course_schedules')
+          .select('*, course:courses(title, course_type)')
+          .eq('enrollment_type', enrollmentType)
+          .in('status', ['scheduled', 'active'])
+          .order('start_date', { ascending: true })
+
+        // Client-side profile matching
+        const profileMatches = (allTypeSchedules || []).filter((s: any) => {
+          if (userRole === 'jhs_student' || userRole === 'shs_student') {
+            const gradeMatch = !profile?.grade || !s.grade || s.grade === String(profile.grade) ||
+              (s.grade_levels && s.grade_levels.includes(Number(profile.grade)))
+            const sectionMatch = !profile?.section || !s.section || s.section === profile.section ||
+              (s.sections && s.sections.includes(profile.section))
+            const strandMatch = userRole !== 'shs_student' || !profile?.strand || !s.strand || s.strand === profile.strand ||
+              (s.strands && s.strands.includes(profile.strand))
+            return gradeMatch && sectionMatch && strandMatch
+          } else if (userRole === 'college_student') {
+            return !profile?.section || !s.section || s.section === profile.section ||
+              (s.sections && s.sections.includes(profile.section))
+          } else if (userRole === 'scholar') {
+            const batchLabel = profile?.batch_number ? `Batch ${profile.batch_number}` : null
+            return !batchLabel || !s.batch || s.batch === batchLabel ||
+              (s.batch_numbers && s.batch_numbers.includes(Number(profile.batch_number)))
           }
+          return true
+        })
+
+        // Fetch explicitly enrolled schedules
+        let enrolledData: any[] = []
+        if (enrolledIds.size > 0) {
+          const { data } = await supabase
+            .from('course_schedules')
+            .select('*, course:courses(title, course_type)')
+            .in('id', Array.from(enrolledIds))
+            .in('status', ['scheduled', 'active'])
+            .order('start_date', { ascending: true })
+          enrolledData = data || []
         }
+
+        // Merge and deduplicate
+        const seen = new Set<string>()
+        const merged: any[] = []
+        for (const s of [...enrolledData, ...profileMatches]) {
+          if (!seen.has(s.id)) { seen.add(s.id); merged.push(s) }
+        }
+        merged.sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime())
+        setCourseSchedules(merged)
       }
 
       // Fetch dashboard statistics
@@ -1446,6 +1517,97 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
         })
       }
 
+      // Fetch pending quizzes for students and instructors
+      const isStudentOrInstructor = ['shs_student', 'jhs_student', 'college_student', 'scholar', 'instructor'].includes(userRole)
+      if (isStudentOrInstructor && user?.id) {
+        try {
+          // Get enrolled course IDs from both schedule_enrollments and course_enrollments
+          const [{ data: schedEnrollments }, { data: courseEnrollments }] = await Promise.all([
+            supabase.from('schedule_enrollments').select('schedule_id').eq('user_id', user.id),
+            supabase.from('course_enrollments').select('course_id').eq('trainee_id', user.id).eq('status', 'active'),
+          ])
+
+          const scheduleIds = (schedEnrollments || []).map((e: any) => e.schedule_id)
+          const directCourseIds = (courseEnrollments || []).map((e: any) => e.course_id)
+
+          // Get course IDs from schedules
+          const courseMap: Record<string, string> = {}
+          if (scheduleIds.length > 0) {
+            const { data: scheduleData } = await supabase
+              .from('course_schedules')
+              .select('course_id, course:courses(title)')
+              .in('id', scheduleIds)
+            ;(scheduleData || []).forEach((s: any) => {
+              if (s.course_id) courseMap[s.course_id] = s.course?.title || ''
+            })
+          }
+          // Add direct course enrollments
+          if (directCourseIds.length > 0) {
+            const { data: directCourses } = await supabase
+              .from('courses')
+              .select('id, title')
+              .in('id', directCourseIds)
+            ;(directCourses || []).forEach((c: any) => { courseMap[c.id] = c.title })
+          }
+
+          const courseIds = Object.keys(courseMap)
+          if (courseIds.length > 0) {
+            const { data: subjects } = await supabase
+              .from('subjects')
+              .select('id, course_id')
+              .in('course_id', courseIds)
+
+            const subjectIds = (subjects || []).map((s: any) => s.id)
+            const subjectCourseMap: Record<string, string> = {}
+            ;(subjects || []).forEach((s: any) => { subjectCourseMap[s.id] = s.course_id })
+
+            if (subjectIds.length > 0) {
+              const { data: modules } = await supabase
+                .from('modules')
+                .select('id, title, subject_id, text_content')
+                .in('subject_id', subjectIds)
+                .eq('status', 'active')
+
+              const { data: submitted } = await supabase
+                .from('quiz_grades')
+                .select('module_id')
+                .eq('user_id', user.id)
+
+              const submittedIds = new Set((submitted || []).map((g: any) => g.module_id))
+              const now = new Date()
+              const pending: { id: string; title: string; course_title: string; quiz_type: string; available_from?: string }[] = []
+              ;(modules || []).forEach((m: any) => {
+                if (submittedIds.has(m.id)) return
+                try {
+                  const parsed = m.text_content ? JSON.parse(m.text_content) : {}
+                  const qc = parsed.quiz_config ? (typeof parsed.quiz_config === 'string' ? JSON.parse(parsed.quiz_config) : parsed.quiz_config) : null
+                  if (qc && qc.questions && qc.questions.length > 0) {
+                    // Show if: no date set (always open), available_from is in the future (upcoming), or currently open window
+                    const from = qc.available_from ? new Date(qc.available_from) : null
+                    const until = qc.available_until ? new Date(qc.available_until) : null
+                    const isUpcoming = from && from > now
+                    const isOpen = (!from || from <= now) && (!until || until >= now)
+                    if (isUpcoming || isOpen) {
+                      const courseId = subjectCourseMap[m.subject_id]
+                      pending.push({ id: m.id, title: qc.title || m.title, course_title: courseMap[courseId] || '', quiz_type: qc.type || 'quiz', available_from: qc.available_from })
+                    }
+                  }
+                } catch {}
+              })
+              // Sort: upcoming (future) first, then open
+              pending.sort((a, b) => {
+                const aDate = a.available_from ? new Date(a.available_from).getTime() : 0
+                const bDate = b.available_from ? new Date(b.available_from).getTime() : 0
+                return aDate - bDate
+              })
+              setPendingQuizzes(pending.slice(0, 10))
+            }
+          }
+        } catch (e) {
+          console.error('Error fetching pending quizzes:', e)
+        }
+      }
+
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
     } finally {
@@ -1519,10 +1681,10 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             </button>
           </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-7 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 md:gap-6">
           
           {/* Profile Card - Shows on desktop only (mobile version is above) */}
-          <div className="order-last xl:col-span-2 xl:order-2 space-y-4 md:space-y-6 flex flex-col">
+          <div className="order-last xl:col-span-1 xl:order-2 space-y-4 md:space-y-6 flex flex-col">
             {/* Avatar / Profile Card - Desktop only */}
             <div className="hidden xl:block relative" ref={dropdownRef}>
               <div className="flex items-center gap-3 justify-end">
@@ -1561,13 +1723,24 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                       </span>
                     )}
                   </div>
-                  {/* Hello + name */}
+                  {/* Name + role */}
                   <div className="text-left">
-                    <p className="text-[11px] text-gray-400 leading-tight">Hello,</p>
                     <p className="font-bold text-sm text-gray-900 leading-tight whitespace-nowrap">
                       {user?.profile?.first_name && user?.profile?.last_name
                         ? `${user.profile.first_name} ${user.profile.last_name}`
                         : 'User'}
+                    </p>
+                    <p className="text-[10px] text-gray-400 leading-tight capitalize">
+                      {({
+                        admin: 'Admin',
+                        developer: 'Developer',
+                        instructor: 'Instructor',
+                        shs_student: 'SHS Student',
+                        jhs_student: 'JHS Student',
+                        college_student: 'College Student',
+                        scholar: 'TESDA Scholar',
+                        guest: 'Guest',
+                      } as Record<string, string>)[userRole] ?? userRole}
                     </p>
                   </div>
                   {/* Chevron */}
@@ -1679,6 +1852,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             </div>
 
             {/* All Users Card - Desktop only, all roles */}
+            <p className="hidden xl:block text-sm font-semibold text-gray-700 mb-2">All Users</p>
             <div className="hidden xl:block bg-white rounded-xl shadow-sm overflow-hidden">
               <div className="overflow-y-auto scrollbar-autohide" style={{ maxHeight: '380px' }}>
                 <OnlineUsers />
@@ -1686,6 +1860,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             </div>
 
             {/* Recent Activity - Desktop only, all roles */}
+            <p className="hidden xl:block text-sm font-semibold text-gray-700 mb-2">Recent Activity</p>
             <div className="hidden xl:block bg-white rounded-lg p-4 transition-all duration-300">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-xs font-semibold text-gray-800">Recent Activity</h3>
@@ -1705,87 +1880,51 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
           </div>
 
           {/* Left Section - Main Content - Shows second on mobile, first on desktop */}
-          <div className="order-first xl:col-span-5 xl:order-1 space-y-6 md:space-y-8">
+          <div className="order-first xl:col-span-3 xl:order-1 space-y-4 md:space-y-5">
 
             {/* Welcome Card */}
-            <div className="relative rounded-2xl overflow-hidden flex items-center px-6 py-6 gap-5 bg-white shadow-sm" style={{ minHeight: '160px' }}>
+            {/* Welcome Banner */}
+            <div className="relative rounded-2xl overflow-hidden flex items-center justify-between px-8 py-6 gap-6 shadow-sm" style={{ background: 'linear-gradient(135deg, #e8f4f6 0%, #d0eaee 60%, #b8dde3 100%)', minHeight: '140px' }}>
               {/* Text content */}
               <div className="flex-1 min-w-0 z-10">
-                <h2 className="text-2xl font-bold text-gray-900 leading-tight">
-                  Welcome, {user?.profile?.first_name || 'there'}
+                <h2 className="text-xl font-bold text-gray-900 leading-tight mb-1">
+                  Enhance Your Learning Journey
                 </h2>
-                <button
-                  onClick={() => onNavigate('profile')}
-                  className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-white text-xs font-semibold transition-colors hover:opacity-90"
-                  style={{ background: '#0f4c5c' }}
-                >
-                  Complete Profile
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              </div>
-
-              {/* book.png decorative image */}
-              <img
-                src="/book.png"
-                alt=""
-                aria-hidden="true"
-                className="absolute right-4 bottom-0 h-36 object-contain pointer-events-none select-none"
-              />
-            </div>
-
-            {/* Learning Progress Cards - hidden for admin/developer */}
-            {!(userRole === 'admin' || userRole === 'developer') && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="bg-white rounded-xl shadow-sm p-4 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#0f4c5c' }}>
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-xl font-bold text-gray-900">{courses.filter(c => c.is_user_enrolled).length || stats.totalCourses}</p>
-                  <p className="text-xs text-gray-500 font-medium">Enrolled Courses</p>
+                <p className="text-sm text-gray-600 mb-4 max-w-sm line-clamp-2 text-left">
+                  Engage in interactive quizzes, monitor your progress, and achieve milestones as you advance through your courses.
+                </p>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => onNavigate(userRole === 'admin' || userRole === 'developer' ? 'course-management' : 'my-courses')}
+                    className="inline-flex items-center px-4 py-1.5 rounded-full border border-gray-800 text-gray-800 text-xs font-semibold bg-white hover:bg-gray-50 transition-colors"
+                  >
+                    Learning Path
+                  </button>
+                  <button
+                    onClick={() => onNavigate(userRole === 'admin' || userRole === 'developer' ? 'user-management' : 'courses')}
+                    className="inline-flex items-center px-4 py-1.5 rounded-full text-white text-xs font-semibold transition-colors hover:opacity-90"
+                    style={{ background: '#0f4c5c' }}
+                  >
+                    Get Started
+                  </button>
                 </div>
               </div>
-              <div className="bg-white rounded-xl shadow-sm p-4 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#0f4c5c' }}>
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-xl font-bold text-gray-900">{stats.completedLessons}</p>
-                  <p className="text-xs text-gray-500 font-medium">Completed Lessons</p>
-                </div>
-              </div>
-              <div className="bg-white rounded-xl shadow-sm p-4 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#0f4c5c' }}>
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-xl font-bold text-gray-900">{stats.completedAssignments}</p>
-                  <p className="text-xs text-gray-500 font-medium">Completed Modules</p>
-                </div>
-              </div>
-              <div className="bg-white rounded-xl shadow-sm p-4 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#0f4c5c' }}>
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-xl font-bold text-gray-900">{stats.totalActivities}</p>
-                  <p className="text-xs text-gray-500 font-medium">Activities</p>
-                </div>
+              {/* Decorative image */}
+              <div className="flex-shrink-0 hidden sm:block">
+                <img
+                  src="/book.png"
+                  alt=""
+                  aria-hidden="true"
+                  className="h-28 object-contain pointer-events-none select-none"
+                />
               </div>
             </div>
-            )}
+
+
+            {/* Learning Progress Cards - hidden for admin/developer - moved below courses */}
 
             {/* Today's Events + Upcoming Schedule + Tasks - 3-col row above courses (desktop) */}
+            <p className="text-sm font-semibold text-gray-700 mb-1">Overview</p>
             <div className="hidden sm:grid grid-cols-3 gap-4">              {/* Today's Events */}
               <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex flex-col">
                 <div className="flex items-center justify-between mb-3 flex-shrink-0">
@@ -1845,7 +1984,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 <UpcomingScheduleList />
               </div>
 
-              {/* Tasks Card - moved here from System Overview */}
+              {/* Tasks Card - admin/developer only */}
               {(userRole === 'admin' || userRole === 'developer') && (
                 <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex flex-col">
                   <div className="flex items-center justify-between mb-3">
@@ -1865,35 +2004,80 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                     </button>
                   </div>
                   <div className="grid grid-cols-2 gap-1.5 flex-1">
-                    <div onClick={() => onNavigate('tasks')} className="flex flex-col items-center justify-center p-2 rounded-lg border border-orange-200 cursor-pointer hover:bg-orange-50 text-center">
-                      <span className="text-sm font-bold text-orange-600">{pendingTasks.unenrolledtrainees}</span>
+                    <div onClick={() => onNavigate('tasks')} className="flex flex-col items-center justify-center p-2 rounded-lg cursor-pointer hover:bg-gray-200 text-center bg-gray-100">
+                      <span className="text-sm font-bold" style={{ color: '#0f4c5c' }}>{pendingTasks.unenrolledtrainees}</span>
                       <span className="text-[10px] text-gray-500 leading-tight mt-0.5">Unenrolled Trainees</span>
                     </div>
-                    <div onClick={() => onNavigate('tasks')} className="flex flex-col items-center justify-center p-2 rounded-lg border border-blue-200 cursor-pointer hover:bg-blue-50 text-center">
-                      <span className="text-sm font-bold text-blue-600">{pendingTasks.unassignedtrainees}</span>
+                    <div onClick={() => onNavigate('tasks')} className="flex flex-col items-center justify-center p-2 rounded-lg cursor-pointer hover:bg-gray-200 text-center bg-gray-100">
+                      <span className="text-sm font-bold" style={{ color: '#0f4c5c' }}>{pendingTasks.unassignedtrainees}</span>
                       <span className="text-[10px] text-gray-500 leading-tight mt-0.5">Unassigned Instructors</span>
                     </div>
-                    <div onClick={() => onNavigate('tasks')} className="flex flex-col items-center justify-center p-2 rounded-lg border border-purple-200 cursor-pointer hover:bg-purple-50 text-center">
-                      <span className="text-sm font-bold text-purple-600">{pendingTasks.pendingFeatureRequests}</span>
+                    <div onClick={() => onNavigate('tasks')} className="flex flex-col items-center justify-center p-2 rounded-lg cursor-pointer hover:bg-gray-200 text-center bg-gray-100">
+                      <span className="text-sm font-bold" style={{ color: '#0f4c5c' }}>{pendingTasks.pendingFeatureRequests}</span>
                       <span className="text-[10px] text-gray-500 leading-tight mt-0.5">Feature Requests</span>
                     </div>
-                    <div onClick={() => onNavigate('tasks')} className="flex flex-col items-center justify-center p-2 rounded-lg border border-red-200 cursor-pointer hover:bg-red-50 text-center">
-                      <span className="text-sm font-bold text-red-600">{pendingTasks.passwordResets}</span>
+                    <div onClick={() => onNavigate('tasks')} className="flex flex-col items-center justify-center p-2 rounded-lg cursor-pointer hover:bg-gray-200 text-center bg-gray-100">
+                      <span className="text-sm font-bold" style={{ color: '#0f4c5c' }}>{pendingTasks.passwordResets}</span>
                       <span className="text-[10px] text-gray-500 leading-tight mt-0.5">Password Resets</span>
                     </div>
-                    <div onClick={() => onNavigate('tasks')} className="flex flex-col items-center justify-center p-2 rounded-lg border border-yellow-200 cursor-pointer hover:bg-yellow-50 text-center">
-                      <span className="text-sm font-bold text-yellow-600">{pendingTasks.bugReports}</span>
+                    <div onClick={() => onNavigate('tasks')} className="flex flex-col items-center justify-center p-2 rounded-lg cursor-pointer hover:bg-gray-200 text-center bg-gray-100">
+                      <span className="text-sm font-bold" style={{ color: '#0f4c5c' }}>{pendingTasks.bugReports}</span>
                       <span className="text-[10px] text-gray-500 leading-tight mt-0.5">Bug Reports</span>
                     </div>
-                    <div onClick={() => onNavigate('tasks')} className="flex flex-col items-center justify-center p-2 rounded-lg border border-indigo-200 cursor-pointer hover:bg-indigo-50 text-center">
-                      <span className="text-sm font-bold text-indigo-600">{pendingTasks.guestUsers}</span>
+                    <div onClick={() => onNavigate('tasks')} className="flex flex-col items-center justify-center p-2 rounded-lg cursor-pointer hover:bg-gray-200 text-center bg-gray-100">
+                      <span className="text-sm font-bold" style={{ color: '#0f4c5c' }}>{pendingTasks.guestUsers}</span>
                       <span className="text-[10px] text-gray-500 leading-tight mt-0.5">Guest Users</span>
                     </div>
                   </div>
                 </div>
               )}
+
+              {/* To Do Card - students and instructors */}
+              {(userRole !== 'admin' && userRole !== 'developer') && (
+                <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex flex-col">
+                  <div className="flex items-center justify-between mb-3 flex-shrink-0">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: '#e6f4f7' }}>
+                        <svg className="w-4 h-4" fill="none" stroke="#0f4c5c" strokeWidth={2} viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                        </svg>
+                      </div>
+                      <span className="text-xs font-semibold text-gray-900">To Do</span>
+                    </div>
+                    <button onClick={() => onNavigate('my-courses')} className="text-xs font-medium hover:opacity-80" style={{ color: '#0f4c5c' }}>See All</button>
+                  </div>
+                  {pendingQuizzes.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center flex-1 py-4 text-center">
+                      <svg className="w-8 h-8 text-gray-200 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <p className="text-xs text-gray-400">All caught up!</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-2 flex-1 overflow-y-auto">
+                      {pendingQuizzes.slice(0, 4).map(q => (
+                        <div key={q.id} onClick={() => onNavigate('my-courses')} className="flex items-start gap-2 p-2 rounded-lg bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors">
+                          <span className={`mt-0.5 flex-shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase ${q.quiz_type === 'exam' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
+                            {q.quiz_type}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold text-gray-900 truncate">{q.title}</p>
+                            <p className="text-[10px] text-gray-400 truncate">{q.course_title}</p>
+                            {q.available_from && new Date(q.available_from) > new Date() && (
+                              <p className="text-[10px] text-orange-500 mt-0.5">
+                                Opens {new Date(q.available_from).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             {/* All Courses -- split for students/instructors, full list for others */}
+            <p className="text-sm font-semibold text-gray-700 mb-1">Courses</p>
             {(() => {
               const isStudentOrInstructor = userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student' || userRole === 'scholar' || userRole === 'instructor'
               const myCourses = isStudentOrInstructor ? allCourses.filter(c => c.is_user_enrolled) : []
@@ -2094,8 +2278,62 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             )}
 
             {/* System Overview - Only for Admin/Developer */}
+            {!(userRole === 'admin' || userRole === 'developer') && (
+            <>
+              <p className="text-sm font-semibold text-gray-700 mb-1">My Progress</p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="bg-white rounded-xl p-4 flex items-center gap-3 border" style={{ borderColor: '#0f4c5c' }}>
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#0f4c5c' }}>
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-xl font-bold" style={{ color: '#0f4c5c' }}>{courses.filter(c => c.is_user_enrolled).length || stats.totalCourses}</p>
+                    <p className="text-xs text-gray-500 font-medium">Enrolled Courses</p>
+                  </div>
+                </div>
+                <div className="bg-white rounded-xl p-4 flex items-center gap-3 border" style={{ borderColor: '#0f4c5c' }}>
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#0f4c5c' }}>
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-xl font-bold" style={{ color: '#0f4c5c' }}>{stats.completedLessons}</p>
+                    <p className="text-xs text-gray-500 font-medium">Completed Lessons</p>
+                  </div>
+                </div>
+                <div className="bg-white rounded-xl p-4 flex items-center gap-3 border" style={{ borderColor: '#0f4c5c' }}>
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#0f4c5c' }}>
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-xl font-bold" style={{ color: '#0f4c5c' }}>{stats.completedAssignments}</p>
+                    <p className="text-xs text-gray-500 font-medium">Completed Modules</p>
+                  </div>
+                </div>
+                <div className="bg-white rounded-xl p-4 flex items-center gap-3 border" style={{ borderColor: '#0f4c5c' }}>
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#0f4c5c' }}>
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-xl font-bold" style={{ color: '#0f4c5c' }}>{stats.totalActivities}</p>
+                    <p className="text-xs text-gray-500 font-medium">Activities</p>
+                  </div>
+                </div>
+              </div>
+            </>
+            )}
+
+            {/* System Overview - Only for Admin/Developer */}
             {(userRole === 'admin' || userRole === 'developer') && (
             <>
+              <p className="text-sm font-semibold text-gray-700 mb-1">System Overview</p>
               {/* Infrastructure Usage -- Developer only */}
               {userRole === 'developer' && (
                 <InfraUsageCards />
@@ -2103,7 +2341,8 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
               {/* Mobile: compact totals */}
               <div className="sm:hidden grid grid-cols-2 gap-3">
                 <button
-                  className="bg-white rounded-xl shadow-sm p-4 flex items-center gap-3"
+                  className="bg-white rounded-xl p-4 flex items-center gap-3 border"
+                  style={{ borderColor: '#0f4c5c' }}
                   onClick={() => onNavigate('course-management')}
                 >
                   <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#0f4c5c' }}>
@@ -2112,12 +2351,13 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                     </svg>
                   </div>
                   <div className="text-left">
-                    <p className="text-2xl font-bold text-gray-900">{stats.totalCourses}</p>
+                    <p className="text-2xl font-bold" style={{ color: '#0f4c5c' }}>{stats.totalCourses}</p>
                     <p className="text-xs text-gray-500 font-medium">Total Courses</p>
                   </div>
                 </button>
                 <button
-                  className="bg-white rounded-xl shadow-sm p-4 flex items-center gap-3"
+                  className="bg-white rounded-xl p-4 flex items-center gap-3 border"
+                  style={{ borderColor: '#0f4c5c' }}
                   onClick={() => onNavigate('user-management')}
                 >
                   <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#0f4c5c' }}>
@@ -2126,7 +2366,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                     </svg>
                   </div>
                   <div className="text-left">
-                    <p className="text-2xl font-bold text-gray-900">{stats.totalUsers}</p>
+                    <p className="text-2xl font-bold" style={{ color: '#0f4c5c' }}>{stats.totalUsers}</p>
                     <p className="text-xs text-gray-500 font-medium">Total Users</p>
                   </div>
                 </button>
