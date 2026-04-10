@@ -2047,47 +2047,40 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
 
   // Render functions
   const renderBreadcrumb = () => (
-    <div className="flex items-center space-x-2 text-sm text-gray-500 mb-6">
-      {selectedCourse && (
-        <>
-          <button 
-            onClick={handleBackToCourses}
-            className="hover:text-gray-700"
-          >
-            Courses
-          </button>
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-          <button 
-            onClick={handleBackToSubjects}
-            className={`hover:text-gray-700 ${currentView === 'subjects' ? 'text-black font-medium' : ''}`}
-          >
-            {selectedCourse.title}
-          </button>
-        </>
-      )}
-      {selectedSubject && currentView === 'lesson' && (
-        <>
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-          <button
-            onClick={handleBackToModules}
-            className="hover:text-gray-700"
-          >
-            {selectedSubject.title}
-          </button>
-        </>
-      )}
-      {currentView === 'lesson' && selectedModule && (
-        <>
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-          <span className="text-black font-medium">{selectedModule.title}</span>
-        </>
-      )}
+    <div className="flex justify-center mb-4">
+      <div className="inline-flex items-center gap-1 bg-white border border-gray-200 rounded-full px-4 py-1.5 shadow-sm">
+        {selectedCourse && (
+          <>
+            <button onClick={handleBackToCourses} className="text-xs font-medium text-gray-500 hover:text-gray-900 transition-colors">
+              Courses
+            </button>
+            <svg className="w-3 h-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+            </svg>
+            <button onClick={handleBackToSubjects} className={`text-xs font-medium transition-colors ${currentView === 'subjects' ? 'font-semibold' : 'text-gray-500 hover:text-gray-900'}`} style={currentView === 'subjects' ? { color: '#0f4c5c' } : {}}>
+              {selectedCourse.title}
+            </button>
+          </>
+        )}
+        {selectedSubject && currentView === 'lesson' && (
+          <>
+            <svg className="w-3 h-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+            </svg>
+            <button onClick={handleBackToModules} className="text-xs font-medium text-gray-500 hover:text-gray-900 transition-colors">
+              {selectedSubject.title}
+            </button>
+          </>
+        )}
+        {currentView === 'lesson' && selectedModule && (
+          <>
+            <svg className="w-3 h-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+            </svg>
+            <span className="text-xs font-semibold" style={{ color: '#0f4c5c' }}>{selectedModule.title}</span>
+          </>
+        )}
+      </div>
     </div>
   )
 

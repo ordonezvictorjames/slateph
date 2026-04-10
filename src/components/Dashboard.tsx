@@ -28,8 +28,9 @@ import BadgesPage from '@/components/pages/BadgesPage'
 import GradesPage from '@/components/pages/GradesPage'
 import CoursesPage from '@/components/pages/CoursesPage'
 import ActivitiesPage from '@/components/pages/ActivitiesPage'
+import WhatsNewPage from '@/components/pages/WhatsNewPage'
 
-export type PageType = 'dashboard' | 'user-management' | 'course-management' | 'my-courses' | 'courses' | 'activities' | 'schedule' | 'analytics' | 'profile' | 'settings' | 'system-tracker' | 'code-generator' | 'feature-requests' | 'tasks' | 'games' | 'activity' | 'ai-assistant' | 'library' | 'badges' | 'grades'
+export type PageType = 'dashboard' | 'user-management' | 'course-management' | 'my-courses' | 'courses' | 'activities' | 'whats-new' | 'schedule' | 'analytics' | 'profile' | 'settings' | 'system-tracker' | 'code-generator' | 'feature-requests' | 'tasks' | 'games' | 'activity' | 'ai-assistant' | 'library' | 'badges' | 'grades'
 
 export default function Dashboard() {
   const { signOut, user } = useAuth()
@@ -79,6 +80,7 @@ export default function Dashboard() {
       case 'my-courses': return <MyCoursesPage initialCourseId={initialCourseId} />
       case 'courses': return <CoursesPage />
       case 'activities': return <ActivitiesPage />
+      case 'whats-new': return <WhatsNewPage />
       case 'schedule': return <SchedulePage />
       case 'analytics': return <AnalyticsPage />
       case 'profile': return <ProfilePage userId={profileUserId} onNavigateToProfile={navigateToProfile} />
@@ -105,11 +107,6 @@ export default function Dashboard() {
           hideHamburger={showChat || showAI || showPython}
         />
         <div className="flex-1 flex flex-col ml-0 lg:ml-16">
-          <div className="w-full overflow-hidden py-1 border-b border-gray-100" style={{ backgroundColor: '#fff' }}>
-            <span className="animate-marquee text-xs font-medium tracking-wide" style={{ color: '#006d77' }}>
-              <span style={{ color: '#dc2626' }}>Beta Test Phase</span> — Encounter any issues? Report them via Bugs &amp; Requests in the sidebar.
-            </span>
-          </div>
           <main className="flex-1">{renderCurrentPage()}</main>
         </div>
         {/* Floating Action Menu */}
@@ -122,6 +119,13 @@ export default function Dashboard() {
         <PythonPlayground isOpen={showPython} onClose={() => setShowPython(false)} />
         <AIAssistant isOpen={showAI} onClose={() => setShowAI(false)} />
         <CourseChat isOpen={showChat} onClose={() => setShowChat(false)} onNavigateToProfile={navigateToProfile} />
+      </div>
+
+      {/* Beta Test Label - fixed bottom center */}
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+        <span className="bg-red-600 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg tracking-widest uppercase">
+          Beta Test
+        </span>
       </div>
     </>
   )

@@ -2278,59 +2278,6 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             )}
 
             {/* System Overview - Only for Admin/Developer */}
-            {!(userRole === 'admin' || userRole === 'developer') && (
-            <>
-              <p className="text-sm font-semibold text-gray-700 mb-1">My Progress</p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="bg-white rounded-xl p-4 flex items-center gap-3 border" style={{ borderColor: '#0f4c5c' }}>
-                  <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#0f4c5c' }}>
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-xl font-bold" style={{ color: '#0f4c5c' }}>{courses.filter(c => c.is_user_enrolled).length || stats.totalCourses}</p>
-                    <p className="text-xs text-gray-500 font-medium">Enrolled Courses</p>
-                  </div>
-                </div>
-                <div className="bg-white rounded-xl p-4 flex items-center gap-3 border" style={{ borderColor: '#0f4c5c' }}>
-                  <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#0f4c5c' }}>
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-xl font-bold" style={{ color: '#0f4c5c' }}>{stats.completedLessons}</p>
-                    <p className="text-xs text-gray-500 font-medium">Completed Lessons</p>
-                  </div>
-                </div>
-                <div className="bg-white rounded-xl p-4 flex items-center gap-3 border" style={{ borderColor: '#0f4c5c' }}>
-                  <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#0f4c5c' }}>
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-xl font-bold" style={{ color: '#0f4c5c' }}>{stats.completedAssignments}</p>
-                    <p className="text-xs text-gray-500 font-medium">Completed Modules</p>
-                  </div>
-                </div>
-                <div className="bg-white rounded-xl p-4 flex items-center gap-3 border" style={{ borderColor: '#0f4c5c' }}>
-                  <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#0f4c5c' }}>
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-xl font-bold" style={{ color: '#0f4c5c' }}>{stats.totalActivities}</p>
-                    <p className="text-xs text-gray-500 font-medium">Activities</p>
-                  </div>
-                </div>
-              </div>
-            </>
-            )}
-
-            {/* System Overview - Only for Admin/Developer */}
             {(userRole === 'admin' || userRole === 'developer') && (
             <>
               <p className="text-sm font-semibold text-gray-700 mb-1">System Overview</p>

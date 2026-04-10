@@ -432,20 +432,22 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
     <div className="p-6 space-y-4">
       {/* Breadcrumb */}
       {currentView !== 'courses' && (
-        <div className="flex items-center gap-2 text-sm text-gray-500">
-          <button onClick={handleBackToCourses} className="hover:text-gray-700">My Courses</button>
-          {selectedCourse && (
-            <>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-              <button onClick={handleBackToSubjects} className={`hover:text-gray-700 ${currentView === 'subjects' ? 'text-gray-900 font-medium' : ''}`}>{selectedCourse.title}</button>
-            </>
-          )}
-          {currentView === 'lesson' && selectedModule && (
-            <>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-              <span className="text-gray-900 font-medium">{selectedModule.title}</span>
-            </>
-          )}
+        <div className="flex justify-center mb-2">
+          <div className="inline-flex items-center gap-1 bg-white border border-gray-200 rounded-full px-4 py-1.5 shadow-sm">
+            <button onClick={handleBackToCourses} className="text-xs font-medium text-gray-500 hover:text-gray-900 transition-colors">Learning Hub</button>
+            {selectedCourse && (
+              <>
+                <svg className="w-3 h-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
+                <button onClick={handleBackToSubjects} className={`text-xs font-medium transition-colors ${currentView === 'subjects' ? 'font-semibold' : 'text-gray-500 hover:text-gray-900'}`} style={currentView === 'subjects' ? { color: '#0f4c5c' } : {}}>{selectedCourse.title}</button>
+              </>
+            )}
+            {currentView === 'lesson' && selectedModule && (
+              <>
+                <svg className="w-3 h-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
+                <span className="text-xs font-semibold" style={{ color: '#0f4c5c' }}>{selectedModule.title}</span>
+              </>
+            )}
+          </div>
         </div>
       )}
 
