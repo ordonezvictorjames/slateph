@@ -34,7 +34,7 @@ export default function CoursesPage() {
         setLoading(false)
         return
       }
-      setCourses((data || []).filter(c => c.status !== 'inactive' && c.status !== 'draft'))
+      setCourses((data || []).filter((c: Course) => c.status !== 'inactive' && c.status !== 'draft'))
       setLoading(false)
     }
     fetchCourses()
