@@ -36,7 +36,10 @@ export default function Dashboard() {
   const { signOut, user } = useAuth()
   const [currentPage, setCurrentPage] = useState<PageType>(() => {
     if (typeof window !== 'undefined') {
-      return (localStorage.getItem('currentPage') as PageType) || 'dashboard'
+      const saved = localStorage.getItem('currentPage') as PageType
+      const validPages: PageType[] = ['dashboard','user-management','course-management','my-courses','courses','activities','whats-new','schedule','analytics','profile','settings','system-tracker','code-generator','feature-requests','tasks','games','activity','ai-assistant','library','badges','grades']
+      if (saved && validPages.includes(saved)) return saved
+      localStorage.removeItem('currentPage')
     }
     return 'dashboard'
   })
