@@ -41,8 +41,7 @@ export default function CoursesPage() {
   }, [user?.id])
 
   const filtered = courses.filter(c =>
-    c.title.toLowerCase().includes(search.toLowerCase()) ||
-    (c.description || '').toLowerCase().includes(search.toLowerCase())
+    c.title.toLowerCase().includes(search.toLowerCase())
   )
 
   const typeLabel: Record<string, string> = {
