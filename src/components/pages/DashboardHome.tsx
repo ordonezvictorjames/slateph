@@ -304,7 +304,7 @@ function InfraUsageCards() {
 
       {/* WebSocket Connections */}
       {(() => {
-        const CHANNELS_PER_USER = 7
+        const CHANNELS_PER_USER = 2
         const FREE_LIMIT = 200
         const estimatedTotal = onlineUsers * CHANNELS_PER_USER
         const wsPct = Math.min(100, (estimatedTotal / FREE_LIMIT) * 100)
@@ -365,22 +365,6 @@ function UpcomingScheduleList() {
 
   useEffect(() => {
     fetchUpcomingSchedules()
-
-    // Set up real-time subscription for course schedules
-    const schedulesSubscription = supabase
-      .channel('schedules-changes')
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'course_schedules' },
-        () => {
-          fetchUpcomingSchedules()
-        }
-      )
-      .subscribe()
-
-    // Cleanup subscription on unmount
-    return () => {
-      supabase.removeChannel(schedulesSubscription)
-    }
   }, [user])
 
   const fetchUpcomingSchedules = async () => {
@@ -643,7 +627,7 @@ function RecentActivityList({ role }: { role: string }) {
           )
         `)
         .order('created_at', { ascending: false })
-        .limit(3)
+        .limit(7)
 
       if (error) {
         console.error('Error fetching recent activities:', error.message, error.code, error.details)
@@ -1852,15 +1836,13 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             </div>
 
             {/* All Users Card - Desktop only, all roles */}
-            <p className="hidden xl:block text-sm font-semibold text-gray-700 mb-2">All Users</p>
             <div className="hidden xl:block bg-white rounded-xl shadow-sm overflow-hidden">
-              <div className="overflow-y-auto scrollbar-autohide" style={{ maxHeight: '380px' }}>
+              <div className="overflow-y-auto scrollbar-autohide" style={{ maxHeight: '320px' }}>
                 <OnlineUsers />
               </div>
             </div>
 
             {/* Recent Activity - Desktop only, all roles */}
-            <p className="hidden xl:block text-sm font-semibold text-gray-700 mb-2">Recent Activity</p>
             <div className="hidden xl:block bg-white rounded-lg p-4 transition-all duration-300">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-xs font-semibold text-gray-800">Recent Activity</h3>
@@ -1873,7 +1855,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                   </svg>
                 </button>
               </div>
-              <div className="overflow-y-auto scrollbar-autohide" style={{ maxHeight: '320px' }}>
+              <div className="overflow-y-auto scrollbar-autohide" style={{ maxHeight: '360px' }}>
                 <RecentActivityList role={userRole} />
               </div>
             </div>
@@ -1909,23 +1891,15 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                   </button>
                 </div>
               </div>
-              {/* Decorative image */}
-              <div className="flex-shrink-0 hidden sm:block">
-                <img
-                  src="/book.png"
-                  alt=""
-                  aria-hidden="true"
-                  className="h-28 object-contain pointer-events-none select-none"
-                />
-              </div>
             </div>
 
 
             {/* Learning Progress Cards - hidden for admin/developer - moved below courses */}
 
             {/* Today's Events + Upcoming Schedule + Tasks - 3-col row above courses (desktop) */}
-            <p className="text-sm font-semibold text-gray-700 mb-1">Overview</p>
-            <div className="hidden sm:grid grid-cols-3 gap-4">              {/* Today's Events */}
+            <div className="bg-white rounded-xl p-4 shadow-sm">
+              <p className="text-sm font-semibold text-gray-700 mb-3">Overview</p>
+              <div className="hidden sm:grid grid-cols-3 gap-4">              {/* Today's Events */}
               <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex flex-col">
                 <div className="flex items-center justify-between mb-3 flex-shrink-0">
                   <div className="flex items-center gap-2">
@@ -2076,8 +2050,9 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 </div>
               )}
             </div>
+            </div>
             {/* All Courses -- split for students/instructors, full list for others */}
-            <p className="text-sm font-semibold text-gray-700 mb-1">Courses</p>
+            <div className="bg-white rounded-xl p-4 shadow-sm">
             {(() => {
               const isStudentOrInstructor = userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student' || userRole === 'scholar' || userRole === 'instructor'
               const myCourses = isStudentOrInstructor ? allCourses.filter(c => c.is_user_enrolled) : []
@@ -2111,13 +2086,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                           </div>
                           <div className="px-3 pb-3 flex flex-col flex-1">
                             <p className="text-sm font-bold text-gray-900 line-clamp-2 leading-snug mb-1">{course.title}</p>
-                            <p className="text-[11px] text-gray-400 mb-2">{course.total_enrollments ?? 0} enrolled</p>
-                            <div className="border-t border-gray-100 my-1.5" />
-                            <div className="flex items-center justify-between">
-                              <div className="flex flex-col items-center gap-0.5"><div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: '#fff3e0' }}><svg className="w-3.5 h-3.5" fill="none" stroke="#f97316" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg></div><span className="text-[9px] text-gray-500">{subjectCount}</span></div>
-                              <div className="flex flex-col items-center gap-0.5"><div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: '#e0f2fe' }}><svg className="w-3.5 h-3.5" fill="none" stroke="#0ea5e9" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg></div><span className="text-[9px] text-gray-500">{moduleCount}</span></div>
-                              <div className="flex flex-col items-center gap-0.5"><div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: '#ede9fe' }}><svg className="w-3.5 h-3.5" fill="none" stroke="#8b5cf6" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg></div><span className="text-[9px] text-gray-500">{activityCount}</span></div>
-                            </div>
+                            <p className="text-[11px] text-gray-400">{course.total_enrollments ?? 0} enrolled</p>
                           </div>
                         </div>
                       )
@@ -2153,13 +2122,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                         </div>
                         <div className="px-3 pb-3 flex flex-col flex-1">
                           <p className="text-sm font-bold text-gray-900 line-clamp-2 leading-snug mb-1">{course.title}</p>
-                          <p className="text-[11px] text-gray-400 mb-2">{course.total_enrollments ?? 0} enrolled student{(course.total_enrollments ?? 0) !== 1 ? 's' : ''}</p>
-                          <div className="border-t border-gray-100 my-2" />
-                          <div className="flex items-center justify-between">
-                            <div className="flex flex-col items-center gap-1"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: '#fff3e0' }}><svg className="w-4 h-4" fill="none" stroke="#f97316" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg></div><span className="text-[10px] text-gray-500 font-medium">{subjectCount} Subjects</span></div>
-                            <div className="flex flex-col items-center gap-1"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: '#e0f2fe' }}><svg className="w-4 h-4" fill="none" stroke="#0ea5e9" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg></div><span className="text-[10px] text-gray-500 font-medium">{moduleCount} Modules</span></div>
-                            <div className="flex flex-col items-center gap-1"><div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: '#ede9fe' }}><svg className="w-4 h-4" fill="none" stroke="#8b5cf6" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg></div><span className="text-[10px] text-gray-500 font-medium">{activityCount} Activities</span></div>
-                          </div>
+                          <p className="text-[11px] text-gray-400">{course.total_enrollments ?? 0} enrolled student{(course.total_enrollments ?? 0) !== 1 ? 's' : ''}</p>
                         </div>
                       </div>
                     )
@@ -2172,19 +2135,29 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 <>
                   {isStudentOrInstructor && myCourses.length > 0 && (
                     <div>
-                      <h3 className="text-sm font-bold text-gray-900 mb-3">{myLabel}</h3>
-                      {renderCarousel(myCourses, '')}
-                      {renderGrid(myCourses, '')}
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-sm font-bold text-gray-900">{myLabel}</h3>
+                        <button onClick={() => onNavigate('my-courses')} className="text-xs font-medium hover:opacity-80" style={{ color: '#0f4c5c' }}>See All</button>
+                      </div>
+                      {renderCarousel(myCourses.slice(0, 4), '')}
+                      {renderGrid(myCourses.slice(0, 4), '')}
                     </div>
                   )}
                   <div className="bg-white rounded-xl p-4">
-                    {isStudentOrInstructor && <h3 className="text-sm font-bold text-gray-900 mb-3">Available Courses</h3>}
-                    {renderCarousel(otherCourses, 'No courses available.')}
-                    {renderGrid(otherCourses, 'No courses available.')}
+                    <div className="flex items-center justify-between mb-3">
+                      {isStudentOrInstructor
+                        ? <h3 className="text-sm font-bold text-gray-900">Available Courses</h3>
+                        : <h3 className="text-sm font-bold text-gray-900">All Courses</h3>
+                      }
+                      <button onClick={() => onNavigate(userRole === 'admin' || userRole === 'developer' ? 'course-management' : 'courses')} className="text-xs font-medium hover:opacity-80" style={{ color: '#0f4c5c' }}>See All</button>
+                    </div>
+                    {renderCarousel(otherCourses.slice(0, 4), 'No courses available.')}
+                    {renderGrid(otherCourses.slice(0, 4), 'No courses available.')}
                   </div>
                 </>
               )
             })()}
+            </div>
 
             {/* Mobile: schedule summary cards -- all roles */}
             {/* Admin/Developer: 2x2 grid with Recent Activity, Today's Events, Tasks, Upcoming */}
@@ -2279,8 +2252,9 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
             {/* System Overview - Only for Admin/Developer */}
             {(userRole === 'admin' || userRole === 'developer') && (
-            <>
-              <p className="text-sm font-semibold text-gray-700 mb-1">System Overview</p>
+            <div className="bg-white rounded-xl p-4 shadow-sm">
+              <p className="text-sm font-semibold text-gray-700 mb-3">System Overview</p>
+              <>
               {/* Infrastructure Usage -- Developer only */}
               {userRole === 'developer' && (
                 <InfraUsageCards />
@@ -2378,8 +2352,8 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                     </button>
                   </div>
-                  {/* Stats Grid - 2 col x 3 rows */}
-                  <div className="grid grid-cols-2 gap-1.5 flex-1">
+                  {/* Stats Grid - 2 rows x 3 cols */}
+                  <div className="grid grid-cols-3 gap-1.5 flex-1">
                     <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-gray-50 text-center flex-1">
                       <span className="text-sm font-bold" style={{ color: '#1f7a8c' }}>{stats.totalCourses}</span>
                       <span className="text-[10px] text-gray-500 mt-0.5">Courses</span>
@@ -2433,27 +2407,27 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                     </button>
                   </div>
 
-                  {/* Role grid - 2 col x 4 rows */}
-                  <div className="grid grid-cols-2 gap-1.5">
+                  {/* Role grid - 2 rows x 4 cols: row1=students, row2=others */}
+                  <div className="grid grid-cols-4 gap-1.5">
                     <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-green-50 text-center">
                       <span className="text-sm font-bold text-green-700">{userStats.totalSHSStudents}</span>
-                      <span className="text-[10px] text-gray-500 mt-0.5">SHS Students</span>
+                      <span className="text-[10px] text-gray-500 mt-0.5">SHS</span>
                     </div>
                     <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-yellow-50 text-center">
                       <span className="text-sm font-bold text-yellow-700">{userStats.totalJHSStudents}</span>
-                      <span className="text-[10px] text-gray-500 mt-0.5">JHS Students</span>
+                      <span className="text-[10px] text-gray-500 mt-0.5">JHS</span>
                     </div>
                     <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-orange-50 text-center">
                       <span className="text-sm font-bold text-orange-700">{userStats.totalCollegeStudents}</span>
-                      <span className="text-[10px] text-gray-500 mt-0.5">College Students</span>
+                      <span className="text-[10px] text-gray-500 mt-0.5">College</span>
                     </div>
                     <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-purple-50 text-center">
                       <span className="text-sm font-bold text-purple-700">{userStats.totalScholars}</span>
-                      <span className="text-[10px] text-gray-500 mt-0.5">Scholars</span>
+                      <span className="text-[10px] text-gray-500 mt-0.5">Scholar</span>
                     </div>
                     <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-blue-50 text-center">
                       <span className="text-sm font-bold text-blue-700">{userStats.totalInstructors}</span>
-                      <span className="text-[10px] text-gray-500 mt-0.5">Instructors</span>
+                      <span className="text-[10px] text-gray-500 mt-0.5">Instructor</span>
                     </div>
                     <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-red-50 text-center">
                       <span className="text-sm font-bold text-red-700">{userStats.totalAdmins}</span>
@@ -2465,7 +2439,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                     </div>
                     <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-gray-50 text-center">
                       <span className="text-sm font-bold text-gray-600">{userStats.totalGuests}</span>
-                      <span className="text-[10px] text-gray-500 mt-0.5">Guests</span>
+                      <span className="text-[10px] text-gray-500 mt-0.5">Guest</span>
                     </div>
                   </div>
 
@@ -2473,9 +2447,10 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 </div>
               </div>
             </>
+            </div>
             )}
             {userRole === 'instructor' && (
-            <div>
+            <div className="bg-white rounded-xl p-4 shadow-sm">
               <div className="flex items-center justify-between mb-4 md:mb-6">
                 <h2 className="text-sm font-bold text-black">My Teaching Overview</h2>
               </div>

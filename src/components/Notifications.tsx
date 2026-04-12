@@ -34,26 +34,15 @@ export default function Notifications({ onNavigateToProfile }: NotificationsProp
   useEffect(() => {
     if (user?.id) {
       loadUnreadCount()
-      
-      // Set up real-time subscription for new notifications
-      const channel = supabase
-        .channel('notifications-changes')
-        .on('postgres_changes',
-          { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
-          () => {
-            loadUnreadCount()
-            if (showDropdown) {
-              loadNotifications()
-            }
-          }
-        )
-        .subscribe()
-
-      return () => {
-        supabase.removeChannel(channel)
-      }
     }
-  }, [user?.id, showDropdown])
+  }, [user?.id])
+
+  // Reload when dropdown opens
+  useEffect(() => {
+    if (showDropdown && user?.id) {
+      loadNotifications()
+    }
+  }, [showDropdown])
 
   // Close dropdown when clicking outside
   useEffect(() => {

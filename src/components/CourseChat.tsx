@@ -21,6 +21,7 @@ interface CourseChatMessage {
 interface Course {
   id: string
   title: string
+  thumbnail_url?: string | null
 }
 
 interface LoungeChat {
@@ -45,8 +46,38 @@ export default function CourseChat({ isOpen, onClose, onNavigateToProfile }: Cou
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [showCourseList, setShowCourseList] = useState(false)
+  const [pastedImage, setPastedImage] = useState<{ file: File; preview: string } | null>(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
+
+  // Handle paste event for images
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = Array.from(e.clipboardData.items)
+    const imageItem = items.find(item => item.type.startsWith('image/'))
+    if (imageItem) {
+      e.preventDefault()
+      const file = imageItem.getAsFile()
+      if (!file) return
+      const preview = URL.createObjectURL(file)
+      setPastedImage({ file, preview })
+    }
+  }
+
+  const uploadImage = async (file: File): Promise<string | null> => {
+    try {
+      setUploadingImage(true)
+      const ext = file.type.split('/')[1] || 'png'
+      const fileName = `chat-images/${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`
+      const { error } = await supabase.storage.from('documents').upload(fileName, file, {
+        contentType: file.type, cacheControl: '86400', upsert: false,
+      })
+      if (error) { console.error('Image upload error:', error); return null }
+      const { data: { publicUrl } } = supabase.storage.from('documents').getPublicUrl(fileName)
+      return publicUrl
+    } catch { return null }
+    finally { setUploadingImage(false) }
+  }
 
   const loungeChat: LoungeChat = {
     id: 'lounge',
@@ -149,7 +180,7 @@ export default function CourseChat({ isOpen, onClose, onNavigateToProfile }: Cou
         // Admin can access all courses
         const { data, error } = await supabase
           .from('courses')
-          .select('id, title')
+          .select('id, title, thumbnail_url')
           .eq('status', 'active')
           .order('title')
 
@@ -174,7 +205,7 @@ export default function CourseChat({ isOpen, onClose, onNavigateToProfile }: Cou
           const courseIds = Array.from(new Set(subjectData.map((s: any) => s.course_id).filter(Boolean)))
           const { data: courseData, error: courseError } = await supabase
             .from('courses')
-            .select('id, title')
+            .select('id, title, thumbnail_url')
             .in('id', courseIds)
             .eq('status', 'active')
             .order('title')
@@ -190,7 +221,7 @@ export default function CourseChat({ isOpen, onClose, onNavigateToProfile }: Cou
         // Developers see all active courses (same as admin)
         const { data, error } = await supabase
           .from('courses')
-          .select('id, title')
+          .select('id, title, thumbnail_url')
           .eq('status', 'active')
           .order('title')
 
@@ -215,7 +246,7 @@ export default function CourseChat({ isOpen, onClose, onNavigateToProfile }: Cou
           const courseIds = Array.from(new Set(enrollData.map((e: any) => e.course_id).filter(Boolean)))
           const { data: courseData, error: courseError } = await supabase
             .from('courses')
-            .select('id, title')
+            .select('id, title, thumbnail_url')
             .in('id', courseIds)
             .eq('status', 'active')
             .order('title')
@@ -308,29 +339,34 @@ export default function CourseChat({ isOpen, onClose, onNavigateToProfile }: Cou
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newMessage.trim() || !user || !selectedCourse || sending) return
+    if ((!newMessage.trim() && !pastedImage) || !user || !selectedCourse || sending) return
 
     const isLounge = 'isLounge' in selectedCourse && selectedCourse.isLounge
 
     setSending(true)
     try {
-      console.log('Attempting to send message:', {
-        isLounge,
-        course_id: isLounge ? null : selectedCourse.id,
-        sender_id: user.id,
-        message: newMessage.trim()
-      })
+      let messageText = newMessage.trim()
+
+      // Upload image if pasted
+      if (pastedImage) {
+        const imageUrl = await uploadImage(pastedImage.file)
+        if (imageUrl) {
+          messageText = messageText ? `${messageText}\n[image:${imageUrl}]` : `[image:${imageUrl}]`
+        }
+        URL.revokeObjectURL(pastedImage.preview)
+        setPastedImage(null)
+      }
 
       const tableName = isLounge ? 'lounge_chat_messages' : 'course_chat_messages'
       const messageData = isLounge
         ? {
             sender_id: user.id,
-            message: newMessage.trim()
+            message: messageText
           }
         : {
             course_id: selectedCourse.id,
             sender_id: user.id,
-            message: newMessage.trim()
+            message: messageText
           }
 
       const { data, error } = await supabase
@@ -364,6 +400,28 @@ export default function CourseChat({ isOpen, onClose, onNavigateToProfile }: Cou
       }
 
       console.log('Message sent successfully:', data)
+
+      // Optimistically add the sent message to local state immediately
+      if (data && data[0]) {
+        const sentMsg: CourseChatMessage = {
+          id: data[0].id,
+          course_id: isLounge ? null : selectedCourse.id as string,
+          sender_id: user.id,
+          message: messageText,
+          created_at: data[0].created_at || new Date().toISOString(),
+          user_first_name: user.profile?.first_name || '',
+          user_last_name: user.profile?.last_name || '',
+          user_avatar_url: (user.profile as any)?.avatar_url || null,
+          user_role: user.profile?.role || '',
+        }
+        setMessages(prev => {
+          // Avoid duplicate if realtime already added it
+          if (prev.some(m => m.id === sentMsg.id)) return prev
+          return [...prev, sentMsg]
+        })
+        setTimeout(scrollToBottom, 100)
+      }
+
       setNewMessage('')
     } catch (error) {
       console.error('Unexpected error sending message:', error)
@@ -404,7 +462,7 @@ export default function CourseChat({ isOpen, onClose, onNavigateToProfile }: Cou
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-0 sm:p-2 md:p-4">
       <div className="bg-white rounded-none sm:rounded-xl w-full h-full sm:h-[95vh] sm:max-w-6xl md:h-[600px] flex flex-col shadow-2xl">
         {/* Header */}
-        <div className="p-2 sm:p-3 md:p-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-blue-500 to-purple-600">
+        <div className="p-2 sm:p-3 md:p-4 border-b border-gray-200 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, #0f4c5c 0%, #1f7a8c 100%)' }}>
           <div className="flex items-center space-x-2">
             {/* Mobile: Back/Menu button */}
             <button
@@ -417,15 +475,15 @@ export default function CourseChat({ isOpen, onClose, onNavigateToProfile }: Cou
             </button>
             
             <div className="w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 bg-white rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0">
-              <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" style={{ color: '#0f4c5c' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
             </div>
             <div className="min-w-0">
-              <h2 className="text-sm sm:text-base md:text-lg font-semibold text-white truncate">
+              <h2 className="text-xs sm:text-sm font-semibold text-white truncate">
                 {selectedCourse ? selectedCourse.title : 'Course Chat'}
               </h2>
-              <p className="text-[9px] sm:text-[10px] md:text-xs text-blue-100">Real-time messaging</p>
+
             </div>
           </div>
           <button
@@ -461,16 +519,15 @@ export default function CourseChat({ isOpen, onClose, onNavigateToProfile }: Cou
                     setShowCourseList(false)
                   }}
                   className={`w-full p-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 ${
-                    selectedCourse?.id === 'lounge' ? 'bg-purple-50 border-l-4 border-l-purple-500' : ''
+                    selectedCourse?.id === 'lounge' ? 'bg-teal-50 border-l-4 border-l-[#0f4c5c]' : ''
                   }`}
                 >
                   <div className="flex items-center space-x-2">
-                    <svg className="w-5 h-5 text-purple-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-[#0f4c5c] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-sm text-gray-900">Lounge</div>
-                      <div className="text-xs text-gray-500 truncate">Global chat for everyone</div>
                     </div>
                   </div>
                 </button>
@@ -493,10 +550,18 @@ export default function CourseChat({ isOpen, onClose, onNavigateToProfile }: Cou
                         setShowCourseList(false)
                       }}
                       className={`w-full p-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 ${
-                        selectedCourse?.id === course.id ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
+                        selectedCourse?.id === course.id ? 'bg-teal-50 border-l-4 border-l-[#0f4c5c]' : ''
                       }`}
                     >
-                      <div className="font-medium text-sm text-gray-900 truncate">{course.title}</div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
+                          {course.thumbnail_url
+                            ? <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover" />
+                            : <div className="w-full h-full flex items-center justify-center" style={{ background: '#0f4c5c' }}><svg className="w-4 h-4 text-white/70" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg></div>
+                          }
+                        </div>
+                        <div className="font-medium text-sm text-gray-900 truncate">{course.title}</div>
+                      </div>
                     </button>
                   ))
                 )}
@@ -514,16 +579,15 @@ export default function CourseChat({ isOpen, onClose, onNavigateToProfile }: Cou
               <button
                 onClick={() => setSelectedCourse(loungeChat)}
                 className={`w-full p-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 ${
-                  selectedCourse?.id === 'lounge' ? 'bg-purple-50 border-l-4 border-l-purple-500' : ''
+                  selectedCourse?.id === 'lounge' ? 'bg-teal-50 border-l-4 border-l-[#0f4c5c]' : ''
                 }`}
               >
                 <div className="flex items-center space-x-2">
-                  <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-[#0f4c5c]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
                   <div className="flex-1">
                     <div className="font-medium text-sm text-gray-900">Lounge</div>
-                    <div className="text-xs text-gray-500">Global chat for everyone</div>
                   </div>
                 </div>
               </button>
@@ -543,10 +607,18 @@ export default function CourseChat({ isOpen, onClose, onNavigateToProfile }: Cou
                     key={course.id}
                     onClick={() => setSelectedCourse(course)}
                     className={`w-full p-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 ${
-                      selectedCourse?.id === course.id ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
+                      selectedCourse?.id === course.id ? 'bg-teal-50 border-l-4 border-l-[#0f4c5c]' : ''
                     }`}
                   >
-                    <div className="font-medium text-sm text-gray-900 truncate">{course.title}</div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
+                        {course.thumbnail_url
+                          ? <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover" />
+                          : <div className="w-full h-full flex items-center justify-center" style={{ background: '#0f4c5c' }}><svg className="w-4 h-4 text-white/70" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg></div>
+                        }
+                      </div>
+                      <div className="font-medium text-sm text-gray-900 truncate">{course.title}</div>
+                    </div>
                   </button>
                 ))
               )}
@@ -582,7 +654,7 @@ export default function CourseChat({ isOpen, onClose, onNavigateToProfile }: Cou
                                   {msg.user_avatar_url}
                                 </div>
                               ) : (
-                                <div className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-[10px] sm:text-xs md:text-sm font-semibold">
+                                <div className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-[#0f4c5c] to-[#1f7a8c] flex items-center justify-center text-white text-[10px] sm:text-xs md:text-sm font-semibold">
                                   {msg.user_first_name.charAt(0)}{msg.user_last_name.charAt(0)}
                                 </div>
                               )}
@@ -614,11 +686,24 @@ export default function CourseChat({ isOpen, onClose, onNavigateToProfile }: Cou
                               <div
                                 className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg ${
                                   isOwnMessage
-                                    ? 'bg-primary-500 text-white'
+                                    ? 'text-white'
                                     : 'bg-gray-100 text-gray-900'
                                 }`}
+                                style={isOwnMessage ? { background: '#0f4c5c' } : {}}
                               >
-                                <p className="text-xs sm:text-sm whitespace-pre-wrap break-words">{msg.message}</p>
+                                {msg.message.includes('[image:') ? (
+                                  <div className="space-y-1">
+                                    {msg.message.split('\n').map((part, i) => {
+                                      const imgMatch = part.match(/^\[image:(.*)\]$/)
+                                      if (imgMatch) {
+                                        return <img key={i} src={imgMatch[1]} alt="shared" className="max-w-[200px] rounded-lg cursor-pointer" onClick={() => window.open(imgMatch[1], '_blank')} />
+                                      }
+                                      return part ? <p key={i} className="text-xs sm:text-sm whitespace-pre-wrap break-words">{part}</p> : null
+                                    })}
+                                  </div>
+                                ) : (
+                                  <p className="text-xs sm:text-sm whitespace-pre-wrap break-words">{msg.message}</p>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -631,33 +716,43 @@ export default function CourseChat({ isOpen, onClose, onNavigateToProfile }: Cou
 
                 {/* Message Input */}
                 <form onSubmit={handleSendMessage} className="p-2 sm:p-3 md:p-4 border-t border-gray-200">
+                  {/* Pasted image preview */}
+                  {pastedImage && (
+                    <div className="mb-2 relative inline-block">
+                      <img src={pastedImage.preview} alt="paste preview" className="max-h-24 rounded-lg border border-gray-200" />
+                      <button type="button" onClick={() => { URL.revokeObjectURL(pastedImage.preview); setPastedImage(null) }}
+                        className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs leading-none">×</button>
+                    </div>
+                  )}
                   <div className="flex items-end space-x-1.5 sm:space-x-2">
                     <div className="flex-1 min-w-0">
                       <textarea
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
+                        onPaste={handlePaste}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && !e.shiftKey) {
                             e.preventDefault()
                             handleSendMessage(e)
                           }
                         }}
-                        placeholder="Type a message..."
-                        className="w-full px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-xs sm:text-sm md:text-base"
+                        placeholder="Type a message or paste an image..."
+                        className="w-full px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0f4c5c] focus:border-transparent resize-none text-xs sm:text-sm md:text-base"
                         rows={2}
                         maxLength={2000}
-                        disabled={sending}
+                        disabled={sending || uploadingImage}
                       />
                       <div className="text-[9px] sm:text-[10px] md:text-xs text-gray-400 mt-0.5 sm:mt-1">
-                        {newMessage.length}/2000
+                        {newMessage.length}/2000 {uploadingImage && '· Uploading image...'}
                       </div>
                     </div>
                     <button
                       type="submit"
-                      disabled={!newMessage.trim() || sending}
-                      className="px-3 sm:px-4 md:px-6 py-1.5 sm:py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed h-[38px] sm:h-[42px] text-xs sm:text-sm md:text-base flex-shrink-0"
+                      disabled={(!newMessage.trim() && !pastedImage) || sending || uploadingImage}
+                      className="px-3 sm:px-4 md:px-6 py-1.5 sm:py-2 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed h-[38px] sm:h-[42px] text-xs sm:text-sm md:text-base flex-shrink-0"
+                      style={{ background: '#0f4c5c' }}
                     >
-                      {sending ? (
+                      {sending || uploadingImage ? (
                         <ButtonLoading />
                       ) : (
                         'Send'

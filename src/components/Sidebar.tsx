@@ -60,7 +60,6 @@ export default function Sidebar({ currentPage, onPageChange, hideHamburger = fal
 
         if (error) {
           console.error('Failed to load section states:', error)
-          // If there's an error, keep all sections enabled (default behavior)
           return
         }
 
@@ -73,32 +72,10 @@ export default function Sidebar({ currentPage, onPageChange, hideHamburger = fal
         }
       } catch (error) {
         console.error('Failed to load section states:', error)
-        // Keep all sections enabled on error
       }
     }
 
     loadSectionStates()
-
-    // Subscribe to real-time changes
-    const channel = supabase
-      .channel('section_settings_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'section_settings'
-        },
-        (payload: any) => {
-          // Reload section states when changes occur
-          loadSectionStates()
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
   }, [])
 
   // Helper function to check if a section is enabled

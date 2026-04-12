@@ -66,7 +66,7 @@ export default function Dashboard() {
     onIdle: () => {
       signOut()
     },
-    idleTime: 30 * 60 * 1000
+    idleTime: 15 * 60 * 1000
   })
 
   const renderCurrentPage = () => {

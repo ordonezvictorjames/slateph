@@ -68,33 +68,9 @@ export default function NotificationBell() {
     }
   }
 
-  // Subscribe to real-time notifications
   useEffect(() => {
     if (!user?.id) return
-
     fetchNotifications()
-
-    // Subscribe to new notifications
-    const channel = supabase
-      .channel('notifications_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload: any) => {
-          console.log('Notification change:', payload)
-          fetchNotifications()
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
   }, [user?.id])
 
   // Close dropdown when clicking outside
