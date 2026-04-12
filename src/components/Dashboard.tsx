@@ -34,7 +34,13 @@ export type PageType = 'dashboard' | 'user-management' | 'course-management' | '
 
 export default function Dashboard() {
   const { signOut, user } = useAuth()
-  const [currentPage, setCurrentPage] = useState<PageType>('dashboard')
+  const [currentPage, setCurrentPage] = useState<PageType>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('currentPage') as PageType) || 'dashboard'
+    }
+    return 'dashboard'
+  })
+  const [refreshKey, setRefreshKey] = useState(0)
   const [profileUserId, setProfileUserId] = useState<string | undefined>(undefined)
   const [initialCourseId, setInitialCourseId] = useState<string | undefined>(undefined)
   const [isPageTransitioning, setIsPageTransitioning] = useState(false)
@@ -51,6 +57,7 @@ export default function Dashboard() {
   const navigateToPage = (page: PageType, courseId?: string) => {
     setInitialCourseId(courseId)
     setCurrentPage(page)
+    localStorage.setItem('currentPage', page)
   }
 
   // Page transition loading effect
@@ -64,6 +71,7 @@ export default function Dashboard() {
 
   useIdleTimeout({
     onIdle: () => {
+      localStorage.removeItem('currentPage')
       signOut()
     },
     idleTime: 15 * 60 * 1000
@@ -74,26 +82,26 @@ export default function Dashboard() {
     const userRole = user?.profile?.role || 'trainee'
     
     switch (currentPage) {
-      case 'dashboard': return <DashboardHome onNavigate={navigateToPage} />
-      case 'user-management': return userRole === 'instructor' ? <MyStudentsPage /> : <UserManagementPage onNavigateToProfile={navigateToProfile} />
-      case 'course-management': return <CourseManagementPage initialCourseId={initialCourseId} />
-      case 'my-courses': return <MyCoursesPage initialCourseId={initialCourseId} />
-      case 'courses': return <CoursesPage />
-      case 'activities': return <ActivitiesPage />
-      case 'whats-new': return <WhatsNewPage />
-      case 'schedule': return <SchedulePage />
-      case 'analytics': return <AnalyticsPage />
-      case 'profile': return <ProfilePage userId={profileUserId} onNavigateToProfile={navigateToProfile} />
-      case 'settings': return <SettingsPage />
-      case 'system-tracker': return <SystemTrackerPage />
-      case 'code-generator': return <CodeGeneratorPage />
-      case 'feature-requests': return <FeatureRequestsPage />
-      case 'tasks': return <TasksPage />
-      case 'ai-assistant': return <AIAssistantPage />
-      case 'library': return <LibraryPage />
-      case 'badges': return <BadgesPage />
-      case 'grades': return <GradesPage />
-      default: return <DashboardHome onNavigate={setCurrentPage} />
+      case 'dashboard': return <DashboardHome key={refreshKey} onNavigate={navigateToPage} />
+      case 'user-management': return userRole === 'instructor' ? <MyStudentsPage key={refreshKey} /> : <UserManagementPage key={refreshKey} onNavigateToProfile={navigateToProfile} />
+      case 'course-management': return <CourseManagementPage key={refreshKey} initialCourseId={initialCourseId} />
+      case 'my-courses': return <MyCoursesPage key={refreshKey} initialCourseId={initialCourseId} />
+      case 'courses': return <CoursesPage key={refreshKey} />
+      case 'activities': return <ActivitiesPage key={refreshKey} />
+      case 'whats-new': return <WhatsNewPage key={refreshKey} />
+      case 'schedule': return <SchedulePage key={refreshKey} />
+      case 'analytics': return <AnalyticsPage key={refreshKey} />
+      case 'profile': return <ProfilePage key={refreshKey} userId={profileUserId} onNavigateToProfile={navigateToProfile} />
+      case 'settings': return <SettingsPage key={refreshKey} />
+      case 'system-tracker': return <SystemTrackerPage key={refreshKey} />
+      case 'code-generator': return <CodeGeneratorPage key={refreshKey} />
+      case 'feature-requests': return <FeatureRequestsPage key={refreshKey} />
+      case 'tasks': return <TasksPage key={refreshKey} />
+      case 'ai-assistant': return <AIAssistantPage key={refreshKey} />
+      case 'library': return <LibraryPage key={refreshKey} />
+      case 'badges': return <BadgesPage key={refreshKey} />
+      case 'grades': return <GradesPage key={refreshKey} />
+      default: return <DashboardHome key={refreshKey} onNavigate={setCurrentPage} />
     }
   }
 
@@ -103,7 +111,7 @@ export default function Dashboard() {
       <div className="min-h-screen flex" style={{ backgroundColor: '#f3f4f6' }}>
         <Sidebar 
           currentPage={currentPage} 
-          onPageChange={setCurrentPage}
+          onPageChange={(page) => { setCurrentPage(page); localStorage.setItem('currentPage', page) }}
           hideHamburger={showChat || showAI || showPython}
         />
         <div className="flex-1 flex flex-col ml-0 lg:ml-16">
