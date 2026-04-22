@@ -1899,6 +1899,35 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             {/* Today's Events + Upcoming Schedule + Tasks - 3-col row above courses (desktop) */}
             <div className="bg-white rounded-xl p-4 shadow-sm">
               <p className="text-sm font-semibold text-gray-700 mb-3">Overview</p>
+              {/* Mobile: Today's Events + Upcoming -- for non-admin/developer roles */}
+              {!(userRole === 'admin' || userRole === 'developer') && (
+                <div className="sm:hidden grid grid-cols-2 gap-3 mb-3">
+                  <button onClick={() => onNavigate('schedule')} className="bg-white rounded-xl p-3 text-left shadow-sm">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: '#e6f4f7' }}>
+                        <svg className="w-3 h-3" fill="none" stroke="#0f4c5c" strokeWidth={2} viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <span className="text-[10px] font-bold text-gray-900">Today's Events</span>
+                    </div>
+                    <p className="text-2xl font-bold text-gray-900">{getTodaysEvents().length}</p>
+                    <p className="text-[10px] text-gray-400">events</p>
+                  </button>
+                  <button onClick={() => onNavigate('schedule')} className="bg-white rounded-xl p-3 text-left shadow-sm">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: '#e6f4f7' }}>
+                        <svg className="w-3 h-3" fill="none" stroke="#0f4c5c" strokeWidth={2} viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <span className="text-[10px] font-bold text-gray-900">Upcoming</span>
+                    </div>
+                    <p className="text-2xl font-bold text-gray-900">{courseSchedules.length}</p>
+                    <p className="text-[10px] text-gray-400">scheduled</p>
+                  </button>
+                </div>
+              )}
               <div className="hidden sm:grid grid-cols-3 gap-4">              {/* Today's Events */}
               <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex flex-col">
                 <div className="flex items-center justify-between mb-3 flex-shrink-0">
@@ -2217,36 +2246,6 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                       <p className="text-2xl font-bold text-gray-900">{courseSchedules.length}</p>
                       <p className="text-[10px] text-gray-400">scheduled</p>
                     </button>
-              </div>
-            )}
-
-            {/* Mobile: Today's Events + Upcoming -- for non-admin/developer roles */}
-            {!(userRole === 'admin' || userRole === 'developer') && (
-              <div className="sm:hidden grid grid-cols-2 gap-3">
-                <button onClick={() => onNavigate('schedule')} className="bg-white rounded-xl p-3 text-left shadow-sm">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: '#e6f4f7' }}>
-                      <svg className="w-3 h-3" fill="none" stroke="#0f4c5c" strokeWidth={2} viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                    <span className="text-[10px] font-bold text-gray-900">Today's Events</span>
-                  </div>
-                  <p className="text-2xl font-bold text-gray-900">{getTodaysEvents().length}</p>
-                  <p className="text-[10px] text-gray-400">events</p>
-                </button>
-                <button onClick={() => onNavigate('schedule')} className="bg-white rounded-xl p-3 text-left shadow-sm">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: '#e6f4f7' }}>
-                      <svg className="w-3 h-3" fill="none" stroke="#0f4c5c" strokeWidth={2} viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <span className="text-[10px] font-bold text-gray-900">Upcoming</span>
-                  </div>
-                  <p className="text-2xl font-bold text-gray-900">{courseSchedules.length}</p>
-                  <p className="text-[10px] text-gray-400">scheduled</p>
-                </button>
               </div>
             )}
 
