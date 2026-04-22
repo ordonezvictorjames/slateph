@@ -438,13 +438,17 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
             {selectedCourse && (
               <>
                 <svg className="w-3 h-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
-                <button onClick={handleBackToSubjects} className={`text-xs font-medium transition-colors ${currentView === 'subjects' ? 'font-semibold' : 'text-gray-500 hover:text-gray-900'}`} style={currentView === 'subjects' ? { color: '#0f4c5c' } : {}}>{selectedCourse.title}</button>
+                {currentView === 'subjects' ? (
+                  <span className="text-xs font-semibold text-white px-2 py-0.5 rounded-full" style={{ background: '#0f4c5c' }}>{selectedCourse.title}</span>
+                ) : (
+                  <button onClick={handleBackToSubjects} className="text-xs font-medium text-gray-500 hover:text-gray-900 transition-colors">{selectedCourse.title}</button>
+                )}
               </>
             )}
             {currentView === 'lesson' && selectedModule && (
               <>
                 <svg className="w-3 h-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
-                <span className="text-xs font-semibold" style={{ color: '#0f4c5c' }}>{selectedModule.title}</span>
+                <span className="text-xs font-semibold text-white px-2 py-0.5 rounded-full" style={{ background: '#0f4c5c' }}>{selectedModule.title}</span>
               </>
             )}
           </div>
@@ -724,10 +728,10 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
                                   <div className="min-w-0 flex-1">
                                     <p className="text-sm font-semibold text-gray-900 leading-snug">{subject.title}</p>
                                     {subject.description && subject.description !== subject.title && (
-                                      <p className="text-xs text-gray-500 mt-1 line-clamp-3 leading-relaxed">{subject.description}</p>
+                                      <p className="hidden sm:block text-xs text-gray-500 mt-1 line-clamp-3 leading-relaxed">{subject.description}</p>
                                     )}
                                     {isSubjectSequentiallyLocked && prevSubject && (
-                                      <p className="text-[10px] text-amber-600 mt-1 flex items-center gap-1">
+                                      <p className="hidden sm:flex text-[10px] text-amber-600 mt-1 items-center gap-1">
                                         <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                         Complete all modules in <span className="font-semibold">&ldquo;{prevSubject.title}&rdquo;</span> to unlock
                                       </p>
@@ -765,10 +769,11 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         onClick={(e) => e.stopPropagation()}
-                                        className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full border border-blue-400 text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors"
+                                        className="inline-flex items-center gap-1 sm:px-2 sm:py-0.5 text-xs font-semibold sm:rounded-full sm:border sm:border-blue-400 text-blue-600 sm:bg-blue-50 sm:hover:bg-blue-100 transition-colors"
+                                        title="Join Class"
                                       >
-                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" /></svg>
-                                        Join Class
+                                        <svg className="w-4 h-4 sm:w-3 sm:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" /></svg>
+                                        <span className="hidden sm:inline">Join Class</span>
                                       </a>
                                     )}
                                   </div>
