@@ -47,6 +47,15 @@ export default function Dashboard() {
   const [profileUserId, setProfileUserId] = useState<string | undefined>(undefined)
   const [initialCourseId, setInitialCourseId] = useState<string | undefined>(undefined)
   const [isPageTransitioning, setIsPageTransitioning] = useState(false)
+
+  // Page transition loading effect — only on explicit navigation, not on mount/refresh
+  const navigateToPage = (page: PageType, courseId?: string) => {
+    setInitialCourseId(courseId)
+    setCurrentPage(page)
+    localStorage.setItem('currentPage', page)
+    setIsPageTransitioning(true)
+    setTimeout(() => setIsPageTransitioning(false), 1700)
+  }
   const [showChat, setShowChat] = useState(false)
   const [showAI, setShowAI] = useState(false)
   const [showPython, setShowPython] = useState(false)
@@ -57,20 +66,7 @@ export default function Dashboard() {
     setCurrentPage('profile')
   }
 
-  const navigateToPage = (page: PageType, courseId?: string) => {
-    setInitialCourseId(courseId)
-    setCurrentPage(page)
-    localStorage.setItem('currentPage', page)
-  }
 
-  // Page transition loading effect
-  useEffect(() => {
-    setIsPageTransitioning(true)
-    const timer = setTimeout(() => {
-      setIsPageTransitioning(false)
-    }, 1700)
-    return () => clearTimeout(timer)
-  }, [currentPage])
 
   useIdleTimeout({
     onIdle: () => {
