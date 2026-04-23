@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useIdleTimeout } from '@/hooks/useIdleTimeout'
+import { createClient } from '@/lib/supabase/client'
 import Sidebar from '@/components/Sidebar'
 import CourseChat from '@/components/CourseChat'
 import AIAssistant from '@/components/AIAssistant'
@@ -17,7 +18,6 @@ import MyCoursesPage from '@/components/pages/MyCoursesPage'
 import AnalyticsPage from '@/components/pages/AnalyticsPage'
 import SchedulePage from '@/components/pages/SchedulePage'
 import ProfilePage from '@/components/pages/ProfilePage'
-import SettingsPage from '@/components/pages/SettingsPage'
 import SystemTrackerPage from '@/components/pages/SystemTrackerPage'
 import CodeGeneratorPage from '@/components/pages/CodeGeneratorPage'
 import FeatureRequestsPage from '@/components/pages/FeatureRequestsPage'
@@ -30,14 +30,137 @@ import CoursesPage from '@/components/pages/CoursesPage'
 import ActivitiesPage from '@/components/pages/ActivitiesPage'
 import WhatsNewPage from '@/components/pages/WhatsNewPage'
 
-export type PageType = 'dashboard' | 'user-management' | 'course-management' | 'my-courses' | 'courses' | 'activities' | 'whats-new' | 'schedule' | 'analytics' | 'profile' | 'settings' | 'system-tracker' | 'code-generator' | 'feature-requests' | 'tasks' | 'games' | 'activity' | 'ai-assistant' | 'library' | 'badges' | 'grades'
+export type PageType = 'dashboard' | 'user-management' | 'course-management' | 'my-courses' | 'courses' | 'activities' | 'whats-new' | 'schedule' | 'analytics' | 'profile' | 'system-tracker' | 'code-generator' | 'feature-requests' | 'tasks' | 'games' | 'activity' | 'ai-assistant' | 'library' | 'badges' | 'grades'
+
+const SPOTIFY_LS_KEY = 'slate_spotify_url'
+
+function SpotifyPanel({ initialUrl, userId, isOpen, onClose }: {
+  initialUrl: string
+  userId: string
+  isOpen: boolean
+  onClose: () => void
+}) {
+  // Restore from localStorage first (survives F5), fall back to DB value
+  const [savedUrl, setSavedUrl] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem(SPOTIFY_LS_KEY) || initialUrl
+    }
+    return initialUrl
+  })
+  const [inputUrl, setInputUrl] = useState(savedUrl)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const popupRef = useRef<Window | null>(null)
+
+  const handleSave = async () => {
+    if (!inputUrl.trim()) return
+    setSaving(true)
+    const supabase = createClient()
+    localStorage.setItem(SPOTIFY_LS_KEY, inputUrl)
+    setSavedUrl(inputUrl)
+    await supabase.from('profiles').update({ spotify_url: inputUrl }).eq('id', userId)
+    setSaving(false)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+  }
+
+  const embedUrl = savedUrl
+    ? savedUrl.replace('open.spotify.com/', 'open.spotify.com/embed/') + '?autoplay=1'
+    : ''
+
+  const handlePopOut = () => {
+    if (!embedUrl) return
+    // If popup already open, focus it
+    if (popupRef.current && !popupRef.current.closed) {
+      popupRef.current.focus()
+      return
+    }
+    const w = 340, h = 160
+    const left = window.screen.width - w - 20
+    const top = window.screen.height - h - 60
+    popupRef.current = window.open(
+      embedUrl,
+      'spotify_player',
+      `width=${w},height=${h},left=${left},top=${top},resizable=no,toolbar=no,menubar=no,scrollbars=no`
+    )
+  }
+
+  return (
+    <div
+      className="fixed bottom-20 right-4 sm:right-6 z-50 rounded-xl overflow-hidden shadow-xl bg-white transition-all duration-200"
+      style={{
+        width: 320,
+        opacity: isOpen ? 1 : 0,
+        pointerEvents: isOpen ? 'auto' : 'none',
+        transform: isOpen ? 'translateY(0)' : 'translateY(8px)',
+      }}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between px-3 py-1.5" style={{ backgroundColor: '#1DB954' }}>
+        <div className="flex items-center gap-1.5">
+          <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+          </svg>
+          <span className="text-white text-[10px] font-bold">Spotify</span>
+        </div>
+        <div className="flex items-center gap-2">
+          {/* Pop-out button */}
+          <button onClick={handlePopOut} title="Open in mini window" className="text-white hover:text-white/70 transition-colors">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+          </button>
+          <button onClick={onClose} className="text-white hover:text-white/70 transition-colors">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {/* Embed — always mounted, autoplay restores after F5 */}
+      {embedUrl ? (
+        <iframe
+          src={embedUrl}
+          width="320"
+          height="80"
+          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+          style={{ border: 'none', display: 'block' }}
+        />
+      ) : (
+        <div className="px-3 py-3 text-xs text-gray-400 text-center">Paste a Spotify link below to start.</div>
+      )}
+
+      {/* URL input */}
+      <div className="p-3 flex gap-2 border-t border-gray-100">
+        <input
+          type="text"
+          value={inputUrl}
+          onChange={e => setInputUrl(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleSave()}
+          placeholder="Paste Spotify link..."
+          className="flex-1 text-xs px-2 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-400"
+          style={{ minWidth: 0 }}
+        />
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="text-xs font-semibold text-white px-3 py-1.5 rounded-lg disabled:opacity-50 flex-shrink-0 transition-colors"
+          style={{ backgroundColor: saved ? '#16a34a' : '#1DB954' }}
+        >
+          {saving ? '...' : saved ? '✓' : 'Set'}
+        </button>
+      </div>
+    </div>
+  )
+}
 
 export default function Dashboard() {
   const { signOut, user } = useAuth()
   const [currentPage, setCurrentPage] = useState<PageType>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('currentPage') as PageType
-      const validPages: PageType[] = ['dashboard','user-management','course-management','my-courses','courses','activities','whats-new','schedule','analytics','profile','settings','system-tracker','code-generator','feature-requests','tasks','games','activity','ai-assistant','library','badges','grades']
+      const validPages: PageType[] = ['dashboard','user-management','course-management','my-courses','courses','activities','whats-new','schedule','analytics','profile','system-tracker','code-generator','feature-requests','tasks','games','activity','ai-assistant','library','badges','grades']
       if (saved && validPages.includes(saved)) return saved
       localStorage.removeItem('currentPage')
     }
@@ -58,6 +181,7 @@ export default function Dashboard() {
   }
   const [showChat, setShowChat] = useState(false)
   const [showAI, setShowAI] = useState(false)
+  const [showSpotify, setShowSpotify] = useState(false)
   const [showPython, setShowPython] = useState(false)
 
   // Function to navigate to a user's profile
@@ -68,16 +192,18 @@ export default function Dashboard() {
 
 
 
+  const signOutRef = useRef(signOut)
+  useEffect(() => { signOutRef.current = signOut })
+
   useIdleTimeout({
-    onIdle: () => {
+    onIdle: useCallback(() => {
       localStorage.removeItem('currentPage')
-      signOut()
-    },
+      signOutRef.current()
+    }, []),
     idleTime: 15 * 60 * 1000
   })
 
   const renderCurrentPage = () => {
-    const user = useAuth().user
     const userRole = user?.profile?.role || 'trainee'
     
     switch (currentPage) {
@@ -91,7 +217,6 @@ export default function Dashboard() {
       case 'schedule': return <SchedulePage key={refreshKey} />
       case 'analytics': return <AnalyticsPage key={refreshKey} />
       case 'profile': return <ProfilePage key={refreshKey} userId={profileUserId} onNavigateToProfile={navigateToProfile} />
-      case 'settings': return <SettingsPage key={refreshKey} />
       case 'system-tracker': return <SystemTrackerPage key={refreshKey} />
       case 'code-generator': return <CodeGeneratorPage key={refreshKey} />
       case 'feature-requests': return <FeatureRequestsPage key={refreshKey} />
@@ -121,6 +246,7 @@ export default function Dashboard() {
           onOpenPython={() => setShowPython(true)}
           onOpenAI={() => setShowAI(true)}
           onOpenChat={() => setShowChat(true)}
+          onOpenSpotify={user?.profile?.role === 'developer' ? () => setShowSpotify(s => !s) : undefined}
         />
         
         <PythonPlayground isOpen={showPython} onClose={() => setShowPython(false)} />
@@ -134,6 +260,16 @@ export default function Dashboard() {
           Beta Test
         </span>
       </div>
+
+      {/* Spotify Player - always mounted for developer so audio keeps playing */}
+      {user?.profile?.role === 'developer' && (
+        <SpotifyPanel
+          initialUrl={user?.profile?.spotify_url || ''}
+          userId={user.id}
+          isOpen={showSpotify}
+          onClose={() => setShowSpotify(false)}
+        />
+      )}
     </>
   )
 }

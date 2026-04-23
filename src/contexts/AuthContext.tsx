@@ -25,18 +25,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Check for active session from server
     const checkSession = async () => {
-      // Skip during SSR/build time
       if (typeof window === 'undefined') {
         if (mounted) setLoading(false)
         return
       }
 
       try {
-        // Add timeout to prevent infinite loading
         const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 8000) // 8 second timeout
+        const timeoutId = setTimeout(() => controller.abort(), 8000)
         
-        // Fetch current session from API
         const response = await fetch('/api/auth/session', {
           signal: controller.signal,
           cache: 'no-store'
@@ -47,15 +44,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (response.ok) {
           const data = await response.json()
           if (data.session?.id && mounted) {
-            // Fetch full user profile from database using the session id
             const { data: profile, error } = await supabase
               .from('profiles')
-              .select('id, email, role, first_name, last_name, avatar_url, banner_url, grade, section, strand, cluster, batch_number, created_at, updated_at')
+              .select('id, email, role, first_name, last_name, avatar_url, banner_url, spotify_url, grade, section, strand, cluster, batch_number, created_at, updated_at')
               .eq('id', data.session.id)
               .single()
 
             if (!error && profile && mounted) {
-              const userData: AuthUser = {
+              setUser({
                 id: profile.id,
                 email: profile.email,
                 role: profile.role,
@@ -67,6 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   email: profile.email,
                   avatar_url: profile.avatar_url,
                   banner_url: profile.banner_url,
+                  spotify_url: profile.spotify_url,
                   grade: profile.grade,
                   section: profile.section,
                   strand: profile.strand,
@@ -75,8 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   created_at: profile.created_at,
                   updated_at: profile.updated_at
                 }
-              }
-              setUser(userData)
+              })
             }
           }
         }
@@ -87,9 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.log('No active session found')
         }
       } finally {
-        if (mounted) {
-          setLoading(false)
-        }
+        if (mounted) setLoading(false)
       }
     }
 
@@ -161,6 +155,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           email: data.user.email,
           avatar_url: data.user.avatar_url,
           banner_url: data.user.banner_url,
+          spotify_url: data.user.spotify_url,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }
@@ -206,7 +201,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       setUser(userData)
-      
+
+      // Fetch full profile to get all fields including spotify_url
+      try {
+        const { data: fullProfile } = await supabase
+          .from('profiles')
+          .select('id, email, role, first_name, last_name, avatar_url, banner_url, spotify_url, grade, section, strand, cluster, batch_number, created_at, updated_at')
+          .eq('id', userData.id)
+          .single()
+        if (fullProfile) setUser(prev => prev ? { ...prev, profile: { ...prev.profile, ...fullProfile } } : prev)
+      } catch { /* non-critical */ }
+
       // Always land on dashboard after login
       if (typeof window !== 'undefined') localStorage.removeItem('currentPage')
       
@@ -267,9 +272,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       })
     } catch (error) {
       console.error('Failed to clear session:', error)
-      // Continue anyway - we'll clear the user state
     }
-    
+
     setUser(null)
   }
 
@@ -280,7 +284,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Fetch updated profile from database
       const { data: profile, error } = await supabase
         .from('profiles')
-        .select('id, email, role, first_name, last_name, avatar_url, banner_url, grade, section, strand, cluster, batch_number, created_at, updated_at')
+        .select('id, email, role, first_name, last_name, avatar_url, banner_url, spotify_url, grade, section, strand, cluster, batch_number, created_at, updated_at')
         .eq('id', user.id)
         .single()
 
@@ -301,6 +305,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             email: profile.email,
             avatar_url: profile.avatar_url,
             banner_url: profile.banner_url,
+            spotify_url: profile.spotify_url,
             grade: profile.grade,
             section: profile.section,
             strand: profile.strand,

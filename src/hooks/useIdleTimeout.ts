@@ -2,56 +2,31 @@ import { useEffect, useRef } from 'react'
 
 interface UseIdleTimeoutOptions {
   onIdle: () => void
-  idleTime?: number // in milliseconds
+  idleTime?: number
 }
 
 export function useIdleTimeout({ onIdle, idleTime = 30 * 60 * 1000 }: UseIdleTimeoutOptions) {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const onIdleRef = useRef(onIdle)
 
-  const resetTimer = () => {
-    // Clear existing timeout
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current)
-    }
-
-    // Set new timeout
-    timeoutRef.current = setTimeout(() => {
-      onIdle()
-    }, idleTime)
-  }
+  // Keep the ref up to date without triggering effect re-runs
+  useEffect(() => {
+    onIdleRef.current = onIdle
+  })
 
   useEffect(() => {
-    // Events that indicate user activity
-    const events = [
-      'mousedown',
-      'mousemove',
-      'keypress',
-      'scroll',
-      'touchstart',
-      'click',
-    ]
-
-    // Reset timer on any user activity
-    const handleActivity = () => {
-      resetTimer()
+    const resetTimer = () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+      timeoutRef.current = setTimeout(() => onIdleRef.current(), idleTime)
     }
 
-    // Add event listeners
-    events.forEach((event) => {
-      window.addEventListener(event, handleActivity)
-    })
-
-    // Initialize timer
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click']
+    events.forEach(e => window.addEventListener(e, resetTimer))
     resetTimer()
 
-    // Cleanup
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current)
-      }
-      events.forEach((event) => {
-        window.removeEventListener(event, handleActivity)
-      })
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+      events.forEach(e => window.removeEventListener(e, resetTimer))
     }
-  }, [idleTime, onIdle])
+  }, [idleTime]) // only re-run if idleTime changes, NOT onIdle
 }
