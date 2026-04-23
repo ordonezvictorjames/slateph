@@ -2057,9 +2057,11 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
             <svg className="w-3 h-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
             </svg>
-            <button onClick={handleBackToSubjects} className={`text-xs font-medium transition-colors ${currentView === 'subjects' ? 'font-semibold' : 'text-gray-500 hover:text-gray-900'}`} style={currentView === 'subjects' ? { color: '#0f4c5c' } : {}}>
-              {selectedCourse.title}
-            </button>
+            {currentView === 'subjects' ? (
+              <span className="text-xs font-semibold text-white px-2 py-0.5 rounded-full" style={{ background: '#0f4c5c' }}>{selectedCourse.title}</span>
+            ) : (
+              <button onClick={handleBackToSubjects} className="text-xs font-medium text-gray-500 hover:text-gray-900 transition-colors">{selectedCourse.title}</button>
+            )}
           </>
         )}
         {selectedSubject && currentView === 'lesson' && (
@@ -2077,7 +2079,7 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
             <svg className="w-3 h-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
             </svg>
-            <span className="text-xs font-semibold" style={{ color: '#0f4c5c' }}>{selectedModule.title}</span>
+            <span className="text-xs font-semibold text-white px-2 py-0.5 rounded-full" style={{ background: '#0f4c5c' }}>{selectedModule.title}</span>
           </>
         )}
       </div>

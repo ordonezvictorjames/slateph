@@ -207,6 +207,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       setUser(userData)
       
+      // Always land on dashboard after login
+      if (typeof window !== 'undefined') localStorage.removeItem('currentPage')
+      
       // Update last login timestamp
       try {
         await supabase.rpc('update_last_login', { p_user_id: userData.id })
