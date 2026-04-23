@@ -151,9 +151,9 @@ export default function CoursesPage() {
               <div key={course.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col hover:shadow-md transition-shadow">
 
                 {/* Thumbnail */}
-                <div className="relative h-36 flex-shrink-0 overflow-hidden">
+                <div className="relative h-32 flex-shrink-0 overflow-hidden bg-gray-100">
                   {course.thumbnail_url ? (
-                    <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover" />
+                    <img src={course.thumbnail_url} alt={course.title} className="w-full h-full" style={{ objectFit: 'cover', objectPosition: 'center', display: 'block' }} />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center" style={{ background: colorHex ? `linear-gradient(135deg, ${colorHex} 0%, ${colorHex}99 100%)` : 'linear-gradient(135deg, #0f4c5c 0%, #1f7a8c 100%)' }}>
                       <svg className="w-10 h-10 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -274,8 +274,8 @@ export default function LoginForm() {
           <div className="relative text-center text-white px-12 z-10">
             {!isSignUp ? (
               <>
-                <h2 className="text-4xl font-bold mb-4">Hello, Friend!</h2>
-                <p className="mb-8 text-white/90">Enter your personal details and start your journey with us</p>
+                <h2 className="text-4xl font-bold mb-4 text-white">Hello, Learner!</h2>
+                <p className="mb-8 text-white/90">Create your account and start your learning journey.</p>
                 <button
                   onClick={() => setIsSignUp(true)}
                   className="border-2 border-white text-white px-12 py-3 rounded-full font-semibold hover:bg-white hover:text-gray-800 transition-all duration-300 focus:outline-none focus-visible:outline-none focus-visible:ring-0"
@@ -285,8 +285,8 @@ export default function LoginForm() {
               </>
             ) : (
               <>
-                <h2 className="text-4xl font-bold mb-4">Welcome Back!</h2>
-                <p className="mb-8 text-white/90">To keep connected with us please login with your personal info</p>
+                <h2 className="text-4xl font-bold mb-4 text-white">Welcome Back, Learner!</h2>
+                <p className="mb-8 text-white/90">Log in to continue your learning</p>
                 <button
                   onClick={() => setIsSignUp(false)}
                   className="border-2 border-white text-white px-12 py-3 rounded-full font-semibold hover:bg-white hover:text-gray-800 transition-all duration-300 focus:outline-none focus-visible:outline-none focus-visible:ring-0"
@@ -310,7 +310,7 @@ export default function LoginForm() {
               <img src="/logo.png" alt="Slate Logo" className="h-12 sm:h-14 lg:h-16 w-auto" />
             </div>
 
-            <h2 className="text-2xl sm:text-3xl font-bold text-black text-center mb-6 sm:mb-8">Sign in to Slate</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold text-center mb-6 sm:mb-8" style={{ color: '#0f4c5c' }}>Sign in to Slate</h2>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Email Field */}
@@ -373,7 +373,7 @@ export default function LoginForm() {
 
               <Button 
                 type="submit" 
-                className="w-full h-12 bg-black hover:bg-primary-700 text-white font-semibold rounded-full transition-colors focus:outline-none focus-visible:outline-none focus-visible:ring-0" 
+                className="w-full h-12 text-white font-semibold rounded-full transition-colors focus:outline-none focus-visible:outline-none focus-visible:ring-0" style={{ backgroundColor: '#0f4c5c' }}
                 disabled={loading}
               >
                 {loading ? (
@@ -571,7 +571,7 @@ export default function LoginForm() {
 
               <Button 
                 type="submit" 
-                className="w-full h-12 bg-black hover:bg-primary-700 text-white font-semibold rounded-full transition-colors focus:outline-none focus-visible:outline-none focus-visible:ring-0 disabled:opacity-50 disabled:cursor-not-allowed" 
+                className="w-full h-12 text-white font-semibold rounded-full transition-colors focus:outline-none focus-visible:outline-none focus-visible:ring-0 disabled:opacity-50 disabled:cursor-not-allowed" style={{ backgroundColor: '#0f4c5c' }}
                 disabled={loading || !acceptedTerms}
               >
                 {loading ? (
@@ -717,8 +717,8 @@ export default function LoginForm() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl max-w-md w-full shadow-2xl overflow-hidden">
             {/* Header */}
-            <div className="bg-black text-white px-6 py-4 flex items-center justify-between">
-              <h3 className="text-xl font-semibold">Forgot Password</h3>
+            <div className="px-6 py-4 flex items-center justify-between" style={{ backgroundColor: '#0f4c5c' }}>
+              <h3 className="text-xl font-semibold text-white">Forgot Password</h3>
               <button
                 onClick={() => {
                   setShowForgotPasswordModal(false)
@@ -739,14 +739,14 @@ export default function LoginForm() {
               </p>
 
               <div className="relative">
-                <label className="absolute -top-2 left-3 bg-white px-2 font-medium text-black text-xs">
+                <label className="absolute -top-2 left-3 bg-white px-2 font-medium text-xs" style={{ color: '#0f4c5c' }}>
                   EMAIL ADDRESS
                 </label>
                 <Input
                   type="email"
                   value={forgotPasswordEmail}
                   onChange={(e) => setForgotPasswordEmail(e.target.value)}
-                  className="h-12 border-2 border-black rounded-xl focus:border-black focus:ring-0 focus:outline-none w-full px-4"
+                  className="h-12 border-2 rounded-xl focus:ring-0 focus:outline-none w-full px-4" style={{ borderColor: '#0f4c5c' }}
                   placeholder="your.email@example.com"
                   required
                 />
@@ -766,7 +766,7 @@ export default function LoginForm() {
                 <button
                   type="submit"
                   disabled={forgotPasswordLoading}
-                  className="flex-1 px-4 py-3 bg-black text-white rounded-xl hover:bg-primary-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                  className="flex-1 px-4 py-3 text-white rounded-xl transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2" style={{ backgroundColor: '#0f4c5c' }}
                 >
                   {forgotPasswordLoading ? (
                     <>
