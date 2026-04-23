@@ -236,7 +236,7 @@ export default function QuizPlayer({
       <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
         <div className="flex items-center justify-between gap-2">
           <div>
-            <p className="text-xs font-semibold text-purple-700 uppercase tracking-wide">
+            <p className="text-xs font-semibold text-[#0f4c5c] uppercase tracking-wide">
               {config.type === 'exam' ? 'Exam' : 'Quiz'} Preview
             </p>
             <h3 className="text-sm font-bold text-gray-900">{config.title || config.type}</h3>
@@ -252,7 +252,7 @@ export default function QuizPlayer({
             { val: config.time_minutes, label: 'Minutes' },
           ].map(({ val, label }) => (
             <div key={label} className="bg-white rounded-lg p-2 border border-gray-200">
-              <p className="text-lg font-bold text-purple-700">{val}</p>
+              <p className="text-lg font-bold text-[#0f4c5c]">{val}</p>
               <p className="text-xs text-gray-500">{label}</p>
             </div>
           ))}
@@ -290,7 +290,7 @@ export default function QuizPlayer({
           <div className="flex items-center gap-2">
             <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Student Submissions</p>
             {grades.length > 0 && (
-              <span className="bg-purple-100 text-purple-700 text-xs font-medium px-2 py-0.5 rounded-full">{grades.length}</span>
+              <span className="bg-purple-100 text-[#0f4c5c] text-xs font-medium px-2 py-0.5 rounded-full">{grades.length}</span>
             )}
           </div>
           <button onClick={fetchGrades} className="text-xs text-[#1f7a8c] hover:underline">Refresh</button>
@@ -334,7 +334,7 @@ export default function QuizPlayer({
                       {g.profiles ? `${g.profiles.first_name} ${g.profiles.last_name}` : g.user_id.slice(0, 8) + '…'}
                     </td>
                     <td className="px-3 py-2 text-center">
-                      <span className={`px-1.5 py-0.5 rounded-full text-xs font-medium capitalize ${g.quiz_type === 'exam' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
+                      <span className={`px-1.5 py-0.5 rounded-full text-xs font-medium capitalize ${g.quiz_type === 'exam' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-[#0f4c5c]'}`}>
                         {g.quiz_type}
                       </span>
                     </td>
@@ -369,7 +369,7 @@ export default function QuizPlayer({
   if (phase === 'intro') return (
     <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
       <div>
-        <p className="text-xs font-semibold text-purple-700 uppercase tracking-wide">
+        <p className="text-xs font-semibold text-[#0f4c5c] uppercase tracking-wide">
           {config.type === 'exam' ? 'Exam' : 'Quiz'}
         </p>
         <h3 className="text-sm font-bold text-gray-900">{config.title || config.type}</h3>
@@ -381,7 +381,7 @@ export default function QuizPlayer({
           { val: config.time_minutes, label: 'Minutes' },
         ].map(({ val, label }) => (
           <div key={label} className="rounded-lg p-2 border border-gray-200">
-            <p className="text-lg font-bold text-purple-700">{val}</p>
+            <p className="text-lg font-bold text-[#0f4c5c]">{val}</p>
             <p className="text-xs text-gray-500">{label}</p>
           </div>
         ))}
@@ -425,7 +425,7 @@ export default function QuizPlayer({
 
       {canStart && questions.length > 0 && (
         <button onClick={startQuiz}
-          className="w-full py-2.5 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors">
+          className="w-full py-2.5 bg-[#0f4c5c] text-white text-sm font-medium rounded-lg hover:bg-[#0f4c5c]/90 transition-colors">
           Start {config.type === 'exam' ? 'Exam' : 'Quiz'}
         </button>
       )}

@@ -326,15 +326,15 @@ export default function LessonViewer({
       {/* Two-column layout */}
       <div className={`flex gap-5 items-start ${hasRightPanel ? 'flex-col lg:flex-row' : ''}`}>
 
-        {/* LEFT — content + info cards (60%) */}
-        <div className={`space-y-5 ${hasRightPanel ? 'w-full lg:w-[60%]' : 'w-full'}`}>
+        {/* LEFT — content + info cards (80%) */}
+        <div className={`space-y-5 ${hasRightPanel ? 'w-full lg:w-[80%]' : 'w-full'}`}>
 
           {/* Main content embed */}
           <ContentEmbed module={module} textBody={textBody} />
         </div>
 
-        {/* RIGHT — quiz/activity (40%) */}
-        <div className="w-full lg:w-[40%] shrink-0 space-y-5">
+        {/* RIGHT — quiz/activity (20%) */}
+        <div className="w-full lg:w-[20%] shrink-0 space-y-5">
           {quizConfig && (quizConfig.type === 'quiz' || quizConfig.type === 'exam') ? (
             <QuizPlayer
               key={module.id}

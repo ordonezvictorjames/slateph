@@ -1138,6 +1138,32 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
                     Refresh Scores
                   </button>
                 )}
+                {testQuizConfig && (
+                  <button type="button"
+                    onClick={async () => {
+                      if (!testModule) return
+                      if (!confirm('Delete this quiz/exam? This will also delete all student scores and cannot be undone.')) return
+                      setSavingTest(true)
+                      try {
+                        let parsed: any = {}
+                        try { parsed = testModule.text_content ? JSON.parse(testModule.text_content) : {} } catch { parsed = {} }
+                        const updated = { ...parsed, quiz_config: null }
+                        await supabase.from('modules').update({ text_content: JSON.stringify(updated) }).eq('id', testModule.id)
+                        await supabase.from('quiz_grades').delete().eq('module_id', testModule.id)
+                        if (testModule.subject_id) {
+                          const { data } = await supabase.from('modules').select('*').eq('subject_id', testModule.subject_id).order('order_index', { ascending: true })
+                          if (data) updateSubjectModules(testModule.subject_id, data)
+                        }
+                        setShowTestModal(false); setTestModule(null); setTestQuizConfig(null)
+                        alert('Quiz/exam deleted successfully.')
+                      } catch { alert('Failed to delete quiz.') }
+                      finally { setSavingTest(false) }
+                    }}
+                    disabled={savingTest}
+                    className="px-4 py-2 text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors text-sm disabled:opacity-50">
+                    Delete Quiz
+                  </button>
+                )}
                 <button type="button" onClick={() => { setShowTestModal(false); setTestModule(null); setTestQuizConfig(null) }}
                   className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
                   Cancel
