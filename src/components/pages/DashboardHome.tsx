@@ -513,16 +513,11 @@ function UpcomingScheduleList() {
 
   if (schedules.length === 0) {
     return (
-      <div className="space-y-2">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="flex items-center gap-3 p-2.5 rounded-lg bg-gray-50">
-            <div className="w-2 h-8 rounded-full bg-gray-200 flex-shrink-0" />
-            <div className="flex-1 space-y-1.5">
-              <div className="h-2.5 bg-gray-200 rounded w-3/4" />
-              <div className="h-2 bg-white rounded w-1/2" />
-            </div>
-          </div>
-        ))}
+      <div className="flex flex-col items-center justify-center min-h-[152px] text-center">
+        <svg className="w-8 h-8 text-gray-200 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <p className="text-xs text-gray-400">No upcoming schedules</p>
       </div>
     )
   }
@@ -1942,16 +1937,11 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                   <button onClick={() => onNavigate('schedule')} className="text-xs font-medium hover:opacity-80" style={{ color: '#0f4c5c' }}>See All</button>
                 </div>
                 {getTodaysEvents().length === 0 ? (
-                  <div className="flex flex-col gap-2 flex-1">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-gray-50 flex-1">
-                        <div className="w-2 h-6 rounded-full bg-gray-200 flex-shrink-0" />
-                        <div className="flex-1 space-y-1">
-                          <div className="h-2 bg-gray-200 rounded w-3/4" />
-                          <div className="h-1.5 bg-gray-100 rounded w-1/2" />
-                        </div>
-                      </div>
-                    ))}
+                  <div className="flex flex-col items-center justify-center flex-1 min-h-[152px] text-center">
+                    <svg className="w-8 h-8 text-gray-200 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <p className="text-xs text-gray-400">No events today</p>
                   </div>
                 ) : (
                   <div className="flex flex-col gap-2 flex-1">
@@ -2081,7 +2071,6 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             </div>
             </div>
             {/* All Courses -- split for students/instructors, full list for others */}
-            <div className="bg-white rounded-xl p-4 shadow-sm">
             {(() => {
               const isStudentOrInstructor = userRole === 'shs_student' || userRole === 'jhs_student' || userRole === 'college_student' || userRole === 'scholar' || userRole === 'instructor'
               const myCourses = isStudentOrInstructor ? allCourses.filter(c => c.is_user_enrolled) : []
@@ -2163,7 +2152,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
               return (
                 <>
                   {isStudentOrInstructor && myCourses.length > 0 && (
-                    <div>
+                    <div className="bg-white rounded-xl p-4 shadow-sm">
                       <div className="flex items-center justify-between mb-3">
                         <h3 className="text-sm font-bold text-gray-900">{myLabel}</h3>
                         <button onClick={() => onNavigate('my-courses')} className="text-xs font-medium hover:opacity-80" style={{ color: '#0f4c5c' }}>See All</button>
@@ -2172,7 +2161,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                       {renderGrid(myCourses.slice(0, 4), '')}
                     </div>
                   )}
-                  <div className="bg-white rounded-xl p-4">
+                  <div className="bg-white rounded-xl p-4 shadow-sm">
                     <div className="flex items-center justify-between mb-3">
                       {isStudentOrInstructor
                         ? <h3 className="text-sm font-bold text-gray-900">Available Courses</h3>
@@ -2186,7 +2175,6 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
                 </>
               )
             })()}
-            </div>
 
             {/* Mobile: schedule summary cards -- all roles */}
             {/* Admin/Developer: 2x2 grid with Recent Activity, Today's Events, Tasks, Upcoming */}
