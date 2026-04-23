@@ -20,9 +20,9 @@ export function InitialPageLoader() {
   return (
     <div className="fixed inset-0 bg-white z-[9999] flex items-center justify-center">
       <div className="flex flex-col items-center">
-        <div className="w-64 h-64">
+        <div className="w-[150px] h-[150px]">
           <DotLottieReact
-            src="/Jumping shapes.lottie"
+            src="/Sandy Loading.lottie"
             loop
             autoplay
           />
