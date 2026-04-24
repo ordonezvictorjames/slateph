@@ -182,6 +182,8 @@ export default function Dashboard() {
   const [showChat, setShowChat] = useState(false)
   const [showAI, setShowAI] = useState(false)
   const [showSpotify, setShowSpotify] = useState(false)
+  const [showIdleWarning, setShowIdleWarning] = useState(false)
+  const idleWarningRef = useRef<NodeJS.Timeout | null>(null)
   const [showPython, setShowPython] = useState(false)
 
   // Function to navigate to a user's profile
@@ -195,12 +197,19 @@ export default function Dashboard() {
   const signOutRef = useRef(signOut)
   useEffect(() => { signOutRef.current = signOut })
 
+  const IDLE_TIME = 15 * 60 * 1000
+  const WARNING_BEFORE = 60 * 1000 // warn 1 min before
+
   useIdleTimeout({
     onIdle: useCallback(() => {
+      setShowIdleWarning(false)
       localStorage.removeItem('currentPage')
       signOutRef.current()
     }, []),
-    idleTime: 15 * 60 * 1000
+    onWarn: useCallback(() => setShowIdleWarning(true), []),
+    onActivity: useCallback(() => setShowIdleWarning(false), []),
+    idleTime: IDLE_TIME,
+    warnBefore: WARNING_BEFORE,
   })
 
   const renderCurrentPage = () => {
@@ -253,6 +262,28 @@ export default function Dashboard() {
         <AIAssistant isOpen={showAI} onClose={() => setShowAI(false)} />
         <CourseChat isOpen={showChat} onClose={() => setShowChat(false)} onNavigateToProfile={navigateToProfile} />
       </div>
+
+      {/* Idle Warning Modal */}
+      {showIdleWarning && (
+        <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center">
+            <div className="w-14 h-14 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-7 h-7 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Still there?</h3>
+            <p className="text-sm text-gray-500 mb-5">You'll be logged out in 1 minute due to inactivity.</p>
+            <button
+              onClick={() => setShowIdleWarning(false)}
+              className="w-full py-2.5 rounded-xl text-white font-semibold text-sm transition-colors"
+              style={{ backgroundColor: '#0f4c5c' }}
+            >
+              Keep me logged in
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Beta Test Label - fixed bottom center */}
       <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none">

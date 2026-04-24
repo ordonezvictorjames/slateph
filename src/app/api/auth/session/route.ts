@@ -106,8 +106,8 @@ export async function POST(request: NextRequest) {
       name: SESSION_COOKIE_NAME,
       value: JSON.stringify(sessionData),
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: true, // always secure — Vercel always serves over HTTPS
+      sameSite: 'strict',
       maxAge: SESSION_MAX_AGE,
       path: '/',
     })
@@ -132,8 +132,8 @@ export async function DELETE() {
       name: SESSION_COOKIE_NAME,
       value: '',
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: true,
+      sameSite: 'strict',
       maxAge: 0,
       path: '/',
     })

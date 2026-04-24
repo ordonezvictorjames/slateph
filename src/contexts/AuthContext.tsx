@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       try {
         const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 8000)
+        const timeoutId = setTimeout(() => controller.abort(), 15000) // 15 second timeout
         
         const response = await fetch('/api/auth/session', {
           signal: controller.signal,

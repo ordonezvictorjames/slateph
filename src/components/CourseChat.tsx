@@ -172,7 +172,7 @@ export default function CourseChat({ isOpen, onClose, onNavigateToProfile }: Cou
       setLoading(true)
       const userRole = user.profile.role
 
-      console.log('Loading courses for user:', { userId: user.id, role: userRole })
+      
 
       let coursesData: Course[] = []
 
@@ -260,7 +260,7 @@ export default function CourseChat({ isOpen, onClose, onNavigateToProfile }: Cou
         }
       }
 
-      console.log('Loaded courses:', coursesData)
+      
       setCourses(coursesData)
       
       // Auto-select Lounge by default
@@ -280,7 +280,7 @@ export default function CourseChat({ isOpen, onClose, onNavigateToProfile }: Cou
     const isLounge = 'isLounge' in selectedCourse && selectedCourse.isLounge
 
     try {
-      console.log('Loading messages for:', isLounge ? 'Lounge' : selectedCourse.id)
+      
       
       const tableName = isLounge ? 'lounge_chat_messages' : 'course_chat_messages'
       
@@ -315,7 +315,7 @@ export default function CourseChat({ isOpen, onClose, onNavigateToProfile }: Cou
         return
       }
 
-      console.log('Messages loaded:', data)
+      
 
       if (data) {
         const formattedMessages: CourseChatMessage[] = data.map((msg: any) => ({
@@ -399,7 +399,7 @@ export default function CourseChat({ isOpen, onClose, onNavigateToProfile }: Cou
         return
       }
 
-      console.log('Message sent successfully:', data)
+      
 
       // Optimistically add the sent message to local state immediately
       if (data && data[0]) {
