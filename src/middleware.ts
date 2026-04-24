@@ -15,12 +15,11 @@ const RATE_LIMIT = {
 // ─── SQL injection / attack patterns ─────────────────────────────────────────
 const ATTACK_PATTERNS = [
   /(\bUNION\b.*\bSELECT\b|\bSELECT\b.*\bFROM\b.*\bWHERE\b)/i,
-  /(\bDROP\b|\bTRUNCATE\b|\bDELETE\b\s+\bFROM\b|\bINSERT\b\s+\bINTO\b)/i,
-  /('|"|;|--|\bOR\b\s+['"]?\d+['"]?\s*=\s*['"]?\d+['"]?)/i,
-  /(\/\*[\s\S]*?\*\/|xp_cmdshell|exec\s*\(|EXECUTE\s*\()/i,
-  /(<script[\s\S]*?>[\s\S]*?<\/script>|javascript:|on\w+\s*=)/i,  // XSS
-  /(\.\.\/|\.\.\\|%2e%2e%2f|%252e%252e)/i,                        // Path traversal
-  /(\beval\s*\(|\bexec\s*\(|base64_decode|system\s*\()/i,         // Code injection
+  /(\bDROP\s+TABLE\b|\bTRUNCATE\s+TABLE\b|\bDELETE\s+FROM\b)/i,
+  /('(\s*)(OR|AND)(\s+)['"]?\d+['"]?\s*=\s*['"]?\d+['"]?)/i,  // OR 1=1 style
+  /(\/\*[\s\S]*?\*\/|xp_cmdshell)/i,
+  /(<script[\s\S]*?>[\s\S]*?<\/script>|javascript:\s*[^\s])/i,  // XSS
+  /(\.\.\/\.\.\/|%2e%2e%2f%2e%2e%2f|%252e%252e)/i,             // Path traversal (double)
 ]
 
 function getIP(request: NextRequest): string {
@@ -36,15 +35,8 @@ function isAttackPattern(value: string): boolean {
 }
 
 function scanRequest(request: NextRequest): boolean {
-  const url = request.nextUrl.toString()
-  if (isAttackPattern(url)) return true
-
-  // Scan query params
-  request.nextUrl.searchParams.forEach(v => {
-    if (isAttackPattern(v)) return true
-  })
-
-  return false
+  const url = request.nextUrl.pathname + request.nextUrl.search
+  return isAttackPattern(url)
 }
 
 export async function middleware(request: NextRequest) {

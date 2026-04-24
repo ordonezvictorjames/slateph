@@ -11,11 +11,13 @@ interface UsedCode {
   id: string
   code: string
   created_at: string
-  used_at: string
-  used_by: string
+  used_at: string | null
+  used_by: string | null
   user_name: string
   user_email: string
   user_role: string
+  is_used: boolean
+  expires_at: string
 }
 
 export default function CodeGeneratorPage() {
@@ -50,6 +52,8 @@ export default function CodeGeneratorPage() {
           created_at,
           used_at,
           used_by,
+          is_used,
+          expires_at,
           user:profiles!registration_codes_used_by_fkey(
             first_name,
             last_name,
@@ -57,8 +61,7 @@ export default function CodeGeneratorPage() {
             role
           )
         `)
-        .eq('is_used', true)
-        .order('used_at', { ascending: false })
+        .order('created_at', { ascending: false })
 
       if (error) {
         console.error('Error fetching used codes:', error)
@@ -71,9 +74,11 @@ export default function CodeGeneratorPage() {
         created_at: item.created_at,
         used_at: item.used_at,
         used_by: item.used_by,
-        user_name: item.user ? `${item.user.first_name} ${item.user.last_name}` : 'Unknown',
-        user_email: item.user?.email || 'N/A',
-        user_role: item.user?.role || 'N/A'
+        is_used: item.is_used,
+        expires_at: item.expires_at,
+        user_name: item.user ? `${item.user.first_name} ${item.user.last_name}` : '—',
+        user_email: item.user?.email || '—',
+        user_role: item.user?.role || '—'
       }))
 
       setUsedCodes(formattedCodes)
@@ -264,10 +269,10 @@ export default function CodeGeneratorPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
               </svg>
               <p className="text-gray-600 font-medium">
-                {searchQuery || filterRole !== 'all' ? 'No codes match your filters' : 'No codes have been used yet'}
+                {searchQuery || filterRole !== 'all' ? 'No codes match your filters' : 'No codes generated yet'}
               </p>
               <p className="text-sm text-gray-500 mt-1">
-                {searchQuery || filterRole !== 'all' ? 'Try adjusting your search or filter' : 'Used codes will appear here once users register'}
+                {searchQuery || filterRole !== 'all' ? 'Try adjusting your search or filter' : 'Generated codes will appear here'}
               </p>
             </div>
           ) : (
@@ -278,9 +283,11 @@ export default function CodeGeneratorPage() {
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Code</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">User Name</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Email</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Role</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Created</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Used At</th>
                 </tr>
               </thead>
@@ -291,35 +298,41 @@ export default function CodeGeneratorPage() {
                       <span className="font-mono font-bold text-lg">{codeData.code}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
-                          {codeData.user_name.charAt(0).toUpperCase()}
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${codeData.is_used ? 'bg-gray-100 text-gray-600' : 'bg-green-100 text-green-700'}`}>
+                        {codeData.is_used ? 'Used' : 'Available'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {codeData.is_used ? (
+                        <div className="flex items-center">
+                          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
+                            {codeData.user_name.charAt(0).toUpperCase()}
+                          </div>
+                          <span className="font-medium text-gray-900">{codeData.user_name}</span>
                         </div>
-                        <span className="font-medium text-gray-900">{codeData.user_name}</span>
-                      </div>
+                      ) : <span className="text-gray-400 text-sm">—</span>}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {codeData.user_email}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                        codeData.user_role === 'admin' ? 'bg-red-100 text-red-800' :
-                        codeData.user_role === 'shs_student' || codeData.user_role === 'jhs_student' || codeData.user_role === 'college_student' ? 'bg-blue-100 text-blue-800' :
-                        codeData.user_role === 'instructor' ? 'bg-green-100 text-green-800' :
-                        codeData.user_role === 'developer' ? 'bg-purple-100 text-purple-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {codeData.user_role.charAt(0).toUpperCase() + codeData.user_role.slice(1)}
-                      </span>
+                      {codeData.is_used ? (
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                          codeData.user_role === 'admin' ? 'bg-red-100 text-red-800' :
+                          codeData.user_role === 'shs_student' || codeData.user_role === 'jhs_student' || codeData.user_role === 'college_student' ? 'bg-blue-100 text-blue-800' :
+                          codeData.user_role === 'instructor' ? 'bg-green-100 text-green-800' :
+                          codeData.user_role === 'developer' ? 'bg-purple-100 text-purple-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {codeData.user_role.charAt(0).toUpperCase() + codeData.user_role.slice(1)}
+                        </span>
+                      ) : <span className="text-gray-400 text-sm">—</span>}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {new Date(codeData.used_at).toLocaleString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
+                      {new Date(codeData.created_at).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      {codeData.used_at ? new Date(codeData.used_at).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : <span className="text-gray-400">—</span>}
                     </td>
                   </tr>
                 ))}
@@ -376,7 +389,7 @@ export default function CodeGeneratorPage() {
         {!loadingUsedCodes && filteredCodes.length > 0 && (
           <div className="px-6 py-3 bg-gray-50 border-t border-gray-200">
             <p className="text-sm text-gray-600">
-              Showing {filteredCodes.length} of {usedCodes.length} used codes
+              Showing {filteredCodes.length} of {usedCodes.length} codes ({usedCodes.filter(c => c.is_used).length} used, {usedCodes.filter(c => !c.is_used).length} available)
             </p>
           </div>
         )}
