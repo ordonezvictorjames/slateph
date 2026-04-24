@@ -1410,19 +1410,22 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
 
       // Fetch pending tasks for admin and developer
       if (userRole === 'admin' || userRole === 'developer') {
-        // Get students not enrolled in any course (JHS, SHS, College, Scholar, Trainee)
+        // Get students not enrolled in any course (JHS, SHS, College, Scholar, Tesda Scholar)
         const { data: alltrainees } = await supabase
           .from('profiles')
           .select('id')
-          .in('role', ['shs_student', 'jhs_student', 'college_student', 'scholar'])
+          .in('role', ['shs_student', 'jhs_student', 'college_student', 'tesda_scholar'])
 
         const { data: enrolledtrainees } = await supabase
           .from('course_enrollments')
           .select('trainee_id')
           .eq('status', 'active')
+          .not('trainee_id', 'is', null)
 
-        const enrolledtraineeIds = new Set(enrolledtrainees?.map((e: { trainee_id: string }) => e.trainee_id) || [])
-        const unenrolledCount = (alltrainees || []).filter((s: { id: string }) => !enrolledtraineeIds.has(s.id)).length
+        const enrolledtraineeIds = new Set(enrolledtrainees?.map((e: { trainee_id: string }) => e.trainee_id).filter(Boolean) || [])
+        // Only count students who have NO active enrollment at all
+        const alltraineeIds = new Set((alltrainees || []).map((s: { id: string }) => s.id))
+        const unenrolledCount = [...alltraineeIds].filter(id => !enrolledtraineeIds.has(id)).length
 
         // Get instructors not assigned to any subject
         const { data: allInstructors } = await supabase

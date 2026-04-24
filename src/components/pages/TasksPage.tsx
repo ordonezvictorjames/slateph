@@ -107,7 +107,7 @@ export default function TasksPage() {
       const { data: alltrainees } = await supabase
         .from('profiles')
         .select('id, first_name, last_name, email, created_at')
-        .in('role', ['shs_student', 'jhs_student', 'college_student'])
+        .in('role', ['shs_student', 'jhs_student', 'college_student', 'tesda_scholar'])
         .order('created_at', { ascending: false })
 
       // Fetch enrolled trainees
@@ -115,8 +115,9 @@ export default function TasksPage() {
         .from('course_enrollments')
         .select('trainee_id')
         .eq('status', 'active')
+        .not('trainee_id', 'is', null)
 
-      const enrolledtraineeIds = new Set(enrolledtrainees?.map((e: { trainee_id: string }) => e.trainee_id) || [])
+      const enrolledtraineeIds = new Set(enrolledtrainees?.map((e: { trainee_id: string }) => e.trainee_id).filter(Boolean) || [])
       const unenrolled = (alltrainees || []).filter((s: trainee) => !enrolledtraineeIds.has(s.id))
       setUnenrolledtrainees(unenrolled)
 
