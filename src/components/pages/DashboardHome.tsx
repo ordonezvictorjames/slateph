@@ -1381,7 +1381,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
         { count: totalAdmins },
         { count: totalGuests },
         { count: totalScholars },
-        { count: totalTrainees }
+        { count: totalScholarCount }
       ] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact', head: true }).in('role', ['shs_student', 'jhs_student', 'college_student']),
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'shs_student'),
@@ -1392,7 +1392,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'admin'),
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'guest'),
         supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'scholar'),
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'trainee')
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'scholar')
       ])
 
       setUserStats({
@@ -1405,7 +1405,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
         totalAdmins: totalAdmins || 0,
         totalGuests: totalGuests || 0,
         totalScholars: totalScholars || 0,
-        totalTrainees: totalTrainees || 0
+        totalTrainees: 0
       })
 
       // Fetch pending tasks for admin and developer
