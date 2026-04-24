@@ -52,7 +52,6 @@ export default function LoginForm() {
       showSuccess('Welcome back!', 'Logging you in...')
       setLoading(false) // Clear loading state immediately
     } catch (err) {
-      console.error('Authentication error:', err)
       const errorMessage = err instanceof Error ? err.message : 'Login failed'
       showError('Login Failed', errorMessage)
       setLoading(false) // Only set loading to false on error
@@ -214,7 +213,6 @@ export default function LoginForm() {
       setIsSignUp(false)
       setLoading(false)
     } catch (err) {
-      console.error('Sign up error:', err)
       const errorMessage = err instanceof Error ? err.message : 'Sign up failed'
       showError('Sign Up Failed', errorMessage)
       setLoading(false)
@@ -251,7 +249,6 @@ export default function LoginForm() {
       setForgotPasswordEmail('')
       setForgotPasswordLoading(false)
     } catch (err) {
-      console.error('Forgot password error:', err)
       showError('Error', 'Failed to process password reset request')
       setForgotPasswordLoading(false)
     }

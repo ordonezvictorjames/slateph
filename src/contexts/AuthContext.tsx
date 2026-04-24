@@ -242,7 +242,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       setLoading(false)
     } catch (error) {
-      console.error('Sign in error:', error)
       setLoading(false)
       throw error
     }
