@@ -1414,7 +1414,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
         const { data: alltrainees } = await supabase
           .from('profiles')
           .select('id')
-          .in('role', ['shs_student', 'jhs_student', 'college_student', 'tesda_scholar'])
+          .in('role', ['shs_student', 'jhs_student', 'college_student', 'scholar'])
 
         const { data: enrolledtrainees } = await supabase
           .from('course_enrollments')
