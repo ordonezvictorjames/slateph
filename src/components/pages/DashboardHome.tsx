@@ -1425,7 +1425,7 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
         const enrolledtraineeIds = new Set(enrolledtrainees?.map((e: { trainee_id: string }) => e.trainee_id).filter(Boolean) || [])
         // Only count students who have NO active enrollment at all
         const alltraineeIds = new Set((alltrainees || []).map((s: { id: string }) => s.id))
-        const unenrolledCount = [...alltraineeIds].filter(id => !enrolledtraineeIds.has(id)).length
+        const unenrolledCount = Array.from(alltraineeIds).filter(id => !enrolledtraineeIds.has(id)).length
 
         // Get instructors not assigned to any subject
         const { data: allInstructors } = await supabase
