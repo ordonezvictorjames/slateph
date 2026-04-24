@@ -118,7 +118,6 @@ export default function CodeGeneratorPage() {
       }) as { data: any, error: any }
 
       if (error) {
-        console.error('Error generating code:', error)
         showError('Error', 'Failed to generate code')
         setGenerating(false)
         return

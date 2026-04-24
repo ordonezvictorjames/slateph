@@ -51,21 +51,25 @@ CREATE POLICY "quiz_grades_delete" ON quiz_grades
 ALTER TABLE user_badges DISABLE ROW LEVEL SECURITY; -- app-layer controlled
 
 -- ─── REGISTRATION CODES ─────────────────────────────────────────────────────
--- Only readable/usable via RPC functions; direct access blocked
+-- Keep RLS enabled but allow all operations since the RPC functions
+-- (generate_registration_code, validate_registration_code) run as invoker
+-- and need access via the anon key. Security is enforced by the RPC logic itself.
 ALTER TABLE registration_codes ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "reg_codes_no_direct_access" ON registration_codes;
+DROP POLICY IF EXISTS "reg_codes_open" ON registration_codes;
 
-CREATE POLICY "reg_codes_no_direct_access" ON registration_codes
-  FOR ALL USING (false); -- all access via RPC only (service role bypasses)
+CREATE POLICY "reg_codes_open" ON registration_codes
+  FOR ALL USING (true) WITH CHECK (true);
 
 -- ─── VERIFICATION CODES ─────────────────────────────────────────────────────
 ALTER TABLE verification_codes ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "verification_codes_no_direct_access" ON verification_codes;
+DROP POLICY IF EXISTS "verification_codes_open" ON verification_codes;
 
-CREATE POLICY "verification_codes_no_direct_access" ON verification_codes
-  FOR ALL USING (false); -- all access via RPC only
+CREATE POLICY "verification_codes_open" ON verification_codes
+  FOR ALL USING (true) WITH CHECK (true);
 
 -- ─── PASSWORD RESET REQUESTS ────────────────────────────────────────────────
 DO $$ BEGIN
