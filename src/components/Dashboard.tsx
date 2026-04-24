@@ -29,8 +29,9 @@ import GradesPage from '@/components/pages/GradesPage'
 import CoursesPage from '@/components/pages/CoursesPage'
 import ActivitiesPage from '@/components/pages/ActivitiesPage'
 import WhatsNewPage from '@/components/pages/WhatsNewPage'
+import SettingsPage from '@/components/pages/SettingsPage'
 
-export type PageType = 'dashboard' | 'user-management' | 'course-management' | 'my-courses' | 'courses' | 'activities' | 'whats-new' | 'schedule' | 'analytics' | 'profile' | 'system-tracker' | 'code-generator' | 'feature-requests' | 'tasks' | 'games' | 'activity' | 'ai-assistant' | 'library' | 'badges' | 'grades'
+export type PageType = 'dashboard' | 'user-management' | 'course-management' | 'my-courses' | 'courses' | 'activities' | 'whats-new' | 'schedule' | 'analytics' | 'profile' | 'settings' | 'system-tracker' | 'code-generator' | 'feature-requests' | 'tasks' | 'games' | 'activity' | 'ai-assistant' | 'library' | 'badges' | 'grades'
 
 const SPOTIFY_LS_KEY = 'slate_spotify_url'
 
@@ -160,7 +161,7 @@ export default function Dashboard() {
   const [currentPage, setCurrentPage] = useState<PageType>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('currentPage') as PageType
-      const validPages: PageType[] = ['dashboard','user-management','course-management','my-courses','courses','activities','whats-new','schedule','analytics','profile','system-tracker','code-generator','feature-requests','tasks','games','activity','ai-assistant','library','badges','grades']
+      const validPages: PageType[] = ['dashboard','user-management','course-management','my-courses','courses','activities','whats-new','schedule','analytics','profile','settings','system-tracker','code-generator','feature-requests','tasks','games','activity','ai-assistant','library','badges','grades']
       if (saved && validPages.includes(saved)) return saved
       localStorage.removeItem('currentPage')
     }
@@ -226,6 +227,7 @@ export default function Dashboard() {
       case 'schedule': return <SchedulePage key={refreshKey} />
       case 'analytics': return <AnalyticsPage key={refreshKey} />
       case 'profile': return <ProfilePage key={refreshKey} userId={profileUserId} onNavigateToProfile={navigateToProfile} />
+      case 'settings': return <SettingsPage key={refreshKey} />
       case 'system-tracker': return <SystemTrackerPage key={refreshKey} />
       case 'code-generator': return <CodeGeneratorPage key={refreshKey} />
       case 'feature-requests': return <FeatureRequestsPage key={refreshKey} />
