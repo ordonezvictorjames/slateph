@@ -754,7 +754,7 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
       const { data, error } = await supabase
         .from('profiles')
         .select('id, first_name, last_name, email, role')
-        .in('role', ['shs_student', 'jhs_student', 'college_student', 'scholar'])
+        .in('role', ['shs_student', 'jhs_student', 'college_student', 'scholar', 'tesda_scholar'])
         .order('first_name', { ascending: true })
 
       if (error) {
@@ -796,7 +796,7 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
           console.error('Error fetching students for enrollment:', studentsError.message)
         }
 
-        const studentRoles = ['shs_student', 'jhs_student', 'college_student', 'scholar']
+        const studentRoles = ['shs_student', 'jhs_student', 'college_student', 'scholar', 'tesda_scholar']
         const freshTrainees = (allUsers || []).filter((u: {role: string}) => studentRoles.includes(u.role))
         settrainees(freshTrainees)
 
@@ -870,7 +870,7 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
       const { count: studentsCount } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
-        .in('role', ['shs_student', 'jhs_student', 'college_student', 'scholar'])
+        .in('role', ['shs_student', 'jhs_student', 'college_student', 'scholar', 'tesda_scholar'])
 
       // Fetch total instructors count
       const { count: instructorsCount } = await supabase
