@@ -349,12 +349,12 @@ export default function CodeGeneratorPage() {
                         {codeData.code}
                       </span>
                       <span className="text-xs text-gray-500">
-                        {new Date(codeData.used_at).toLocaleDateString('en-US', {
+                        {codeData.used_at ? new Date(codeData.used_at).toLocaleDateString('en-US', {
                           month: 'short',
                           day: 'numeric',
                           hour: '2-digit',
                           minute: '2-digit'
-                        })}
+                        }) : '—'}
                       </span>
                     </div>
                     <div className="flex items-center mb-2">
