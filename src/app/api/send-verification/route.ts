@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 export async function POST(request: NextRequest) {
   try {
     const { email, code, firstName } = await request.json()
-
-    console.log('Verification code generated for:', email)
-    console.log('Code:', code)
 
     if (!email || !code || !firstName) {
       return NextResponse.json(
@@ -14,14 +13,28 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Return success with code (no email sending)
+    // Validate email format
+    if (!EMAIL_REGEX.test(email)) {
+      return NextResponse.json(
+        { success: false, message: 'Invalid email format' },
+        { status: 400 }
+      )
+    }
+
+    // Validate code is exactly 6 alphanumeric characters
+    if (!/^[A-Z0-9]{6}$/i.test(String(code))) {
+      return NextResponse.json(
+        { success: false, message: 'Invalid code format' },
+        { status: 400 }
+      )
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Verification code generated',
       code: code,
     })
   } catch (error) {
-    console.error('Send verification error:', error)
     return NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }

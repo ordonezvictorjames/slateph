@@ -71,6 +71,28 @@ export default function LoginForm() {
         return
       }
 
+      // Sanitize and validate name fields
+      const cleanFirst = firstName.trim().replace(/[<>'"]/g, '')
+      const cleanLast = lastName.trim().replace(/[<>'"]/g, '')
+      if (!cleanFirst || !cleanLast) {
+        showError('Invalid Name', 'First and last name are required')
+        setLoading(false)
+        return
+      }
+      if (cleanFirst.length > 50 || cleanLast.length > 50) {
+        showError('Invalid Name', 'Name must be 50 characters or less')
+        setLoading(false)
+        return
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(signUpEmail)) {
+        showError('Invalid Email', 'Please enter a valid email address')
+        setLoading(false)
+        return
+      }
+
       // Validate code length
       if (code.length !== 6) {
         showError('Invalid Code', 'Code must be exactly 6 characters')

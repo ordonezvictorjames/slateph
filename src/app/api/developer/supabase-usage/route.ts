@@ -1,11 +1,27 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { cookies } from 'next/headers'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // Verify session and restrict to developer/admin only
+  const cookieStore = await cookies()
+  const sessionCookie = cookieStore.get('slate_session')
+  if (!sessionCookie?.value) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+  try {
+    const session = JSON.parse(sessionCookie.value)
+    if (session.role !== 'developer' && session.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+  } catch {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const key = SERVICE_ROLE_KEY || ANON_KEY
   const supabase = createClient(SUPABASE_URL, key)
 
