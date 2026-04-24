@@ -19,6 +19,7 @@ export interface Profile {
   strand?: string | null
   cluster?: string | null
   batch_number?: number | string | null
+  gender?: string | null
   created_at: string
   updated_at: string
 }

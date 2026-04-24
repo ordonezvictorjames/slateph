@@ -46,7 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (data.session?.id && mounted) {
             const { data: profile, error } = await supabase
               .from('profiles')
-              .select('id, email, role, first_name, last_name, avatar_url, banner_url, spotify_url, grade, section, strand, cluster, batch_number, created_at, updated_at')
+              .select('id, email, role, first_name, last_name, avatar_url, banner_url, spotify_url, grade, section, strand, cluster, batch_number, gender, created_at, updated_at')
               .eq('id', data.session.id)
               .single()
 
@@ -69,6 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   strand: profile.strand,
                   cluster: profile.cluster,
                   batch_number: profile.batch_number,
+                  gender: profile.gender,
                   created_at: profile.created_at,
                   updated_at: profile.updated_at
                 }
@@ -206,7 +207,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const { data: fullProfile } = await supabase
           .from('profiles')
-          .select('id, email, role, first_name, last_name, avatar_url, banner_url, spotify_url, grade, section, strand, cluster, batch_number, created_at, updated_at')
+          .select('id, email, role, first_name, last_name, avatar_url, banner_url, spotify_url, grade, section, strand, cluster, batch_number, gender, created_at, updated_at')
           .eq('id', userData.id)
           .single()
         if (fullProfile) setUser(prev => prev ? { ...prev, profile: { ...prev.profile, ...fullProfile } } : prev)
@@ -283,7 +284,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Fetch updated profile from database
       const { data: profile, error } = await supabase
         .from('profiles')
-        .select('id, email, role, first_name, last_name, avatar_url, banner_url, spotify_url, grade, section, strand, cluster, batch_number, created_at, updated_at')
+        .select('id, email, role, first_name, last_name, avatar_url, banner_url, spotify_url, grade, section, strand, cluster, batch_number, gender, created_at, updated_at')
         .eq('id', user.id)
         .single()
 
@@ -310,6 +311,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             strand: profile.strand,
             cluster: profile.cluster,
             batch_number: profile.batch_number,
+                  gender: profile.gender,
             created_at: profile.created_at,
             updated_at: profile.updated_at
           }

@@ -21,6 +21,7 @@ export default function LoginForm() {
   // Sign up form fields
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
+  const [gender, setGender] = useState('')
   const [signUpEmail, setSignUpEmail] = useState('')
   const [signUpPassword, setSignUpPassword] = useState('')
   const [code, setCode] = useState('')
@@ -80,6 +81,12 @@ export default function LoginForm() {
       }
       if (cleanFirst.length > 50 || cleanLast.length > 50) {
         showError('Invalid Name', 'Name must be 50 characters or less')
+        setLoading(false)
+        return
+      }
+
+      if (!gender) {
+        showError('Gender Required', 'Please select your gender')
         setLoading(false)
         return
       }
@@ -200,12 +207,18 @@ export default function LoginForm() {
         p_user_id: data.user.id
       })
 
+      // Save gender
+      if (gender) {
+        await supabase.from('profiles').update({ gender }).eq('id', data.user.id)
+      }
+
       // Success! Clear form and show success message
       showSuccess('Account Created!', 'You can now sign in with your credentials')
       
       // Reset form and switch to sign in
       setFirstName('')
       setLastName('')
+      setGender('')
       setSignUpEmail('')
       setSignUpPassword('')
       setCode('')
@@ -466,6 +479,23 @@ export default function LoginForm() {
                   className="h-12 border-2 border-black rounded-xl focus:border-black focus:ring-0 focus:outline-none focus-visible:outline-none focus-visible:ring-0 w-full px-4 text-black"
                   required
                 />
+              </div>
+
+              {/* Gender */}
+              <div className="relative">
+                <label className="absolute -top-2 left-3 bg-white px-2 font-medium text-black" style={{ fontSize: '10px' }}>
+                  GENDER
+                </label>
+                <select
+                  value={gender}
+                  onChange={(e) => setGender(e.target.value)}
+                  required
+                  className="h-12 border-2 border-black rounded-xl focus:border-black focus:ring-0 focus:outline-none focus-visible:outline-none focus-visible:ring-0 w-full px-4 text-black bg-white appearance-none"
+                >
+                  <option value="" disabled>Select gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </select>
               </div>
 
               {/* Email */}

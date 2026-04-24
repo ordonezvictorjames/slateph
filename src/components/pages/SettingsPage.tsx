@@ -9,6 +9,8 @@ import { ButtonLoading } from '@/components/ui/loading'
 export default function SettingsPage() {
   const { user } = useAuth()
   const { showSuccess, showError } = useToast()
+  const [gender, setGender] = useState((user?.profile as any)?.gender || '')
+  const [savingGender, setSavingGender] = useState(false)
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -24,6 +26,20 @@ export default function SettingsPage() {
     { label: 'One number', met: /\d/.test(newPassword) },
   ]
   const allMet = passwordRequirements.every(r => r.met)
+
+  const handleSaveGender = async () => {
+    if (!user?.id || !gender) return
+    setSavingGender(true)
+    try {
+      const supabase = createClient()
+      await supabase.from('profiles').update({ gender }).eq('id', user.id)
+      showSuccess('Saved', 'Gender updated successfully')
+    } catch {
+      showError('Error', 'Failed to update gender')
+    } finally {
+      setSavingGender(false)
+    }
+  }
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -73,6 +89,40 @@ export default function SettingsPage() {
       <div className="mb-6">
         <h1 className="text-xl font-bold text-gray-900">Settings</h1>
         <p className="text-sm text-gray-500 mt-0.5">Manage your account preferences</p>
+      </div>
+
+      {/* Gender */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-4">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#e6f4f7' }}>
+            <svg className="w-5 h-5" fill="none" stroke="#0f4c5c" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-sm font-bold text-gray-900">Gender</h2>
+            <p className="text-xs text-gray-500">Update your gender information</p>
+          </div>
+        </div>
+        <div className="flex gap-3">
+          <select
+            value={gender}
+            onChange={e => setGender(e.target.value)}
+            className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400"
+          >
+            <option value="" disabled>Select gender</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+          <button
+            onClick={handleSaveGender}
+            disabled={savingGender || !gender}
+            className="px-4 py-2 text-sm font-semibold text-white rounded-lg disabled:opacity-50 transition-colors"
+            style={{ backgroundColor: '#0f4c5c' }}
+          >
+            {savingGender ? '...' : 'Save'}
+          </button>
+        </div>
       </div>
 
       {/* Change Password */}

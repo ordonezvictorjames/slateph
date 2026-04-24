@@ -139,6 +139,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
     section: null,
     grade: null,
     batch_number: null,
+    gender: null,
   })
 
   const handleInputChange = (field: keyof NewUser, value: string | number | null) => {
@@ -163,6 +164,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
       section: null,
       grade: null,
       batch_number: null,
+      gender: null,
     })
     setUploadedImage(null)
   }
@@ -257,7 +259,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
       const insertedUser = data?.user
 
       // Update avatar, strand, section, and grade if needed
-      if (insertedUser && (newUser.avatar_url || newUser.strand || newUser.section || newUser.grade || newUser.batch_number)) {
+      if (insertedUser && (newUser.avatar_url || newUser.strand || newUser.section || newUser.grade || newUser.batch_number || newUser.gender)) {
         await supabase
           .from('profiles')
           .update({ 
@@ -266,6 +268,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
             section: newUser.section,
             grade: newUser.grade,
             batch_number: newUser.batch_number,
+            gender: newUser.gender,
           })
           .eq('id', insertedUser.id)
       }
@@ -297,6 +300,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
         section: null,
         grade: null,
         batch_number: null,
+      gender: null,
       })
       setUploadedImage(null)
       setShowAddModal(false)
@@ -325,6 +329,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
       section: userData.section || null,
       grade: userData.grade || null,
       batch_number: userData.batch_number || null,
+      gender: (userData as any).gender || null,
     })
     
     // Reset avatar states first
@@ -384,6 +389,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
           section: newUser.section,
           grade: newUser.grade,
           batch_number: newUser.batch_number,
+          gender: newUser.gender,
         })
         .eq('id', editingUser.id)
 
@@ -475,6 +481,7 @@ export default function UserManagementPage({ onNavigateToProfile }: UserManageme
         section: null,
         grade: null,
         batch_number: null,
+      gender: null,
       })
       setEditingUser(null)
       setUploadedImage(null)

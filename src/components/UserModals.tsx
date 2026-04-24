@@ -55,6 +55,7 @@ export interface NewUser {
   section: string | null
   grade: number | null
   batch_number: number | null
+  gender: string | null
 }
 
 interface UserModalProps {
@@ -192,6 +193,18 @@ export function UserModal({ isOpen, onClose, onSubmit, user, onInputChange, subm
                 ? <input type="password" value={user.password} onChange={e => onInputChange('password', e.target.value)} placeholder="Leave blank to keep current" className={inputCls} />
                 : <input type="text" value="Slate2026!" readOnly disabled className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg bg-gray-50 text-gray-400 cursor-not-allowed" />
               }
+            </Field>
+
+            <Field label="Gender">
+              <CustomSelect
+                value={user.gender ?? ''}
+                onChange={v => onInputChange('gender', v || null)}
+                options={[
+                  { value: 'male', label: 'Male' },
+                  { value: 'female', label: 'Female' },
+                ]}
+                placeholder="Select Gender"
+              />
             </Field>
           </div>
 
