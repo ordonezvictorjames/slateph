@@ -570,33 +570,89 @@ export default function QuizPlayer({
   // ── RESULT ─────────────────────────────────────────────────
   return (
     <div className="space-y-4">
-      <div className={`rounded-xl p-5 text-center border ${passed ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-        <div className={`text-4xl font-bold mb-1 ${passed ? 'text-green-700' : 'text-red-600'}`}>{pct}%</div>
-        <p className={`text-sm font-semibold ${passed ? 'text-green-700' : 'text-red-600'}`}>
-          {passed ? 'Passed!' : 'Not passed'}
-        </p>
-        <p className="text-xs text-gray-500 mt-1">{score!.correct} / {score!.total} correct</p>
-        {saving && <p className="text-xs text-gray-400 mt-1">Saving grade...</p>}
-      </div>
+      {(() => {
+        const getRating = (p: number) => {
+          if (p < 60) return 'Failed'
+          if (p < 75) return 'Good'
+          if (p < 90) return 'Very Good'
+          return 'Excellent'
+        }
+        const rating = getRating(pct)
+        const isFailed = pct < 60
+        const accent = isFailed ? '#e74c3c' : '#0f4c5c'
+        const radius = 54
+        const circumference = 2 * Math.PI * radius
+        const dashOffset = circumference - (pct / 100) * circumference
+
+        return (
+          <div className="bg-white rounded-2xl p-6 text-center shadow-sm border border-gray-100">
+            {/* Circular progress */}
+            <div className="flex items-center justify-center mb-4">
+              <div className="relative w-36 h-36">
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 128 128">
+                  <circle cx="64" cy="64" r={radius} fill="none" stroke="#e5e7eb" strokeWidth="10" />
+                  <circle cx="64" cy="64" r={radius} fill="none" stroke={accent} strokeWidth="10"
+                    strokeDasharray={circumference} strokeDashoffset={dashOffset}
+                    strokeLinecap="round" style={{ transition: 'stroke-dashoffset 0.6s ease' }} />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-2xl font-bold text-gray-900">{score!.correct}<span className="text-sm font-medium text-gray-400">/{score!.total}</span></span>
+                  <span className="text-xs font-semibold mt-0.5" style={{ color: accent }}>Your Score</span>
+                </div>
+              </div>
+            </div>
+
+            <h3 className="text-xl font-bold text-gray-900 mb-3">
+              {isFailed ? 'Keep Trying!' : 'Quiz Done!'}
+            </h3>
+
+            {/* Rating pill */}
+            <div className="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold"
+              style={{ backgroundColor: `${accent}15`, color: accent }}>
+              {pct}% — {rating}
+            </div>
+            {saving && <p className="text-xs text-gray-400 mt-2">Saving grade...</p>}
+          </div>
+        )
+      })()}
 
       <div className="space-y-3">
         {questions.map((q, qi) => {
           const chosen  = answers[q.id]
           const correct = q.choices.find(c => c.isCorrect)
           const isRight = chosen === correct?.id
+          const accent  = isRight ? '#0f4c5c' : '#e74c3c'
           return (
-            <div key={q.id} className={`rounded-xl border p-3 space-y-2 ${isRight ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
-              <p className="text-xs font-medium text-gray-800">{qi + 1}. {q.text}</p>
-              <div className="space-y-1">
+            <div key={q.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 space-y-3">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Question {qi + 1}</p>
+              <p className="text-sm font-semibold text-gray-900">{q.text}</p>
+              <div className="space-y-2">
                 {q.choices.map((c, ci) => {
                   const isChosen  = c.id === chosen
                   const isCorrect = c.isCorrect
+                  const isHighlight = isCorrect || (isChosen && !isCorrect)
                   return (
-                    <div key={c.id} className={`flex items-center gap-2 px-2 py-1 rounded-lg text-xs ${isCorrect ? 'bg-green-100 text-green-800 font-medium' : isChosen && !isCorrect ? 'bg-red-100 text-red-700' : 'text-gray-500'}`}>
-                      <span className="shrink-0">{String.fromCharCode(65 + ci)}.</span>
-                      <span>{c.text}</span>
-                      {isCorrect && <span className="ml-auto shrink-0">correct</span>}
-                      {isChosen && !isCorrect && <span className="ml-auto shrink-0">your answer</span>}
+                    <div key={c.id}
+                      className="flex items-center justify-between px-4 py-2.5 rounded-full text-sm transition-all"
+                      style={
+                        isCorrect
+                          ? { background: `linear-gradient(135deg, #0f4c5c, #1f7a8c)`, color: '#fff' }
+                          : isChosen && !isCorrect
+                          ? { backgroundColor: '#fef2f2', border: '1px solid #fca5a5', color: '#dc2626' }
+                          : { backgroundColor: '#f3f4f6', color: '#6b7280' }
+                      }
+                    >
+                      <span>{String.fromCharCode(65 + ci)}.  {c.text}</span>
+                      {isCorrect && (
+                        <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                      {isChosen && !isCorrect && (
+                        <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      )}
                     </div>
                   )
                 })}

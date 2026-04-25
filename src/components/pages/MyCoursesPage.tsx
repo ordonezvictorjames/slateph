@@ -506,7 +506,8 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
                   const isSelected = previewCourse?.id === course.id
                   return (
                     <div key={course.id} onClick={() => setPreviewCourse(course)}
-                      className={`flex items-center gap-4 px-4 py-5 cursor-pointer border-b border-gray-100 transition-all shadow-sm hover:shadow-md ${isSelected ? 'bg-gray-50' : 'hover:bg-gray-50'}`}>
+                      className={`flex items-center gap-4 px-4 py-4 mx-2 my-1 cursor-pointer rounded-lg transition-all ${isSelected ? 'text-white' : 'bg-gray-100 hover:bg-gray-200'}`}
+                      style={isSelected ? { backgroundColor: '#0f4c5c' } : {}}>
                       <div className="flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border border-gray-200 bg-gray-100">
                         {course.thumbnail_url ? (
                           <img src={course.thumbnail_url} alt={course.title} className="w-full h-full" style={{ objectFit: "cover", objectPosition: "center" }} />
@@ -517,12 +518,13 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-900 line-clamp-1">{course.title}</p>
-                        {course.description && <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">{course.description}</p>}
+                        <p className={`text-sm font-semibold line-clamp-1 ${isSelected ? 'text-white' : 'text-gray-900'}`}>{course.title}</p>
+                        {course.description && <p className={`text-xs mt-0.5 line-clamp-2 ${isSelected ? 'text-white/70' : 'text-gray-400'}`}>{course.description}</p>}
                         {!isStudent && (
                           <span className={`inline-flex mt-1.5 text-[10px] px-1.5 py-0.5 rounded-full font-medium border ${
+                            isSelected ? 'border-white/40 text-white' :
                             course.status === 'active' ? 'text-white border-[#1f7a8c]' : 'bg-white text-[#1f7a8c] border-[#1f7a8c]'
-                          }`} style={course.status === 'active' ? { backgroundColor: '#1f7a8c' } : {}}>
+                          }`} style={!isSelected && course.status === 'active' ? { backgroundColor: '#1f7a8c' } : {}}>
                             {course.status.charAt(0).toUpperCase() + course.status.slice(1)}
                           </span>
                         )}
@@ -707,7 +709,7 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
                         const isLocked = isSubjectSequentiallyLocked || (!isAdmin && subject.status !== 'active')
                         const isHighlighted = highlightedSubjectId === subject.id
                         return (
-                          <div key={subject.id} className="rounded-xl border border-gray-200 bg-white">
+                          <div key={subject.id} className="rounded-xl border border-gray-200 bg-gray-100">
                           <div
                               className={`flex gap-3 p-3 transition-colors ${isLocked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-gray-50'}`}
                               onClick={() => !isLocked && toggleSubjectExpand(subject)}

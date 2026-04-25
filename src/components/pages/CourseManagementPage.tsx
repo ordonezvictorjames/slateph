@@ -2221,33 +2221,31 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
                       <div
                         key={course.id}
                         onClick={() => setPreviewCourse(course)}
-                        className={`flex items-center gap-4 px-4 py-5 cursor-pointer border-b border-gray-100 transition-all shadow-sm hover:shadow-md ${isSelected ? 'bg-gray-50' : 'hover:bg-gray-50'}`}
+                        className={`flex items-center gap-4 px-4 py-4 mx-2 my-1 cursor-pointer rounded-lg transition-all ${isSelected ? '' : 'bg-gray-100 hover:bg-gray-200'}`}
+                        style={isSelected ? { backgroundColor: '#0f4c5c' } : {}}
                       >
                         {/* Thumbnail */}
                         <div className="flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border border-gray-200 bg-gray-100">
                           {course.thumbnail_url ? (
                             <img src={course.thumbnail_url} alt={course.title} className="w-full h-full" style={{ objectFit: "cover", objectPosition: "center" }} />
                           ) : (
-                            <div className="w-full h-full" style={{
-                              background: 'linear-gradient(135deg, #1f7a8c20, #1f7a8c08)'
-                            }} />
+                            <div className="w-full h-full" style={{ background: 'linear-gradient(135deg, #1f7a8c20, #1f7a8c08)' }} />
                           )}
                         </div>
                         {/* Info */}
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-gray-900 line-clamp-1 leading-snug">{course.title}</p>
+                          <p className={`text-sm font-semibold line-clamp-1 leading-snug ${isSelected ? 'text-white' : 'text-gray-900'}`}>{course.title}</p>
                           {course.description && (
-                            <p className="text-xs text-gray-400 mt-0.5 line-clamp-2 leading-relaxed">{course.description}</p>
+                            <p className={`text-xs mt-0.5 line-clamp-2 leading-relaxed ${isSelected ? 'text-white/70' : 'text-gray-400'}`}>{course.description}</p>
                           )}
                           <div className="flex items-center gap-2 mt-1.5">
                             <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium border ${
-                              course.status === 'active'
-                                ? 'text-white border-[#1f7a8c]'
-                                : 'bg-white text-[#1f7a8c] border-[#1f7a8c]'
-                            }`} style={course.status === 'active' ? { backgroundColor: '#1f7a8c' } : {}}>
+                              isSelected ? 'border-white/40 text-white' :
+                              course.status === 'active' ? 'text-white border-[#1f7a8c]' : 'bg-white text-[#1f7a8c] border-[#1f7a8c]'
+                            }`} style={!isSelected && course.status === 'active' ? { backgroundColor: '#1f7a8c' } : {}}>
                               {course.status.charAt(0).toUpperCase() + course.status.slice(1)}
                             </span>
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-blue-100 text-blue-700">
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${isSelected ? 'bg-white/20 text-white' : 'bg-blue-100 text-blue-700'}`}>
                               {course.course_type === 'academic' ? 'Academic' : course.course_type === 'tesda' ? 'TESDA' : 'UpSkill'}
                             </span>
                           </div>
@@ -2457,7 +2455,7 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
                 const mods = subjectModules[subject.id] || []
                 const isLoadingMods = subjectModulesLoading.has(subject.id)
                 return (
-                  <div key={subject.id} className="rounded-xl border border-gray-200 overflow-hidden bg-white">
+                  <div key={subject.id} className="rounded-xl border border-gray-200 overflow-hidden bg-gray-100">
                     {/* Subject row */}
                     <div
                       className="flex gap-3 p-3 cursor-pointer transition-all hover:bg-gray-50"

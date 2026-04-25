@@ -800,7 +800,7 @@ export default function SchedulePage() {
           </div>
 
           {/* Right Column - Day Schedule View */}
-          <div className="rounded-xl overflow-hidden flex flex-col shadow-sm border-2 border-gray-200">
+          <div className="rounded-xl overflow-hidden flex flex-col shadow-sm border-2 border-gray-200 self-start sticky top-4" style={{ maxHeight: 'calc(100vh - 8rem)' }}>
             {/* Blue Header */}
             <div className="flex items-center justify-between px-4 py-3" style={{ backgroundColor: '#1f7a8c' }}>
               <span className="text-white font-semibold text-sm">Day</span>
@@ -833,7 +833,7 @@ export default function SchedulePage() {
             </div>
 
             {/* Time Grid */}
-            <div className="bg-white flex-1 pt-3">
+            <div className="bg-white flex-1 pt-3 overflow-y-auto">
               {(() => {
                 const SLOT_HEIGHT = 64 // px per hour
                 const START_HOUR = 8
