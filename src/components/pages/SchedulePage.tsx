@@ -586,75 +586,86 @@ export default function SchedulePage() {
           {/* Left Column - Calendar (50%) */}
           <div className="flex flex-col gap-6">
             {/* Dashboard-style Calendar */}
-            <div className="rounded-xl p-4 shadow-sm border-2 border-gray-200 bg-white">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-gray-800">Calendar</h3>
-              </div>
-
-              {/* Month Navigation */}
-              <div className="flex items-center justify-between mb-4">
+            <div className="rounded-2xl overflow-hidden shadow-sm">
+              {/* Header — dark teal */}
+              <div className="flex items-center justify-between px-5 py-4" style={{ backgroundColor: '#0f4c5c' }}>
                 <button
                   onClick={() => navigateMonth('prev')}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="w-8 h-8 flex items-center justify-center rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-colors"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
-                <h4 className="font-semibold text-gray-800">
+                <h4 className="text-base font-bold text-white">
                   {selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                 </h4>
                 <button
                   onClick={() => navigateMonth('next')}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="w-8 h-8 flex items-center justify-center rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-colors"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
                   </svg>
                 </button>
               </div>
 
               {/* Calendar Grid */}
-              <div className="grid grid-cols-7 gap-1 mb-4">
-                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
-                  <div key={`day-${index}`} className="text-center text-xs font-medium text-gray-500 py-2">
-                    {day}
-                  </div>
-                ))}
-                {getMonthDates().map((date, index) => {
-                  const daySchedules = getSchedulesForDate(date)
-                  const isCurrentMonth = date.getMonth() === selectedDate.getMonth()
-                  const isToday = date.toDateString() === new Date().toDateString()
-                  const hasEvent = daySchedules.length > 0
-
-                  return (
-                    <div
-                      key={index}
-                      onClick={() => {
-                        if (hasEvent) {
-                          setSelectedDateSchedules(daySchedules)
-                          setSelectedDateString(date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }))
-                          setShowDateModal(true)
-                        }
-                      }}
-                      className={`text-center text-sm py-2 relative cursor-pointer transition-colors ${
-                        isToday
-                          ? 'text-white rounded-lg font-bold'
-                          : isCurrentMonth
-                          ? 'text-gray-700 hover:bg-gray-100 rounded-lg'
-                          : 'text-gray-300'
-                      }`}
-                      style={isToday ? { backgroundColor: '#1f7a8c' } : {}}
-                    >
-                      {date.getDate()}
-                      {hasEvent && (
-                        <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2">
-                          <div className={`w-1 h-1 rounded-full ${isToday ? 'bg-white' : 'bg-green-500'}`} />
-                        </div>
-                      )}
+              <div className="bg-white p-4">
+                {/* Day labels */}
+                <div className="grid grid-cols-7 mb-2">
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, i) => (
+                    <div key={i} className={`text-center text-[11px] font-semibold py-1 ${i === 0 ? 'text-red-400' : i === 6 ? 'text-blue-400' : 'text-gray-400'}`}>
+                      {day}
                     </div>
-                  )
-                })}
+                  ))}
+                </div>
+
+                {/* Day cells */}
+                <div className="grid grid-cols-7 gap-1">
+                  {getMonthDates().map((date, index) => {
+                    const daySchedules = getSchedulesForDate(date)
+                    const isCurrentMonth = date.getMonth() === selectedDate.getMonth()
+                    const isToday = date.toDateString() === new Date().toDateString()
+                    const hasEvent = daySchedules.length > 0
+                    const isSun = date.getDay() === 0
+                    const isSat = date.getDay() === 6
+
+                    return (
+                      <div
+                        key={index}
+                        onClick={() => {
+                          if (hasEvent) {
+                            setSelectedDateSchedules(daySchedules)
+                            setSelectedDateString(date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }))
+                            setShowDateModal(true)
+                          }
+                        }}
+                        className={`relative flex items-center justify-center h-9 rounded-xl text-sm font-semibold transition-all cursor-pointer
+                          ${isToday ? 'text-white shadow-md' : ''}
+                          ${!isToday && isCurrentMonth && hasEvent ? 'shadow-sm' : ''}
+                          ${!isToday && isCurrentMonth && !hasEvent ? 'hover:bg-gray-50' : ''}
+                          ${!isCurrentMonth ? 'opacity-25' : ''}
+                          ${!isToday && isCurrentMonth && isSun ? 'text-red-400' : ''}
+                          ${!isToday && isCurrentMonth && isSat ? 'text-blue-400' : ''}
+                          ${!isToday && isCurrentMonth && !isSun && !isSat ? 'text-gray-800' : ''}
+                        `}
+                        style={
+                          isToday
+                            ? { backgroundColor: '#0f4c5c' }
+                            : hasEvent && isCurrentMonth
+                            ? { backgroundColor: '#e6f4f7' }
+                            : {}
+                        }
+                      >
+                        {date.getDate()}
+                        {hasEvent && !isToday && (
+                          <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full" style={{ backgroundColor: '#0f4c5c' }} />
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
             </div>
 
