@@ -438,7 +438,7 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
       const { data: coursesData, error } = await supabase
         .from('courses')
         .select('*, subjects(*, modules(*))')
-        .order('created_at', { ascending: false })
+        .order('created_at', { ascending: true })
 
       if (error) {
         console.error('Error fetching courses:', error)

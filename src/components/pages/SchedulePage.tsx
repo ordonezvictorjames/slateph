@@ -959,27 +959,21 @@ export default function SchedulePage() {
                         return (
                           <div
                             key={s.id}
-                            className="absolute rounded-md px-3 py-2 overflow-hidden group transition-all border-l-4"
+                            className="absolute rounded-xl px-3 py-2 overflow-hidden group transition-all"
                             style={{
                               top: `${topPx}px`,
                               height: `${heightPx}px`,
                               left: `calc(${leftExpr})`,
                               width: `calc(${slotWidthExpr})`,
-                              backgroundColor: '#ffffff',
-                              borderLeftColor: color,
-                              borderTopColor: '#e5e7eb',
-                              borderRightColor: '#e5e7eb',
-                              borderBottomColor: '#e5e7eb',
-                              borderTopWidth: '1px',
-                              borderRightWidth: '1px',
-                              borderBottomWidth: '1px',
+                              backgroundColor: '#0f4c5c',
+                              border: '1px solid rgba(255,255,255,0.1)',
                             }}
                           >
                             <div className="flex items-start justify-between gap-2 h-full">
                               <div className="min-w-0 flex-1">
-                                <div className="text-xs font-medium" style={{ color }}>{startLabel}</div>
-                                <div className="text-sm font-bold truncate text-gray-800">{s.title}</div>
-                                {s.course_title && <div className="text-xs text-gray-500 truncate">{s.course_title}</div>}
+                                <div className="text-xs font-medium text-white/60">{startLabel}</div>
+                                <div className="text-sm font-bold truncate text-white">{s.title}</div>
+                                {s.course_title && <div className="text-xs text-white/50 truncate">{s.course_title}</div>}
                               </div>
                               <div className="flex flex-col items-end gap-1 flex-shrink-0">
 

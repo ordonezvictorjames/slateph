@@ -321,10 +321,7 @@ export default function QuizPlayer({
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
                   <th className="text-left px-3 py-2 text-gray-500 font-medium">Student</th>
-                  <th className="text-center px-3 py-2 text-gray-500 font-medium">Type</th>
                   <th className="text-center px-3 py-2 text-gray-500 font-medium">Score</th>
-                  <th className="text-center px-3 py-2 text-gray-500 font-medium">%</th>
-                  <th className="text-center px-3 py-2 text-gray-500 font-medium">Result</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -333,18 +330,7 @@ export default function QuizPlayer({
                     <td className="px-3 py-2 text-gray-800 font-medium">
                       {g.profiles ? `${g.profiles.first_name} ${g.profiles.last_name}` : g.user_id.slice(0, 8) + '…'}
                     </td>
-                    <td className="px-3 py-2 text-center">
-                      <span className={`px-1.5 py-0.5 rounded-full text-xs font-medium capitalize ${g.quiz_type === 'exam' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-[#0f4c5c]'}`}>
-                        {g.quiz_type}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 text-center text-gray-700">{g.score}/{g.total}</td>
-                    <td className="px-3 py-2 text-center font-semibold text-gray-800">{g.percentage}%</td>
-                    <td className="px-3 py-2 text-center">
-                      <span className={`px-1.5 py-0.5 rounded-full text-xs font-medium ${g.passed ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
-                        {g.passed ? 'Passed' : 'Failed'}
-                      </span>
-                    </td>
+                    <td className="px-3 py-2 text-center font-semibold text-gray-800">{g.score}/{g.total}</td>
                   </tr>
                 ))}
               </tbody>
