@@ -305,7 +305,7 @@ export default function CodeGeneratorPage() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       {codeData.is_used ? (
                         <div className="flex items-center">
-                          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
+                          <div className="w-8 h-8 bg-[#0f4c5c] rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
                             {codeData.user_name.charAt(0).toUpperCase()}
                           </div>
                           <span className="font-medium text-gray-900">{codeData.user_name}</span>
@@ -358,7 +358,7 @@ export default function CodeGeneratorPage() {
                       </span>
                     </div>
                     <div className="flex items-center mb-2">
-                      <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
+                      <div className="w-8 h-8 bg-[#0f4c5c] rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
                         {codeData.user_name.charAt(0).toUpperCase()}
                       </div>
                       <div>

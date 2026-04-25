@@ -1771,55 +1771,39 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
             {/* Today's Events + Upcoming Schedule moved to main content area */}
 
             {/* Calendar + Clock Card - Desktop only */}
-            <div className="hidden xl:block bg-white rounded-xl shadow-sm overflow-hidden">
-              <div className="p-4">
-                {/* Clock */}
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <p className="text-2xl font-bold text-gray-900 leading-none tabular-nums">
-                      {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
+            <div className="hidden xl:block">
+              <div className="flex rounded-2xl overflow-hidden shadow-sm" style={{ minHeight: '72px' }}>
+
+                {/* Left — Date (dark, bg-ready for image) */}
+                <div className="relative flex flex-col items-center justify-center px-3 py-2 w-[30%]"
+                  style={{ backgroundColor: '#0f4c5c', backgroundSize: 'cover', backgroundPosition: 'center' }}>
+                  {/* overlay for readability when bg image is added */}
+                  <div className="absolute inset-0 rounded-l-2xl" style={{ backgroundColor: 'rgba(15,76,92,0.75)' }} />
+                  <div className="relative z-10 flex flex-col items-center">
+                    <p className="text-xl font-extrabold text-white leading-none tabular-nums">
+                      {currentDate.getDate().toString().padStart(2, '0')}
+                    </p>
+                    <p className="text-[10px] font-bold text-white/70 uppercase tracking-widest mt-1">
+                      {currentDate.toLocaleDateString('en-US', { month: 'short' })}
                     </p>
                   </div>
-                  <button onClick={() => onNavigate('schedule')} className="text-xs font-medium hover:opacity-80" style={{ color: '#0f4c5c' }}>Schedule</button>
                 </div>
 
-                {/* Calendar header */}
-                <div className="flex items-center justify-between mb-2">
-                  <button onClick={() => navigateMonth('prev')} className="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500">
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-                  </button>
-                  <span className="text-xs font-semibold text-gray-800">{getMonthYear()}</span>
-                  <button onClick={() => navigateMonth('next')} className="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100 text-gray-500">
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                  </button>
+                {/* Right — Time (light) */}
+                <div className="flex flex-col items-start justify-center px-3 py-2 w-[70%] bg-gray-50">
+                  <div className="flex items-baseline gap-0.5">
+                    <span className="text-xl font-extrabold text-gray-900 tabular-nums leading-none">
+                      {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                    </span>
+                    <span className="text-xs font-semibold text-gray-400 ml-1 lowercase">
+                      {currentTime.toLocaleTimeString('en-US', { hour12: true }).slice(-2)}
+                    </span>
+                  </div>
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mt-1">
+                    {currentDate.toLocaleDateString('en-US', { weekday: 'long' })}
+                  </p>
                 </div>
 
-                {/* Day labels */}
-                <div className="grid grid-cols-7 mb-1">
-                  {['Su','Mo','Tu','We','Th','Fr','Sa'].map(d => (
-                    <div key={d} className="text-center text-[10px] font-medium text-gray-400 py-0.5">{d}</div>
-                  ))}
-                </div>
-
-                {/* Calendar days */}
-                <div className="grid grid-cols-7 gap-0.5">
-                  {getCalendarData().map((day, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => day.hasEvent && onNavigate('schedule')}
-                      className={`relative flex items-center justify-center h-7 w-full rounded text-[11px] font-medium transition-colors
-                        ${day.isToday ? 'text-white' : day.isCurrentMonth ? 'text-gray-700 hover:bg-gray-100' : 'text-gray-300'}
-                        ${day.hasEvent && !day.isToday ? 'font-bold' : ''}
-                      `}
-                      style={day.isToday ? { backgroundColor: '#0f4c5c' } : {}}
-                    >
-                      {day.day}
-                      {day.hasEvent && !day.isToday && (
-                        <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full" style={{ backgroundColor: '#1f7a8c' }} />
-                      )}
-                    </button>
-                  ))}
-                </div>
               </div>
             </div>
 

@@ -910,7 +910,7 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto">
           {/* Banner Section */}
-          <div className="relative w-full h-32 md:h-48 bg-gradient-to-r from-blue-500 to-purple-600 overflow-hidden">
+          <div className="relative w-full h-32 md:h-48 bg-[#0f4c5c] overflow-hidden">
             <div className="absolute inset-0">
               {bannerUrl ? (
                 <img 
@@ -922,7 +922,7 @@ export default function ProfilePage({ userId, onNavigateToProfile }: ProfilePage
                   }}
                 />
               ) : (
-                <div className="w-full h-full bg-gradient-to-r from-blue-500 to-purple-600"></div>
+                <div className="w-full h-full bg-[#0f4c5c]"></div>
               )}
             </div>
             

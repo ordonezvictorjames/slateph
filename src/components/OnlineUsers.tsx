@@ -215,7 +215,7 @@ export default function OnlineUsers({ onNavigateToProfile }: OnlineUsersProps = 
               />
             )
           ) : (
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-xs">
+            <div className="w-7 h-7 rounded-full bg-[#0f4c5c] flex items-center justify-center text-white font-semibold text-xs">
               {u.first_name.charAt(0)}{u.last_name.charAt(0)}
             </div>
           )}

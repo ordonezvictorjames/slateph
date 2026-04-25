@@ -653,8 +653,14 @@ export default function CourseChat({ isOpen, onClose, onNavigateToProfile }: Cou
                                 <div className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm sm:text-base md:text-lg">
                                   {msg.user_avatar_url}
                                 </div>
+                              ) : msg.user_avatar_url ? (
+                                <img
+                                  src={msg.user_avatar_url}
+                                  alt={msg.user_first_name}
+                                  className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full object-cover"
+                                />
                               ) : (
-                                <div className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-[#0f4c5c] to-[#1f7a8c] flex items-center justify-center text-white text-[10px] sm:text-xs md:text-sm font-semibold">
+                                <div className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full bg-[#0f4c5c] flex items-center justify-center text-white text-[10px] sm:text-xs md:text-sm font-semibold">
                                   {msg.user_first_name.charAt(0)}{msg.user_last_name.charAt(0)}
                                 </div>
                               )}
