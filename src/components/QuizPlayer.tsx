@@ -86,16 +86,23 @@ export default function QuizPlayer({
     if (!isStudent || !userId) { setPhase('intro'); return }
     supabase
       .from('quiz_grades')
-      .select('id')
+      .select('id, score, total, percentage, answers')
       .eq('module_id', moduleId)
       .eq('user_id', userId)
-      .then(({ data }: { data: { id: string }[] | null }) => {
+      .order('submitted_at', { ascending: false })
+      .then(({ data }: { data: { id: string; score: number; total: number; percentage: number; answers: any }[] | null }) => {
         const tries = data?.length ?? 0
         const maxTries = config.max_tries ?? 1
-        if (maxTries === 0) {
-          // unlimited — never block
-        } else if (tries >= maxTries) {
+        if (maxTries !== 0 && tries >= maxTries) {
           setAlreadyTaken(true)
+          // Restore last result so the result screen shows instead of intro
+          const last = data?.[0]
+          if (last) {
+            setScore({ correct: last.score, total: last.total })
+            if (last.answers) setAnswers(last.answers)
+            setPhase('result')
+            return
+          }
         }
         setPhase('intro')
       })
@@ -602,15 +609,18 @@ export default function QuizPlayer({
               </div>
             </div>
 
-            <h3 className="text-xl font-bold text-gray-900 mb-3">
+            <h2 className="text-xl font-bold text-gray-900 mb-0.5">
               {isFailed ? 'Keep Trying!' : 'Quiz Done!'}
-            </h3>
+            </h2>
+            <p className="text-sm text-gray-400 mb-3">
+              {isFailed ? 'Review the material and try again.' : "Well done, you've completed the quiz!"}
+            </p>
 
             {/* Rating pill */}
-            <div className="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold"
-              style={{ backgroundColor: `${accent}15`, color: accent }}>
+            <div className="inline-block px-5 py-2 rounded-full text-sm font-semibold text-white" style={{ backgroundColor: accent }}>
               {pct}% — {rating}
             </div>
+
             {saving && <p className="text-xs text-gray-400 mt-2">Saving grade...</p>}
           </div>
         )
@@ -621,37 +631,35 @@ export default function QuizPlayer({
           const chosen  = answers[q.id]
           const correct = q.choices.find(c => c.isCorrect)
           const isRight = chosen === correct?.id
-          const accent  = isRight ? '#0f4c5c' : '#e74c3c'
           return (
-            <div key={q.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 space-y-3">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Question {qi + 1}</p>
-              <p className="text-sm font-semibold text-gray-900">{q.text}</p>
+            <div key={q.id} className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm space-y-3">
+              <p className="text-sm font-semibold text-gray-800">{qi + 1}. {q.text}</p>
               <div className="space-y-2">
                 {q.choices.map((c, ci) => {
                   const isChosen  = c.id === chosen
                   const isCorrect = c.isCorrect
-                  const isHighlight = isCorrect || (isChosen && !isCorrect)
+                  const isWrong   = isChosen && !isCorrect
                   return (
                     <div key={c.id}
                       className="flex items-center justify-between px-4 py-2.5 rounded-full text-sm transition-all"
                       style={
                         isCorrect
-                          ? { background: `linear-gradient(135deg, #0f4c5c, #1f7a8c)`, color: '#fff' }
-                          : isChosen && !isCorrect
-                          ? { backgroundColor: '#fef2f2', border: '1px solid #fca5a5', color: '#dc2626' }
+                          ? { background: 'linear-gradient(135deg, #0f4c5c, #1f7a8c)', color: '#fff' }
+                          : isWrong
+                          ? { backgroundColor: '#fee2e2', color: '#b91c1c' }
                           : { backgroundColor: '#f3f4f6', color: '#6b7280' }
                       }
                     >
-                      <span>{String.fromCharCode(65 + ci)}.  {c.text}</span>
+                      <span className="font-medium">{String.fromCharCode(65 + ci)}.&nbsp;&nbsp;{c.text}</span>
                       {isCorrect && (
-                        <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                        </svg>
+                        <span className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                          <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </span>
                       )}
-                      {isChosen && !isCorrect && (
-                        <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+                      {isWrong && (
+                        <span className="text-xs font-semibold text-red-500 flex-shrink-0">✗</span>
                       )}
                     </div>
                   )

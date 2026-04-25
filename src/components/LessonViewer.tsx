@@ -196,7 +196,8 @@ function InfoCard({ label, children, color }: {
   )
 }
 
-function ModuleTimer({ moduleId }: { moduleId: string }) {
+function ModuleTimer({ moduleId, userRole }: { moduleId: string; userRole?: string }) {
+  const isPrivileged = userRole === 'developer' || userRole === 'instructor' || userRole === 'admin'
   const DURATION = 2 * 60 * 60
   const storageKey = `module_timer_remaining_${moduleId}`
 
@@ -213,6 +214,7 @@ function ModuleTimer({ moduleId }: { moduleId: string }) {
 
   // Visibility change — pause on hide, start 3s countdown on show
   useEffect(() => {
+    if (isPrivileged) return // no tab restriction for developer/instructor/admin
     const handleVisibility = () => {
       if (document.hidden) {
         setIsActive(false)
@@ -240,7 +242,7 @@ function ModuleTimer({ moduleId }: { moduleId: string }) {
 
   // Main countdown — only ticks when active and no countdown running
   useEffect(() => {
-    if (!isActive || countdown !== null || secondsLeft <= 0) return
+    if (isPrivileged || !isActive || countdown !== null || secondsLeft <= 0) return
     const id = setInterval(() => {
       setSecondsLeft(s => {
         const next = Math.max(0, s - 1)
@@ -257,6 +259,9 @@ function ModuleTimer({ moduleId }: { moduleId: string }) {
   const pad = (n: number) => String(n).padStart(2, '0')
   const urgent = secondsLeft <= 300
   const expired = secondsLeft === 0
+
+  // No timer for privileged roles
+  if (isPrivileged) return null
 
   // Countdown overlay — full-screen centered
   if (countdown !== null) {
@@ -320,7 +325,7 @@ export default function LessonViewer({
       {/* Title row */}
       <div className="mb-4 flex items-start justify-between gap-3">
         <h2 className="text-xl font-bold text-gray-900 leading-tight">{module.title}</h2>
-        <ModuleTimer moduleId={module.id} />
+        <ModuleTimer moduleId={module.id} userRole={userRole} />
       </div>
 
       {/* Two-column layout */}
