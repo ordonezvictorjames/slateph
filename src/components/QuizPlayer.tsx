@@ -11,6 +11,7 @@ interface Props {
   courseId?: string
   userId?: string
   userRole?: string
+  onQuizPassed?: (moduleId: string) => void
 }
 
 interface GradeRow {
@@ -50,7 +51,7 @@ function scheduleStatus(cfg: QuizConfig): 'before' | 'open' | 'after' | 'always'
 }
 
 export default function QuizPlayer({
-  config, moduleId, subjectId, courseId, userId, userRole
+  config, moduleId, subjectId, courseId, userId, userRole, onQuizPassed
 }: Props) {
   const supabase  = createClient()
   const isStudent = STUDENT_ROLES.includes(userRole ?? '')
@@ -221,12 +222,17 @@ export default function QuizPlayer({
     }
     const total      = questions.length
     const percentage = total > 0 ? Math.round((correct / total) * 100 * 100) / 100 : 0
-    const passed     = percentage >= 60
+    const passed     = percentage >= 50  // 50% threshold for unlocking
     const timeTaken  = Math.round((Date.now() - startedAt) / 1000)
 
     setScore({ correct, total })
     setAlreadyTaken(true)
     setPhase('result')
+
+    // Notify parent if student passed (≥50%) — unlocks next module
+    if (passed && isStudent) {
+      onQuizPassed?.(moduleId)
+    }
 
     if (userId && isStudent) {
       setSaving(true)
@@ -255,7 +261,7 @@ export default function QuizPlayer({
   }
 
   const pct    = score ? Math.round((score.correct / score.total) * 100) : 0
-  const passed = pct >= 60
+  const passed = pct >= 50  // 50% threshold
 
   // ── STAFF VIEW ─────────────────────────────────────────────
   if (isStaff) return (

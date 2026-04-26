@@ -1100,6 +1100,7 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
           userRole={user?.profile?.role || role}
           subjectId={selectedModule.subject_id}
           courseId={selectedCourse?.id}
+          onQuizPassed={handleQuizSubmitted}
         />
       )}
 

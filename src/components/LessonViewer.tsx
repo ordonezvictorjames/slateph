@@ -35,6 +35,7 @@ interface LessonViewerProps {
   onNavigate?: (mod: Module) => void
   userId?: string
   userRole?: string
+  onQuizPassed?: (moduleId: string) => void
   subjectId?: string
   courseId?: string
 }
@@ -303,7 +304,7 @@ function ModuleTimer({ moduleId, userRole }: { moduleId: string; userRole?: stri
 
 export default function LessonViewer({
   module, isOpen, onClose, inline = false, siblingModules = [], onNavigate,
-  userId, userRole, subjectId, courseId
+  userId, userRole, onQuizPassed, subjectId, courseId
 }: LessonViewerProps) {
   if (!module) return null
 
@@ -348,6 +349,7 @@ export default function LessonViewer({
               courseId={courseId}
               userId={userId}
               userRole={userRole}
+              onQuizPassed={onQuizPassed}
             />
           ) : (
             <div className="bg-white rounded-xl border border-gray-200 p-6 flex items-center justify-center min-h-[120px]">
