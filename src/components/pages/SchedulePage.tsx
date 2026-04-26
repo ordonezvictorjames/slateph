@@ -895,15 +895,16 @@ export default function SchedulePage() {
                       })}
                     </div>
 
-                    {/* Day columns */}
+                    {/* Day columns — grid lines + single-day events only */}
                     {weekDays.map((day, dayIdx) => {
                       const dateStr = fmtDateStr(day)
+                      const isToday = day.toDateString() === new Date().toDateString()
+                      // Only render single-day schedules per column
                       const daySchedules = schedules.filter(s => {
                         const sd = fmtDateStr(new Date(stripTZ(s.start_date)))
                         const ed = fmtDateStr(new Date(stripTZ(s.end_date)))
-                        return dateStr >= sd && dateStr <= ed
+                        return sd === ed && dateStr === sd
                       })
-                      const isToday = day.toDateString() === new Date().toDateString()
 
                       // Overlap layout
                       const events = daySchedules.map(s => {
@@ -950,12 +951,10 @@ export default function SchedulePage() {
                               }} />
                           ))}
 
-                          {/* Event blocks */}
+                          {/* Single-day event blocks */}
                           {events.map(({ s, sMins, eMins, col, numCols }) => {
-                            // SLOT_HEIGHT is per hour, divide by 60
                             const topPx = ((sMins - START_HOUR * 60) / 60) * SLOT_HEIGHT
                             const heightPx = Math.max(((eMins - sMins) / 60) * SLOT_HEIGHT, 28)
-                            const color = getSubjectColor((s as any).subject_id, s.course_id)
                             const sd = new Date(stripTZ(s.start_date)), ed = new Date(stripTZ(s.end_date))
                             const tStart = `${sd.getHours() % 12 || 12}:${String(sd.getMinutes()).padStart(2,'0')} ${sd.getHours() >= 12 ? 'PM' : 'AM'}`
                             const tEnd = `${ed.getHours() % 12 || 12}:${String(ed.getMinutes()).padStart(2,'0')} ${ed.getHours() >= 12 ? 'PM' : 'AM'}`
@@ -963,11 +962,6 @@ export default function SchedulePage() {
                             const widthPct = (1 / numCols) * 100
                             const leftPct = (col / numCols) * 100
                             const isAdminDev = user?.profile?.role === 'admin' || user?.profile?.role === 'developer'
-
-                            // Dark teal bg, white text
-                            const bgColor = '#0f4c5c'
-                            const borderColor = '#0a3540'
-
                             return (
                               <div key={s.id}
                                 className="absolute overflow-hidden group rounded-xl transition-shadow hover:shadow-md cursor-pointer"
@@ -976,8 +970,8 @@ export default function SchedulePage() {
                                   height: `${heightPx - 2}px`,
                                   left: `calc(${leftPct}% + ${GAP}px)`,
                                   width: `calc(${widthPct}% - ${GAP * 2}px)`,
-                                  backgroundColor: bgColor,
-                                  border: `1px solid ${borderColor}`,
+                                  backgroundColor: '#0f4c5c',
+                                  border: '1px solid #0a3540',
                                 }}
                                 onClick={() => {
                                   setSelectedDateSchedules([s])
@@ -987,46 +981,28 @@ export default function SchedulePage() {
                               >
                                 <div className="flex flex-col h-full px-2 py-1.5 overflow-hidden">
                                   {heightPx < 48 ? (
-                                    /* Small block: module title only */
                                     <p className="text-xs font-semibold truncate leading-tight text-white">
                                       {(s as any).module_title || s.course_title || s.title}
                                     </p>
                                   ) : (
                                     <>
-                                      {/* Module title */}
                                       {(s as any).module_title && (
-                                        <p className="text-xs font-bold truncate leading-tight text-white">
-                                          {(s as any).module_title}
-                                        </p>
+                                        <p className="text-xs font-bold truncate leading-tight text-white">{(s as any).module_title}</p>
                                       )}
-                                      {/* Course title */}
-                                      <p className="text-[11px] font-bold leading-tight text-white truncate">
-                                        {s.course_title || s.title}
-                                      </p>
-                                      {/* Time */}
+                                      <p className="text-[11px] font-bold leading-tight text-white truncate">{s.course_title || s.title}</p>
                                       {heightPx >= 64 && (
-                                        <p className="text-[10px] mt-0.5 whitespace-nowrap truncate text-red-400 font-medium">
-                                          {tStart} – {tEnd}
-                                        </p>
+                                        <p className="text-[10px] mt-0.5 whitespace-nowrap truncate text-red-400 font-medium">{tStart} – {tEnd}</p>
                                       )}
                                     </>
                                   )}
                                 </div>
-
-                                {/* Edit/Delete on hover */}
                                 {isAdminDev && (
                                   <div className="hidden group-hover:flex absolute top-1 right-1 items-center gap-0.5 bg-white/90 rounded-lg px-1 py-0.5 shadow-sm">
-                                    <button onClick={(e) => { e.stopPropagation(); handleEditSchedule(s) }}
-                                      className="p-0.5 rounded hover:bg-gray-100 transition-colors" title="Edit">
-                                      <svg className="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                      </svg>
+                                    <button onClick={(e) => { e.stopPropagation(); handleEditSchedule(s) }} className="p-0.5 rounded hover:bg-gray-100 transition-colors" title="Edit">
+                                      <svg className="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                     </button>
-                                    <button onClick={(e) => { e.stopPropagation(); handleDeleteSchedule(s) }}
-                                      className="p-0.5 rounded hover:bg-red-50 transition-colors" title="Delete">
-                                      <svg className="w-3 h-3 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                      </svg>
+                                    <button onClick={(e) => { e.stopPropagation(); handleDeleteSchedule(s) }} className="p-0.5 rounded hover:bg-red-50 transition-colors" title="Delete">
+                                      <svg className="w-3 h-3 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                     </button>
                                   </div>
                                 )}
@@ -1036,6 +1012,91 @@ export default function SchedulePage() {
                         </div>
                       )
                     })}
+
+                    {/* Multi-day spanning events — rendered as one block across columns */}
+                    {schedules
+                      .filter(s => {
+                        const sd = fmtDateStr(new Date(stripTZ(s.start_date)))
+                        const ed = fmtDateStr(new Date(stripTZ(s.end_date)))
+                        return sd !== ed
+                      })
+                      .map(s => {
+                        const sdStr = fmtDateStr(new Date(stripTZ(s.start_date)))
+                        const edStr = fmtDateStr(new Date(stripTZ(s.end_date)))
+                        const weekStrs = weekDays.map(d => fmtDateStr(d))
+                        const firstCol = weekStrs.findIndex(d => d >= sdStr && d <= edStr)
+                        if (firstCol === -1) return null
+                        const lastCol = weekStrs.reduce((acc, d, i) => (d >= sdStr && d <= edStr ? i : acc), -1)
+                        if (lastCol === -1) return null
+
+                        const sd = new Date(stripTZ(s.start_date))
+                        const ed = new Date(stripTZ(s.end_date))
+                        let sMins = sd.getHours() * 60 + sd.getMinutes()
+                        let eMins = ed.getHours() * 60 + ed.getMinutes()
+                        if (sMins === 0 && eMins === 0) { sMins = START_HOUR * 60; eMins = sMins + 60 }
+                        if (eMins <= sMins) eMins = sMins + 60
+
+                        const topPx = ((sMins - START_HOUR * 60) / 60) * SLOT_HEIGHT
+                        const heightPx = Math.max(((eMins - sMins) / 60) * SLOT_HEIGHT, 28)
+                        const tStart = `${sd.getHours() % 12 || 12}:${String(sd.getMinutes()).padStart(2,'0')} ${sd.getHours() >= 12 ? 'PM' : 'AM'}`
+                        const tEnd = `${ed.getHours() % 12 || 12}:${String(ed.getMinutes()).padStart(2,'0')} ${ed.getHours() >= 12 ? 'PM' : 'AM'}`
+                        const isAdminDev = user?.profile?.role === 'admin' || user?.profile?.role === 'developer'
+                        const GAP = 3
+                        const numCols = weekDays.length
+                        // left = TIME_COL_W + firstCol * colWidth, width = spanCols * colWidth
+                        const colWidthExpr = `(100% - ${TIME_COL_W}px) / ${numCols}`
+                        const leftExpr = `${TIME_COL_W}px + ${firstCol} * (${colWidthExpr})`
+                        const widthExpr = `${lastCol - firstCol + 1} * (${colWidthExpr})`
+                        const day = weekDays[firstCol]
+
+                        return (
+                          <div key={`span-${s.id}`}
+                            className="absolute overflow-hidden group rounded-xl transition-shadow hover:shadow-md cursor-pointer z-10"
+                            style={{
+                              top: `${topPx + 1}px`,
+                              height: `${heightPx - 2}px`,
+                              left: `calc(${leftExpr} + ${GAP}px)`,
+                              width: `calc(${widthExpr} - ${GAP * 2}px)`,
+                              backgroundColor: '#0f4c5c',
+                              border: '1px solid #0a3540',
+                            }}
+                            onClick={() => {
+                              setSelectedDateSchedules([s])
+                              setSelectedDateString(day.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }))
+                              setShowDateModal(true)
+                            }}
+                          >
+                            <div className="flex flex-col h-full px-2 py-1.5 overflow-hidden">
+                              {heightPx < 48 ? (
+                                <p className="text-xs font-semibold truncate leading-tight text-white">
+                                  {(s as any).module_title || s.course_title || s.title}
+                                </p>
+                              ) : (
+                                <>
+                                  {(s as any).module_title && (
+                                    <p className="text-xs font-bold truncate leading-tight text-white">{(s as any).module_title}</p>
+                                  )}
+                                  <p className="text-[11px] font-bold leading-tight text-white truncate">{s.course_title || s.title}</p>
+                                  {heightPx >= 64 && (
+                                    <p className="text-[10px] mt-0.5 whitespace-nowrap truncate text-red-400 font-medium">{tStart} – {tEnd}</p>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                            {isAdminDev && (
+                              <div className="hidden group-hover:flex absolute top-1 right-1 items-center gap-0.5 bg-white/90 rounded-lg px-1 py-0.5 shadow-sm">
+                                <button onClick={(e) => { e.stopPropagation(); handleEditSchedule(s) }} className="p-0.5 rounded hover:bg-gray-100 transition-colors" title="Edit">
+                                  <svg className="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                </button>
+                                <button onClick={(e) => { e.stopPropagation(); handleDeleteSchedule(s) }} className="p-0.5 rounded hover:bg-red-50 transition-colors" title="Delete">
+                                  <svg className="w-3 h-3 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })
+                    }
                   </div>
                 </div>
               </>
