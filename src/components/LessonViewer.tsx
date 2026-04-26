@@ -362,28 +362,6 @@ export default function LessonViewer({
         <InfoCard label="Explanation / Lesson Body" color="blue">{explanation}</InfoCard>
       )}
 
-      {/* Prev / Next */}
-      {siblingModules.length > 1 && (
-        <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-100">
-          <button onClick={() => currentIndex > 0 && onNavigate?.(siblingModules[currentIndex - 1])}
-            disabled={currentIndex === 0}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Previous
-          </button>
-          <span className="text-xs text-gray-400">{currentIndex + 1} / {siblingModules.length}</span>
-          <button onClick={() => currentIndex < siblingModules.length - 1 && onNavigate?.(siblingModules[currentIndex + 1])}
-            disabled={currentIndex === siblingModules.length - 1}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-            Next
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        </div>
-      )}
     </div>
   )
 

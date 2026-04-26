@@ -348,7 +348,15 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
   const handleStartLesson = (mod: Module) => {
     setSelectedModule(mod)
     setCurrentView('lesson')
-    // Module completion is only set via handleTimeUpdate / handleQuizSubmitted — NOT on open
+    // Auto-complete modules that have no quiz — opening them is enough
+    if (!moduleHasQuiz(mod) && !completedModules.has(mod.id)) {
+      setCompletedModules(cp => {
+        const next = new Set(cp)
+        next.add(mod.id)
+        try { localStorage.setItem(`completed_modules_${user!.id}`, JSON.stringify(Array.from(next))) } catch {}
+        return next
+      })
+    }
   }
 
   const handleOpenTest = (mod: Module) => {

@@ -153,6 +153,17 @@ export default function QuizPlayer({
       Object.fromEntries((profileData ?? []).map((p: { id: string; first_name: string; last_name: string; email: string }) => [p.id, p]))
 
     setGrades(gradeData.map((g: GradeRow) => ({ ...g, profiles: profileMap[g.user_id] ?? undefined })))
+
+    // Deduplicate: keep only the highest score per student
+    const allGrades: GradeRow[] = gradeData.map((g: GradeRow) => ({ ...g, profiles: profileMap[g.user_id] ?? undefined }))
+    const bestByUser: Record<string, GradeRow> = {}
+    for (const g of allGrades) {
+      const existing = bestByUser[g.user_id]
+      if (!existing || g.score > existing.score) {
+        bestByUser[g.user_id] = g
+      }
+    }
+    setGrades(Object.values(bestByUser).sort((a, b) => b.score - a.score))
     setLoadingGrades(false)
   }
 

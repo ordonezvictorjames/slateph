@@ -918,6 +918,44 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
   }, [])
 
+  // Auto-fill explanation based on content type when content is set and explanation is empty
+  useEffect(() => {
+    if (newModule.explanation) return // don't overwrite if already filled
+    const title = newModule.title || 'this module'
+    let auto = ''
+    switch (newModule.content_type) {
+      case 'video':
+        if (newModule.video_url) auto = `Watch the video above to learn about "${title}".`
+        break
+      case 'canva_presentation':
+        if (newModule.canva_url) auto = `Review the Canva presentation above for "${title}".`
+        break
+      case 'online_document':
+        if (newModule.document_url) auto = `Read the document above to understand "${title}".`
+        break
+      case 'pdf_document':
+        if (newModule.document_url) auto = `Review the PDF document above for "${title}".`
+        break
+      case 'slide_presentation':
+        if (newModule.document_url) auto = `Go through the slides above to learn about "${title}".`
+        break
+      case 'online_conference':
+        if (newModule.conference_url) auto = `Join the online session above for "${title}".`
+        break
+      case 'text':
+        if (newModule.text_content) auto = newModule.text_content.slice(0, 200)
+        break
+    }
+    if (auto) setNewModule(prev => ({ ...prev, explanation: auto }))
+  }, [
+    newModule.content_type,
+    newModule.video_url,
+    newModule.canva_url,
+    newModule.document_url,
+    newModule.conference_url,
+    newModule.text_content,
+  ])
+
   // Navigation functions
   const handleCourseSelect = (course: Course) => {
     setSelectedCourse(course)
@@ -3404,13 +3442,6 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
                 )}
               </div>
 
-              {/* Section 3: Explanation / Lesson Body */}
-              <div className="border border-gray-200 rounded-lg p-4">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">📝 Explanation / Lesson Body</h3>
-                <textarea rows={4} value={newModule.explanation || ''} onChange={(e) => setNewModule(prev => ({ ...prev, explanation: e.target.value }))}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c] resize-none" placeholder="Explain the lesson in your own words, add context, background info..." />
-              </div>
-
               {/* Section 6: Quiz / Activity */}
 
               <div className="flex justify-end space-x-3 pt-2 border-t border-gray-100">
@@ -3533,13 +3564,6 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
                       className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c] resize-none" placeholder="Enter the main lesson text..." />
                   </div>
                 )}
-              </div>
-
-              {/* Section 3: Explanation / Lesson Body */}
-              <div className="border border-gray-200 rounded-lg p-4">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">📝 Explanation / Lesson Body</h3>
-                <textarea rows={4} value={newModule.explanation || ''} onChange={(e) => setNewModule(prev => ({ ...prev, explanation: e.target.value }))}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-[#1f7a8c] resize-none" placeholder="Explain the lesson in your own words, add context, background info..." />
               </div>
 
               {/* Section 6: Quiz / Activity */}
