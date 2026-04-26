@@ -163,7 +163,7 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
     if (user?.id) fetchEnrolledCourses()
   }, [user])
 
-  // Load completed modules from localStorage for this student
+  // Load completed modules from localStorage + DB grades for this student
   useEffect(() => {
     if (!user?.id || !isStudent) return
     const key = `completed_modules_${user.id}`
@@ -176,6 +176,34 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
       const saved = localStorage.getItem(progKey)
       if (saved) setModuleProgress(JSON.parse(saved))
     } catch {}
+
+    // Also restore from DB: any module where student has a passing grade (≥50%)
+    supabase
+      .from('quiz_grades')
+      .select('module_id, score, total')
+      .eq('user_id', user.id)
+      .then(({ data }) => {
+        if (!data || data.length === 0) return
+        // Group by module_id, keep highest score
+        const best: Record<string, { score: number; total: number }> = {}
+        for (const g of data as { module_id: string; score: number; total: number }[]) {
+          if (!best[g.module_id] || g.score > best[g.module_id].score) {
+            best[g.module_id] = { score: g.score, total: g.total }
+          }
+        }
+        const passedModuleIds = Object.entries(best)
+          .filter(([, v]) => v.total > 0 && (v.score / v.total) >= 0.5)
+          .map(([id]) => id)
+
+        if (passedModuleIds.length > 0) {
+          setCompletedModules(prev => {
+            const next = new Set(prev)
+            passedModuleIds.forEach(id => next.add(id))
+            try { localStorage.setItem(`completed_modules_${user!.id}`, JSON.stringify(Array.from(next))) } catch {}
+            return next
+          })
+        }
+      })
   }, [user?.id, isStudent])
 
   // Load accumulated earned badge counts from DB
