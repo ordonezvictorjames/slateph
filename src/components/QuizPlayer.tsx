@@ -63,6 +63,7 @@ export default function QuizPlayer({
   const [startedAt, setStartedAt]     = useState(0)
   const [score, setScore]             = useState<{ correct: number; total: number } | null>(null)
   const [saving, setSaving]           = useState(false)
+  const [reviewIdx, setReviewIdx]     = useState(0)
   const [grades, setGrades]           = useState<GradeRow[]>([])
   const [loadingGrades, setLoadingGrades] = useState(false)
   const [gradesError, setGradesError] = useState<string | null>(null)
@@ -75,7 +76,16 @@ export default function QuizPlayer({
     return () => { mountedRef.current = false }
   }, [])
 
-  const questions: Question[] = config.questions ?? []
+  // Shuffle questions randomly once on mount (stable for the duration of the quiz)
+  const [questions] = useState<Question[]>(() => {
+    const qs = [...(config.questions ?? [])]
+    if (qs.length <= 1) return qs
+    for (let i = qs.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [qs[i], qs[j]] = [qs[j], qs[i]]
+    }
+    return qs
+  })
   const sched       = scheduleStatus(config)
   const withinSched = sched === 'always' || sched === 'open'
   // Student can start only if: open, within schedule, not already taken
@@ -95,12 +105,11 @@ export default function QuizPlayer({
         const maxTries = config.max_tries ?? 1
         if (maxTries !== 0 && tries >= maxTries) {
           setAlreadyTaken(true)
-          // Restore last result so the result screen shows instead of intro
           const last = data?.[0]
           if (last) {
             setScore({ correct: last.score, total: last.total })
             if (last.answers) setAnswers(last.answers)
-            setPhase('result')
+            setPhase('result') // always show result screen, even if answers are null
             return
           }
         }
@@ -439,7 +448,11 @@ export default function QuizPlayer({
 
     return (
       <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-2 sm:p-4">
-        <div className="bg-white rounded-2xl w-full max-w-5xl h-[95vh] flex flex-col shadow-2xl overflow-hidden">
+        <div className="bg-white rounded-2xl w-full max-w-5xl h-[95vh] flex flex-col shadow-2xl overflow-hidden select-none"
+          onCopy={e => e.preventDefault()}
+          onCut={e => e.preventDefault()}
+          onContextMenu={e => e.preventDefault()}
+        >
           {/* Header */}
           <div className={`flex items-center justify-between px-5 py-3 border-b shrink-0 ${urgent ? 'bg-red-50 border-red-200' : 'bg-white border-gray-100'}`}>
             <h2 className="text-base font-bold text-gray-900">{config.title || (config.type === 'exam' ? 'Exam' : 'Quiz')}</h2>
@@ -609,12 +622,12 @@ export default function QuizPlayer({
               </div>
             </div>
 
-            <h2 className="text-xl font-bold text-gray-900 mb-0.5">
-              {isFailed ? 'Keep Trying!' : 'Quiz Done!'}
-            </h2>
-            <p className="text-sm text-gray-400 mb-3">
-              {isFailed ? 'Review the material and try again.' : "Well done, you've completed the quiz!"}
-            </p>
+            {!isFailed && (
+              <h2 className="text-xl font-bold text-gray-900 mb-0.5">Quiz Done!</h2>
+            )}
+            {!isFailed && (
+              <p className="text-sm text-gray-400 mb-3">Well done, you've completed the quiz!</p>
+            )}
 
             {/* Rating pill */}
             <div className="inline-block px-5 py-2 rounded-full text-sm font-semibold text-white" style={{ backgroundColor: accent }}>
@@ -626,49 +639,70 @@ export default function QuizPlayer({
         )
       })()}
 
-      <div className="space-y-3">
-        {questions.map((q, qi) => {
-          const chosen  = answers[q.id]
-          const correct = q.choices.find(c => c.isCorrect)
-          const isRight = chosen === correct?.id
-          return (
-            <div key={q.id} className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm space-y-3">
-              <p className="text-sm font-semibold text-gray-800">{qi + 1}. {q.text}</p>
-              <div className="space-y-2">
-                {q.choices.map((c, ci) => {
-                  const isChosen  = c.id === chosen
-                  const isCorrect = c.isCorrect
-                  const isWrong   = isChosen && !isCorrect
-                  return (
-                    <div key={c.id}
-                      className="flex items-center justify-between px-4 py-2.5 rounded-full text-sm transition-all"
-                      style={
-                        isCorrect
-                          ? { background: 'linear-gradient(135deg, #0f4c5c, #1f7a8c)', color: '#fff' }
-                          : isWrong
-                          ? { backgroundColor: '#fee2e2', color: '#b91c1c' }
-                          : { backgroundColor: '#f3f4f6', color: '#6b7280' }
-                      }
-                    >
-                      <span className="font-medium">{String.fromCharCode(65 + ci)}.&nbsp;&nbsp;{c.text}</span>
-                      {isCorrect && (
-                        <span className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
-                          <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                          </svg>
-                        </span>
-                      )}
-                      {isWrong && (
-                        <span className="text-xs font-semibold text-red-500 flex-shrink-0">✗</span>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
+      {/* Single question review with Next/Prev navigation */}
+      {questions.length > 0 && (() => {
+        const qi = reviewIdx
+        const q = questions[qi]
+        const chosen = answers[q.id]
+        const isRight = chosen === q.choices.find(c => c.isCorrect)?.id
+        return (
+          <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm space-y-3">
+            <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
+              <span>Question {qi + 1} of {questions.length}</span>
+              <span className={isRight ? 'font-semibold' : 'text-red-500 font-semibold'}
+                style={isRight ? { color: '#0f4c5c' } : {}}>
+                {isRight ? '✓ Correct' : '✗ Incorrect'}
+              </span>
             </div>
-          )
-        })}
-      </div>
+            <p className="text-sm font-semibold text-gray-800">{q.text}</p>
+            <div className="space-y-2">
+              {q.choices.map((c, ci) => {
+                const isChosen  = c.id === chosen
+                const isCorrect = c.isCorrect
+                const isRight   = isChosen && isCorrect
+                const isWrong   = isChosen && !isCorrect
+                return (
+                  <div key={c.id}
+                    className="flex items-center justify-between px-4 py-2.5 rounded-full text-sm"
+                    style={
+                      isRight
+                        ? { background: 'linear-gradient(135deg, #0f4c5c, #1f7a8c)', color: '#fff' }
+                        : isWrong
+                        ? { backgroundColor: '#fee2e2', color: '#b91c1c' }
+                        : { backgroundColor: '#f3f4f6', color: '#6b7280' }
+                    }
+                  >
+                    <span className="font-medium">{String.fromCharCode(65 + ci)}.&nbsp;&nbsp;{c.text}</span>
+                    {isRight && (
+                      <span className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                        <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </span>
+                    )}
+                    {isWrong && <span className="text-xs font-semibold text-red-500 flex-shrink-0">✗</span>}
+                  </div>
+                )
+              })}
+            </div>
+            <div className="flex items-center justify-between pt-2">
+              <button onClick={() => setReviewIdx(i => Math.max(0, i - 1))} disabled={qi === 0}
+                className="px-4 py-2 text-xs font-semibold rounded-full border border-gray-200 text-gray-500 disabled:opacity-30 hover:bg-gray-50 transition-colors">
+                ← Prev
+              </button>
+              {qi < questions.length - 1 ? (
+                <button onClick={() => setReviewIdx(i => i + 1)}
+                  className="px-5 py-2 text-xs font-semibold rounded-full text-white transition-colors"
+                  style={{ backgroundColor: '#0f4c5c' }}>
+                  Next →
+                </button>
+              ) : (
+                <span className="px-4 py-2 text-xs text-gray-400">End of review</span>
+              )}
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }

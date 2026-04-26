@@ -325,21 +325,20 @@ export default function LessonViewer({
       {/* Title row */}
       <div className="mb-4 flex items-start justify-between gap-3">
         <h2 className="text-xl font-bold text-gray-900 leading-tight">{module.title}</h2>
-        <ModuleTimer moduleId={module.id} userRole={userRole} />
       </div>
 
       {/* Two-column layout */}
       <div className={`flex gap-5 items-start ${hasRightPanel ? 'flex-col lg:flex-row' : ''}`}>
 
-        {/* LEFT — content + info cards (80%) */}
-        <div className={`space-y-5 ${hasRightPanel ? 'w-full lg:w-[80%]' : 'w-full'}`}>
+        {/* LEFT — content + info cards (60%) */}
+        <div className={`space-y-5 ${hasRightPanel ? 'w-full lg:w-[70%]' : 'w-full'}`}>
 
           {/* Main content embed */}
           <ContentEmbed module={module} textBody={textBody} />
         </div>
 
-        {/* RIGHT — quiz/activity (20%) */}
-        <div className="w-full lg:w-[20%] shrink-0 space-y-5">
+        {/* RIGHT — quiz/activity (40%) */}
+        <div className="w-full lg:w-[30%] shrink-0 space-y-5">
           {quizConfig && (quizConfig.type === 'quiz' || quizConfig.type === 'exam') ? (
             <QuizPlayer
               key={module.id}

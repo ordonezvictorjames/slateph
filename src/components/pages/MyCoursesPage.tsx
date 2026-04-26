@@ -99,7 +99,7 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
   // Module progress: { [moduleId]: { timeSpentSeconds: number, quizSubmitted: boolean } }
   const [moduleProgress, setModuleProgress] = useState<Record<string, { timeSpentSeconds: number; quizSubmitted: boolean }>>({})
 
-  const REQUIRED_READ_SECONDS = 2 * 60 * 60 // 2 hours
+  const REQUIRED_READ_SECONDS = 0 // No time requirement — completion based on quiz only
 
   // Helper: check if a module has a quiz/exam embedded
   const moduleHasQuiz = (mod: Module): boolean => {
@@ -113,10 +113,9 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
   // Helper: check if a module is fully completed
   const isModuleCompleted = (mod: Module): boolean => {
     const prog = moduleProgress[mod.id]
-    const timeOk = (prog?.timeSpentSeconds ?? 0) >= REQUIRED_READ_SECONDS
     const quizRequired = moduleHasQuiz(mod)
     const quizOk = !quizRequired || (prog?.quizSubmitted ?? false)
-    return timeOk && quizOk
+    return quizOk
   }
 
   // Save progress to localStorage
@@ -130,21 +129,15 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
     setModuleProgress(prev => {
       const updated = { ...prev, [moduleId]: { ...prev[moduleId], timeSpentSeconds: seconds, quizSubmitted: prev[moduleId]?.quizSubmitted ?? false } }
       saveProgress(updated)
-      // If now completed, mark in completedModules
+      // Mark complete if no quiz required (time-only modules complete immediately)
       const mod = Object.values(subjectModules).flat().find(m => m.id === moduleId)
-      if (mod) {
-        const prog = updated[moduleId]
-        const timeOk = prog.timeSpentSeconds >= REQUIRED_READ_SECONDS
-        const quizRequired = moduleHasQuiz(mod)
-        const quizOk = !quizRequired || prog.quizSubmitted
-        if (timeOk && quizOk) {
-          setCompletedModules(cp => {
-            const next = new Set(cp)
-            next.add(moduleId)
-            try { localStorage.setItem(`completed_modules_${user!.id}`, JSON.stringify(Array.from(next))) } catch {}
-            return next
-          })
-        }
+      if (mod && !moduleHasQuiz(mod)) {
+        setCompletedModules(cp => {
+          const next = new Set(cp)
+          next.add(moduleId)
+          try { localStorage.setItem(`completed_modules_${user!.id}`, JSON.stringify(Array.from(next))) } catch {}
+          return next
+        })
       }
       return updated
     })
@@ -155,19 +148,13 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
     setModuleProgress(prev => {
       const updated = { ...prev, [moduleId]: { timeSpentSeconds: prev[moduleId]?.timeSpentSeconds ?? 0, quizSubmitted: true } }
       saveProgress(updated)
-      const mod = Object.values(subjectModules).flat().find(m => m.id === moduleId)
-      if (mod) {
-        const prog = updated[moduleId]
-        const timeOk = prog.timeSpentSeconds >= REQUIRED_READ_SECONDS
-        if (timeOk) {
-          setCompletedModules(cp => {
-            const next = new Set(cp)
-            next.add(moduleId)
-            try { localStorage.setItem(`completed_modules_${user!.id}`, JSON.stringify(Array.from(next))) } catch {}
-            return next
-          })
-        }
-      }
+      // Quiz submitted = module complete
+      setCompletedModules(cp => {
+        const next = new Set(cp)
+        next.add(moduleId)
+        try { localStorage.setItem(`completed_modules_${user!.id}`, JSON.stringify(Array.from(next))) } catch {}
+        return next
+      })
       return updated
     })
   }
@@ -801,8 +788,10 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
                                 ) : (
                                   <div className="space-y-1.5 overflow-y-auto" style={{ maxHeight: '420px' }}>
                                     {mods.map((mod, idx) => {
-                                      // Sequential locking: first module always open, rest locked until previous is completed
-                                      const isModLocked = isStudent && idx > 0 && !completedModules.has(mods[idx - 1].id)
+                                      // Sequential locking: first module always open, rest locked until previous module's quiz is passed (or completed if no quiz)
+                                      const prevMod = idx > 0 ? mods[idx - 1] : null
+                                      const prevCompleted = prevMod ? completedModules.has(prevMod.id) : true
+                                      const isModLocked = isStudent && idx > 0 && !prevCompleted
                                       return (
                                       <div key={mod.id}
                                         onClick={() => !isModLocked && handleStartLesson(mod)}
@@ -825,9 +814,9 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
                                               <p className="text-xs text-gray-500 mt-0.5 line-clamp-3 leading-relaxed">{mod.description}</p>
                                             )}
                                             {isModLocked && (
-                                              <p className="text-[10px] text-amber-600 mt-1 flex items-center gap-1">
+                                              <p className="hidden sm:flex text-[10px] text-amber-600 mt-1 items-center gap-1">
                                                 <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                                Complete 2hr timer {moduleHasQuiz(mods[idx - 1]) ? '& quiz' : ''} in <span className="font-semibold">&ldquo;{mods[idx - 1].title}&rdquo;</span> to unlock
+                                                {moduleHasQuiz(mods[idx - 1]) ? 'Pass the quiz in' : 'Complete'} <span className="font-semibold">&ldquo;{mods[idx - 1].title}&rdquo;</span> to unlock
                                               </p>
                                             )}
                                           </div>
