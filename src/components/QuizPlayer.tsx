@@ -64,7 +64,6 @@ export default function QuizPlayer({
   const [score, setScore]             = useState<{ correct: number; total: number } | null>(null)
   const [saving, setSaving]           = useState(false)
   const [reviewIdx, setReviewIdx]     = useState(0)
-  const [watermarkName, setWatermarkName] = useState('')
   const [grades, setGrades]           = useState<GradeRow[]>([])
   const [loadingGrades, setLoadingGrades] = useState(false)
   const [gradesError, setGradesError] = useState<string | null>(null)
@@ -95,9 +94,6 @@ export default function QuizPlayer({
   // Check if student already submitted this quiz/exam (respects max_tries)
   useEffect(() => {
     if (!isStudent || !userId) { setPhase('intro'); return }
-    // Fetch student name for watermark
-    supabase.from('profiles').select('first_name, last_name').eq('id', userId).single()
-      .then(({ data }) => { if (data) setWatermarkName(`${data.first_name} ${data.last_name}`) })
     supabase
       .from('quiz_grades')
       .select('id, score, total, percentage, answers')
@@ -452,32 +448,11 @@ export default function QuizPlayer({
 
     return (
       <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-2 sm:p-4">
-        <div className="bg-white rounded-2xl w-full max-w-5xl h-[95vh] flex flex-col shadow-2xl overflow-hidden select-none relative"
+        <div className="bg-white rounded-2xl w-full max-w-5xl h-[95vh] flex flex-col shadow-2xl overflow-hidden select-none"
           onCopy={e => e.preventDefault()}
           onCut={e => e.preventDefault()}
           onContextMenu={e => e.preventDefault()}
         >
-          {/* Watermark overlay */}
-          {watermarkName && (
-            <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden" aria-hidden="true">
-              {Array.from({ length: 6 }).map((_, row) =>
-                Array.from({ length: 4 }).map((_, col) => (
-                  <div
-                    key={`${row}-${col}`}
-                    className="absolute text-[11px] font-semibold text-gray-400/25 whitespace-nowrap"
-                    style={{
-                      top: `${row * 18 + 5}%`,
-                      left: `${col * 28 - 5}%`,
-                      transform: 'rotate(-30deg)',
-                      userSelect: 'none',
-                    }}
-                  >
-                    {watermarkName}
-                  </div>
-                ))
-              )}
-            </div>
-          )}
           {/* Header */}
           <div className={`flex items-center justify-between px-5 py-3 border-b shrink-0 ${urgent ? 'bg-red-50 border-red-200' : 'bg-white border-gray-100'}`}>
             <h2 className="text-base font-bold text-gray-900">{config.title || (config.type === 'exam' ? 'Exam' : 'Quiz')}</h2>
