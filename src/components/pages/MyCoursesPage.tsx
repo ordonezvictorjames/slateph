@@ -182,11 +182,11 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
       .from('quiz_grades')
       .select('module_id, score, total')
       .eq('user_id', user.id)
-      .then(({ data }) => {
+      .then(({ data }: { data: { module_id: string; score: number; total: number }[] | null }) => {
         if (!data || data.length === 0) return
         // Group by module_id, keep highest score
         const best: Record<string, { score: number; total: number }> = {}
-        for (const g of data as { module_id: string; score: number; total: number }[]) {
+        for (const g of data) {
           if (!best[g.module_id] || g.score > best[g.module_id].score) {
             best[g.module_id] = { score: g.score, total: g.total }
           }
