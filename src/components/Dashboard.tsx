@@ -30,6 +30,7 @@ import CoursesPage from '@/components/pages/CoursesPage'
 import ActivitiesPage from '@/components/pages/ActivitiesPage'
 import WhatsNewPage from '@/components/pages/WhatsNewPage'
 import SettingsPage from '@/components/pages/SettingsPage'
+import DeletionWarningBanner from '@/components/DeletionWarningBanner'
 
 export type PageType = 'dashboard' | 'user-management' | 'course-management' | 'my-courses' | 'courses' | 'activities' | 'whats-new' | 'schedule' | 'analytics' | 'profile' | 'settings' | 'system-tracker' | 'code-generator' | 'feature-requests' | 'tasks' | 'games' | 'activity' | 'ai-assistant' | 'library' | 'badges' | 'grades'
 
@@ -243,6 +244,7 @@ export default function Dashboard() {
   return (
     <>
       {isPageTransitioning && <PageLoading />}
+      <DeletionWarningBanner />
       <div className="min-h-screen flex" style={{ backgroundColor: '#f3f4f6' }}>
         <Sidebar 
           currentPage={currentPage} 

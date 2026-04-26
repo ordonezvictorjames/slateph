@@ -50,7 +50,6 @@ export default function OnlineUsers({ onNavigateToProfile }: OnlineUsersProps = 
         .from('profiles')
         .select('id, first_name, last_name, email, role, avatar_url')
         .order('first_name', { ascending: true })
-        .limit(7)
 
       if (profilesError) {
         console.error('Error fetching profiles:', profilesError)

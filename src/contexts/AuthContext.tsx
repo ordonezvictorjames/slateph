@@ -223,6 +223,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error('Failed to update last login:', error)
         // Continue anyway - login is successful
       }
+
+      // Cancel any pending account deletion (user is active again)
+      try {
+        await supabase.rpc('cancel_account_deletion', { p_user_id: userData.id })
+      } catch { /* non-critical */ }
       
       // Log the login activity
       await logActivity({
