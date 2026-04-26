@@ -633,12 +633,6 @@ export default function QuizPlayer({
               </div>
             </div>
 
-            {!isFailed && (
-              <h2 className="text-xl font-bold text-gray-900 mb-0.5">Quiz Done!</h2>
-            )}
-            {!isFailed && (
-              <p className="text-sm text-gray-400 mb-3">Well done, you've completed the quiz!</p>
-            )}
 
             {/* Rating pill */}
             <div className="inline-block px-5 py-2 rounded-full text-sm font-semibold text-white" style={{ backgroundColor: accent }}>
