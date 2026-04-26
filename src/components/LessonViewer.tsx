@@ -357,10 +357,7 @@ export default function LessonViewer({
         </div>
       </div>
 
-      {/* Row 2 — full-width explanation */}
-      {explanation.trim() && (
-        <InfoCard label="Explanation / Lesson Body" color="blue">{explanation}</InfoCard>
-      )}
+
 
     </div>
   )
