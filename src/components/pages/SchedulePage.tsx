@@ -112,7 +112,7 @@ export default function SchedulePage() {
   useEffect(() => {
     if (!newSchedule.course_id || showEditModal) { if (!showEditModal) { setScheduleSubjects([]); setScheduleModules([]) } return }
     supabase.from('subjects').select('id, title').eq('course_id', newSchedule.course_id).order('order_index', { ascending: true })
-      .then(({ data }) => setScheduleSubjects((data || []) as { id: string; title: string }[]))
+      .then(({ data }: { data: { id: string; title: string }[] | null }) => setScheduleSubjects((data || [])))
     setNewSchedule(prev => ({ ...prev, subject_id: '', module_id: '' }))
     setScheduleModules([])
   }, [newSchedule.course_id, showEditModal])
@@ -121,7 +121,7 @@ export default function SchedulePage() {
   useEffect(() => {
     if (!newSchedule.subject_id || showEditModal) { if (!showEditModal) setScheduleModules([]); return }
     supabase.from('modules').select('id, title').eq('subject_id', newSchedule.subject_id).order('order_index', { ascending: true })
-      .then(({ data }) => setScheduleModules((data || []) as { id: string; title: string }[]))
+      .then(({ data }: { data: { id: string; title: string }[] | null }) => setScheduleModules((data || [])))
     setNewSchedule(prev => ({ ...prev, module_id: '' }))
   }, [newSchedule.subject_id, showEditModal])
 
@@ -129,14 +129,14 @@ export default function SchedulePage() {
   useEffect(() => {
     if (!showEditModal || !newSchedule.course_id) { setEditSubjects([]); setEditModules([]); return }
     supabase.from('subjects').select('id, title').eq('course_id', newSchedule.course_id).order('order_index', { ascending: true })
-      .then(({ data }) => setEditSubjects((data || []) as { id: string; title: string }[]))
+      .then(({ data }: { data: { id: string; title: string }[] | null }) => setEditSubjects((data || [])))
   }, [newSchedule.course_id, showEditModal])
 
   // Fetch modules when subject changes (edit modal)
   useEffect(() => {
     if (!showEditModal || !newSchedule.subject_id) { setEditModules([]); return }
     supabase.from('modules').select('id, title').eq('subject_id', newSchedule.subject_id).order('order_index', { ascending: true })
-      .then(({ data }) => setEditModules((data || []) as { id: string; title: string }[]))
+      .then(({ data }: { data: { id: string; title: string }[] | null }) => setEditModules((data || [])))
   }, [newSchedule.subject_id, showEditModal])
 
   useEffect(() => {
