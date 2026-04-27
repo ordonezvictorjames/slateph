@@ -9,6 +9,7 @@ import { Loading, ButtonLoading } from '@/components/ui/loading'
 import LessonViewer from '@/components/LessonViewer'
 import QuizBuilder, { QuizConfig, emptyQuizConfig } from '@/components/QuizBuilder'
 import { compressImage, validatePDFSize, validatePresentationSize } from '@/lib/imageCompression'
+import AutoLinkText from '@/components/ui/AutoLinkText'
 interface Course {
   id: string
   title: string
@@ -2759,7 +2760,7 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
                     </div>
                   </div>
                 ) : announcement ? (
-                  <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">{announcement}</p>
+                  <AutoLinkText text={announcement} className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed" />
                 ) : (
                   <p className="text-sm text-gray-400 italic">No announcement yet. Click Edit to add one.</p>
                 )}

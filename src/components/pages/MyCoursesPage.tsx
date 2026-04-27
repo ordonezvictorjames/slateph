@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { Loading } from '@/components/ui/loading'
 import LessonViewer from '@/components/LessonViewer'
 import QuizBuilder, { QuizConfig } from '@/components/QuizBuilder'
+import AutoLinkText from '@/components/ui/AutoLinkText'
 
 interface Course {
   id: string
@@ -997,7 +998,7 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
                       </div>
                     </div>
                   ) : announcement ? (
-                    <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">{announcement}</p>
+                    <AutoLinkText text={announcement} className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed" />
                   ) : (
                     <p className="text-sm text-gray-400 italic">
                       {canEditAnnouncement ? 'No announcement yet. Click Edit to add one.' : 'No announcements at this time.'}
