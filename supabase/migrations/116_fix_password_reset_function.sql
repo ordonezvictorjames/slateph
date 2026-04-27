@@ -14,13 +14,16 @@ DECLARE
   v_email      TEXT;
   v_count      INTEGER;
 BEGIN
-  -- Lookup user (SECURITY DEFINER bypasses RLS)
   SELECT id, first_name, last_name, email
-  INTO STRICT v_user_id, v_first_name, v_last_name, v_email
+  INTO v_user_id, v_first_name, v_last_name, v_email
   FROM public.profiles
-  WHERE LOWER(email) = LOWER(p_email);
+  WHERE LOWER(email) = LOWER(p_email)
+  LIMIT 1;
 
-  -- Bulk-insert one notification per admin/developer
+  IF v_user_id IS NULL THEN
+    RETURN json_build_object('success', false, 'message', 'No account found with that email address');
+  END IF;
+
   INSERT INTO public.notifications (user_id, type, title, message, is_read)
   SELECT
     p.id,
@@ -38,12 +41,6 @@ BEGIN
   END IF;
 
   RETURN json_build_object('success', true, 'message', 'Request sent to ' || v_count || ' administrator(s)');
-
-EXCEPTION
-  WHEN NO_DATA_FOUND THEN
-    RETURN json_build_object('success', false, 'message', 'No account found with that email address');
-  WHEN TOO_MANY_ROWS THEN
-    RETURN json_build_object('success', false, 'message', 'Multiple accounts found, contact support');
 END;
 $$;
 
