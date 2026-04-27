@@ -7,17 +7,21 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-  v_user_record RECORD;
-  v_admin_record RECORD;
+  v_user_id UUID;
+  v_first_name TEXT;
+  v_last_name TEXT;
+  v_email TEXT;
+  v_admin_id UUID;
   v_notification_count INTEGER := 0;
 BEGIN
   -- Check if email exists
-  SELECT id, email, first_name, last_name
-  INTO v_user_record
+  SELECT id, first_name, last_name, email
+  INTO v_user_id, v_first_name, v_last_name, v_email
   FROM profiles
-  WHERE LOWER(email) = LOWER(p_email);
+  WHERE LOWER(profiles.email) = LOWER(p_email)
+  LIMIT 1;
 
-  IF NOT FOUND THEN
+  IF v_user_id IS NULL THEN
     RETURN json_build_object(
       'success', false,
       'message', 'No account found with that email address'
@@ -25,18 +29,15 @@ BEGIN
   END IF;
 
   -- Insert notifications for all admins and developers
-  FOR v_admin_record IN
-    SELECT id
-    FROM profiles
-    WHERE role IN ('admin', 'developer')
+  FOR v_admin_id IN
+    SELECT id FROM profiles WHERE role IN ('admin', 'developer')
   LOOP
     INSERT INTO notifications (user_id, type, title, message, is_read)
     VALUES (
-      v_admin_record.id,
+      v_admin_id,
       'system_alert',
       'Password Reset Request',
-      v_user_record.first_name || ' ' || v_user_record.last_name ||
-        ' (' || v_user_record.email || ') has requested a password reset.',
+      v_first_name || ' ' || v_last_name || ' (' || v_email || ') has requested a password reset.',
       false
     );
     v_notification_count := v_notification_count + 1;
