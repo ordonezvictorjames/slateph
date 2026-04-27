@@ -88,6 +88,14 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
   const [loadingRankings, setLoadingRankings] = useState(false)
   // Cross-course accumulated badge counts (badge_type → count)
   const [earnedBadgeCounts, setEarnedBadgeCounts] = useState<Record<string, number>>({})
+
+  // Announcement state
+  const [announcement, setAnnouncement] = useState<string>('')
+  const [announcementId, setAnnouncementId] = useState<string | null>(null)
+  const [editingAnnouncement, setEditingAnnouncement] = useState(false)
+  const [announcementDraft, setAnnouncementDraft] = useState('')
+  const [savingAnnouncement, setSavingAnnouncement] = useState(false)
+  const canEditAnnouncement = role === 'admin' || role === 'developer' || role === 'instructor'
   // Track opened/completed modules per student (persisted in localStorage)
   const [completedModules, setCompletedModules] = useState<Set<string>>(new Set())
   // Test modal state (admin/developer/instructor)
@@ -325,6 +333,38 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
     }
   }, [previewCourse])
 
+  const fetchAnnouncement = async (courseId: string) => {
+    const { data } = await supabase
+      .from('course_announcements')
+      .select('id, content')
+      .eq('course_id', courseId)
+      .single()
+    setAnnouncement(data?.content || '')
+    setAnnouncementId(data?.id || null)
+    setEditingAnnouncement(false)
+  }
+
+  const saveAnnouncement = async () => {
+    if (!selectedCourse) return
+    setSavingAnnouncement(true)
+    try {
+      if (announcementId) {
+        await supabase.from('course_announcements')
+          .update({ content: announcementDraft, updated_by: user?.id, updated_at: new Date().toISOString() })
+          .eq('id', announcementId)
+      } else {
+        const { data } = await supabase.from('course_announcements')
+          .insert({ course_id: selectedCourse.id, content: announcementDraft, updated_by: user?.id })
+          .select('id').single()
+        if (data) setAnnouncementId(data.id)
+      }
+      setAnnouncement(announcementDraft)
+      setEditingAnnouncement(false)
+    } finally {
+      setSavingAnnouncement(false)
+    }
+  }
+
   const fetchPreviewSubjects = async (courseId: string) => {
     setPreviewSubjectsLoading(true)
     try {
@@ -351,6 +391,7 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
     fetchSubjects(course.id)
     fetchAllModulesForCourse(course.id)
     fetchCourseOverview(course.id)
+    fetchAnnouncement(course.id)
     try {
       const { data } = await supabase.from('modules').select('*').eq('subject_id', subjectId).order('order_index', { ascending: true })
       if (data) updateSubjectModules(subjectId, data)
@@ -369,6 +410,7 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
     fetchSubjects(course.id)
     fetchAllModulesForCourse(course.id)
     fetchCourseOverview(course.id)
+    fetchAnnouncement(course.id)
   }
 
   const handleBackToCourses = () => { setCurrentView('courses'); setSelectedCourse(null); setSelectedModule(null) }
@@ -700,16 +742,18 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
           <div className="flex flex-col lg:flex-row gap-4 lg:items-stretch">
             <div className="w-full lg:flex-[7] lg:min-w-0 lg:flex lg:flex-col">
               <div className="overflow-y-auto overflow-x-visible border border-gray-200 rounded-xl bg-white p-2 sm:p-3 lg:flex-1">
-                <div className="flex items-center gap-1 mb-3 p-1 bg-gray-100 rounded-lg w-fit">
-                  <button onClick={() => setShowActiveOnly(false)}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${!showActiveOnly ? 'text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                    style={!showActiveOnly ? { backgroundColor: '#1f7a8c' } : {}}>All Subjects</button>
-                  <button onClick={() => setShowActiveOnly(true)}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${showActiveOnly ? 'text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                    style={showActiveOnly ? { backgroundColor: '#1f7a8c' } : {}}>Active Only</button>
-                </div>
+                {!isStudent && (
+                  <div className="flex items-center gap-1 mb-3 p-1 bg-gray-100 rounded-lg w-fit">
+                    <button onClick={() => setShowActiveOnly(false)}
+                      className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${!showActiveOnly ? 'text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                      style={!showActiveOnly ? { backgroundColor: '#1f7a8c' } : {}}>All Subjects</button>
+                    <button onClick={() => setShowActiveOnly(true)}
+                      className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${showActiveOnly ? 'text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                      style={showActiveOnly ? { backgroundColor: '#1f7a8c' } : {}}>Active Only</button>
+                  </div>
+                )}
                 {(() => {
-                  const visibleSubjects = showActiveOnly ? subjects.filter(s => s.status === 'active') : subjects
+                  const visibleSubjects = (isStudent || showActiveOnly) ? subjects.filter(s => s.status === 'active') : subjects
                   return visibleSubjects.length === 0 ? (
                     <div className="text-center py-16">
                       <p className="text-sm text-gray-500">No subjects available</p>
@@ -895,6 +939,68 @@ export default function MyCoursesPage({ initialCourseId }: { initialCourseId?: s
             </div>
 
             <div className="w-full lg:flex-[3] lg:min-w-0 space-y-4">
+              {/* Announcement card */}
+              {selectedCourse && (
+                <div className="bg-white rounded-xl border border-gray-200 p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#e6f4f7' }}>
+                        <svg className="w-4 h-4" style={{ color: '#1f7a8c' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                        </svg>
+                      </div>
+                      <h3 className="text-sm font-bold text-gray-800">Announcement</h3>
+                    </div>
+                    {canEditAnnouncement && !editingAnnouncement && (
+                      <button
+                        onClick={() => { setAnnouncementDraft(announcement); setEditingAnnouncement(true) }}
+                        className="text-xs text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Edit
+                      </button>
+                    )}
+                  </div>
+
+                  {editingAnnouncement ? (
+                    <div className="flex flex-col gap-2">
+                      <textarea
+                        value={announcementDraft}
+                        onChange={e => setAnnouncementDraft(e.target.value)}
+                        rows={5}
+                        placeholder="Write an announcement for this course..."
+                        className="w-full text-sm text-gray-700 border border-gray-200 rounded-lg p-2.5 resize-none focus:outline-none focus:ring-2 focus:border-transparent"
+                        style={{ '--tw-ring-color': '#1f7a8c' } as React.CSSProperties}
+                      />
+                      <div className="flex gap-2 justify-end">
+                        <button
+                          onClick={() => setEditingAnnouncement(false)}
+                          className="px-3 py-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={saveAnnouncement}
+                          disabled={savingAnnouncement}
+                          className="px-3 py-1.5 text-xs text-white rounded-lg transition-colors disabled:opacity-50"
+                          style={{ backgroundColor: '#1f7a8c' }}
+                        >
+                          {savingAnnouncement ? 'Saving…' : 'Save'}
+                        </button>
+                      </div>
+                    </div>
+                  ) : announcement ? (
+                    <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">{announcement}</p>
+                  ) : (
+                    <p className="text-sm text-gray-400 italic">
+                      {canEditAnnouncement ? 'No announcement yet. Click Edit to add one.' : 'No announcements at this time.'}
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* Available Badges card — students and developers */}
               {(isStudent || isAdmin) && (() => {
                 const allMods = Object.values(subjectModules).flat()
