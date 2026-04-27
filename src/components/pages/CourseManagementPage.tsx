@@ -473,13 +473,18 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
   }
 
   const fetchAnnouncement = async (courseId: string) => {
-    const { data } = await supabase
-      .from('course_announcements')
-      .select('id, content')
-      .eq('course_id', courseId)
-      .single()
-    setAnnouncement(data?.content || '')
-    setAnnouncementId(data?.id || null)
+    try {
+      const { data } = await supabase
+        .from('course_announcements')
+        .select('id, content')
+        .eq('course_id', courseId)
+        .single()
+      setAnnouncement(data?.content || '')
+      setAnnouncementId(data?.id || null)
+    } catch {
+      setAnnouncement('')
+      setAnnouncementId(null)
+    }
     setEditingAnnouncement(false)
   }
 
@@ -499,6 +504,8 @@ export default function CourseManagementPage({ initialCourseId }: { initialCours
       }
       setAnnouncement(announcementDraft)
       setEditingAnnouncement(false)
+    } catch (e) {
+      console.error('Failed to save announcement:', e)
     } finally {
       setSavingAnnouncement(false)
     }
