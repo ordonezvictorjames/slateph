@@ -1105,59 +1105,46 @@ export default function DashboardHome({ onNavigate }: DashboardHomeProps) {
         console.log('Courses fetched successfully:', coursesData?.length, 'courses')
         console.log('Course data:', coursesData)
         
-        // Fetch enrollment counts and check user enrollment for each course
-        const coursesWithEnrollments = await Promise.all(
-          (coursesData || []).map(async (course: Course) => {
-            // Get total enrollments for this course
-            const { count: enrollmentCount } = await supabase
-              .from('course_enrollments')
-              .select('*', { count: 'exact', head: true })
-              .eq('course_id', course.id)
-              .eq('status', 'active')
+        // Fetch all enrollment counts in one query, then check user enrollment once
+        const courseIds = (coursesData || []).map((c: Course) => c.id)
 
-            // Check if current user is enrolled in this course
-            let isUserEnrolled = false
-            if (user?.id && (user?.profile?.role === 'shs_student' || user?.profile?.role === 'jhs_student' || user?.profile?.role === 'college_student')) {
-              try {
-                const { data: userEnrollment, error: enrollmentError } = await supabase
-                  .from('course_enrollments')
-                  .select('id')
-                  .eq('course_id', course.id)
-                  .eq('trainee_id', user.id)
-                  .eq('status', 'active')
-                  .limit(1)
-                
-                // Silently handle errors - enrollment check is not critical
-                if (!enrollmentError) {
-                  isUserEnrolled = (userEnrollment && userEnrollment.length > 0) || false
-                  
-                  if (isUserEnrolled) {
-                    console.log(`? User is enrolled in course: ${course.title}`)
-                  }
-                }
-              } catch (err) {
-                // Silently catch exceptions - enrollment check is not critical
-              }
-            }
+        const [{ data: enrollmentCounts }, { data: userEnrollments }] = await Promise.all([
+          supabase
+            .from('course_enrollments')
+            .select('course_id')
+            .in('course_id', courseIds)
+            .eq('status', 'active'),
+          user?.id && (user?.profile?.role === 'shs_student' || user?.profile?.role === 'jhs_student' || user?.profile?.role === 'college_student')
+            ? supabase
+                .from('course_enrollments')
+                .select('course_id')
+                .in('course_id', courseIds)
+                .eq('trainee_id', user.id)
+                .eq('status', 'active')
+            : Promise.resolve({ data: [] })
+        ])
 
-            return {
-              ...course,
-              total_enrollments: enrollmentCount || 0,
-              is_user_enrolled: isUserEnrolled
-            }
-          })
-        )
-        
-        // Sort courses: enrolled courses first for students
-        const sortedCourses = coursesWithEnrollments.sort((a, b) => {
-          if ((user?.profile?.role === 'shs_student' || user?.profile?.role === 'jhs_student' || user?.profile?.role === 'college_student')) {
-            // Enrolled courses come first
+        // Build lookup maps
+        const countMap: Record<string, number> = {}
+        for (const e of (enrollmentCounts || [])) {
+          countMap[e.course_id] = (countMap[e.course_id] || 0) + 1
+        }
+        const enrolledSet = new Set((userEnrollments || []).map((e: any) => e.course_id))
+
+        const coursesWithEnrollments = (coursesData || []).map((course: Course) => ({
+          ...course,
+          total_enrollments: countMap[course.id] || 0,
+          is_user_enrolled: enrolledSet.has(course.id),
+        }))
+
+        const sortedCourses = coursesWithEnrollments.sort((a: any, b: any) => {
+          if (user?.profile?.role === 'shs_student' || user?.profile?.role === 'jhs_student' || user?.profile?.role === 'college_student') {
             if (a.is_user_enrolled && !b.is_user_enrolled) return -1
             if (!a.is_user_enrolled && b.is_user_enrolled) return 1
           }
           return 0
         })
-        
+
         setCourses(sortedCourses)
       }
 

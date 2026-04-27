@@ -4,33 +4,38 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useIdleTimeout } from '@/hooks/useIdleTimeout'
 import { createClient } from '@/lib/supabase/client'
+import dynamic from 'next/dynamic'
 import Sidebar from '@/components/Sidebar'
 import CourseChat from '@/components/CourseChat'
 import AIAssistant from '@/components/AIAssistant'
 import PythonPlayground from '@/components/PythonPlayground'
 import FloatingActionMenu from '@/components/FloatingActionMenu'
 import { PageLoading } from '@/components/ui/page-loading'
-import DashboardHome from '@/components/pages/DashboardHome'
-import UserManagementPage from '@/components/pages/UserManagementPage'
-import MyStudentsPage from '@/components/pages/MyStudentsPage'
-import CourseManagementPage from '@/components/pages/CourseManagementPage'
-import MyCoursesPage from '@/components/pages/MyCoursesPage'
-import AnalyticsPage from '@/components/pages/AnalyticsPage'
-import SchedulePage from '@/components/pages/SchedulePage'
-import ProfilePage from '@/components/pages/ProfilePage'
-import SystemTrackerPage from '@/components/pages/SystemTrackerPage'
-import CodeGeneratorPage from '@/components/pages/CodeGeneratorPage'
-import FeatureRequestsPage from '@/components/pages/FeatureRequestsPage'
-import TasksPage from '@/components/pages/TasksPage'
-import AIAssistantPage from '@/components/pages/AIAssistantPage'
-import LibraryPage from '@/components/pages/LibraryPage'
-import BadgesPage from '@/components/pages/BadgesPage'
-import GradesPage from '@/components/pages/GradesPage'
-import CoursesPage from '@/components/pages/CoursesPage'
-import ActivitiesPage from '@/components/pages/ActivitiesPage'
-import WhatsNewPage from '@/components/pages/WhatsNewPage'
-import SettingsPage from '@/components/pages/SettingsPage'
 import DeletionWarningBanner from '@/components/DeletionWarningBanner'
+import { Loading } from '@/components/ui/loading'
+
+// Lazy-load all page components — only downloaded when first visited
+const loader = () => <div className="p-8"><Loading size="lg" className="h-64" /></div>
+const DashboardHome       = dynamic(() => import('@/components/pages/DashboardHome'),       { loading: loader })
+const UserManagementPage  = dynamic(() => import('@/components/pages/UserManagementPage'),  { loading: loader })
+const MyStudentsPage      = dynamic(() => import('@/components/pages/MyStudentsPage'),      { loading: loader })
+const CourseManagementPage= dynamic(() => import('@/components/pages/CourseManagementPage'),{ loading: loader })
+const MyCoursesPage       = dynamic(() => import('@/components/pages/MyCoursesPage'),       { loading: loader })
+const AnalyticsPage       = dynamic(() => import('@/components/pages/AnalyticsPage'),       { loading: loader })
+const SchedulePage        = dynamic(() => import('@/components/pages/SchedulePage'),        { loading: loader })
+const ProfilePage         = dynamic(() => import('@/components/pages/ProfilePage'),         { loading: loader })
+const SystemTrackerPage   = dynamic(() => import('@/components/pages/SystemTrackerPage'),   { loading: loader })
+const CodeGeneratorPage   = dynamic(() => import('@/components/pages/CodeGeneratorPage'),   { loading: loader })
+const FeatureRequestsPage = dynamic(() => import('@/components/pages/FeatureRequestsPage'), { loading: loader })
+const TasksPage           = dynamic(() => import('@/components/pages/TasksPage'),           { loading: loader })
+const AIAssistantPage     = dynamic(() => import('@/components/pages/AIAssistantPage'),     { loading: loader })
+const LibraryPage         = dynamic(() => import('@/components/pages/LibraryPage'),         { loading: loader })
+const BadgesPage          = dynamic(() => import('@/components/pages/BadgesPage'),          { loading: loader })
+const GradesPage          = dynamic(() => import('@/components/pages/GradesPage'),          { loading: loader })
+const CoursesPage         = dynamic(() => import('@/components/pages/CoursesPage'),         { loading: loader })
+const ActivitiesPage      = dynamic(() => import('@/components/pages/ActivitiesPage'),      { loading: loader })
+const WhatsNewPage        = dynamic(() => import('@/components/pages/WhatsNewPage'),        { loading: loader })
+const SettingsPage        = dynamic(() => import('@/components/pages/SettingsPage'),        { loading: loader })
 
 export type PageType = 'dashboard' | 'user-management' | 'course-management' | 'my-courses' | 'courses' | 'activities' | 'whats-new' | 'schedule' | 'analytics' | 'profile' | 'settings' | 'system-tracker' | 'code-generator' | 'feature-requests' | 'tasks' | 'games' | 'activity' | 'ai-assistant' | 'library' | 'badges' | 'grades'
 

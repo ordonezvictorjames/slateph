@@ -152,72 +152,24 @@ export default function TasksPage() {
         // Fetch feature requests (category = 'feature')
         const { data: requests } = await supabase
           .from('feature_requests')
-          .select(`
-            id,
-            title,
-            description,
-            status,
-            priority,
-            created_at,
-            user_id,
-            category
-          `)
+          .select(`id, title, description, status, priority, created_at, user_id, category,
+            user:profiles!user_id(first_name, last_name)`)
           .eq('category', 'feature')
           .in('status', ['pending', 'ongoing'])
           .order('created_at', { ascending: false })
 
-        // Fetch user details for each request
-        const requestsWithUsers = await Promise.all(
-          (requests || []).map(async (req: any) => {
-            const { data: userData } = await supabase
-              .from('profiles')
-              .select('first_name, last_name')
-              .eq('id', req.user_id)
-              .single()
-
-            return {
-              ...req,
-              user: userData
-            }
-          })
-        )
-
-        setFeatureRequests(requestsWithUsers)
+        setFeatureRequests((requests || []).map((req: any) => ({ ...req, user: req.user })))
 
         // Fetch bug reports (category = 'bug')
         const { data: bugs } = await supabase
           .from('feature_requests')
-          .select(`
-            id,
-            title,
-            description,
-            status,
-            priority,
-            created_at,
-            user_id,
-            category
-          `)
+          .select(`id, title, description, status, priority, created_at, user_id, category,
+            user:profiles!user_id(first_name, last_name)`)
           .eq('category', 'bug')
           .in('status', ['pending', 'ongoing'])
           .order('created_at', { ascending: false })
 
-        // Fetch user details for each bug
-        const bugsWithUsers = await Promise.all(
-          (bugs || []).map(async (bug: any) => {
-            const { data: userData } = await supabase
-              .from('profiles')
-              .select('first_name, last_name')
-              .eq('id', bug.user_id)
-              .single()
-
-            return {
-              ...bug,
-              user: userData
-            }
-          })
-        )
-
-        setBugReports(bugsWithUsers)
+        setBugReports((bugs || []).map((bug: any) => ({ ...bug, user: bug.user })))
 
         // Fetch password reset requests from notifications
         const { data: passwordNotifications } = await supabase
