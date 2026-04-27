@@ -5,55 +5,45 @@ CREATE OR REPLACE FUNCTION request_password_reset(p_email TEXT)
 RETURNS JSON
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
-  v_user_id UUID;
+  v_user_id    UUID;
   v_first_name TEXT;
-  v_last_name TEXT;
-  v_email TEXT;
-  v_admin RECORD;
-  v_notification_count INTEGER := 0;
+  v_last_name  TEXT;
+  v_email      TEXT;
+  v_count      INTEGER;
 BEGIN
-  -- Check if email exists
+  -- Lookup user (SECURITY DEFINER bypasses RLS)
   SELECT id, first_name, last_name, email
-  INTO v_user_id, v_first_name, v_last_name, v_email
-  FROM profiles
-  WHERE LOWER(profiles.email) = LOWER(p_email)
-  LIMIT 1;
+  INTO STRICT v_user_id, v_first_name, v_last_name, v_email
+  FROM public.profiles
+  WHERE LOWER(email) = LOWER(p_email);
 
-  IF v_user_id IS NULL THEN
-    RETURN json_build_object(
-      'success', false,
-      'message', 'No account found with that email address'
-    );
+  -- Bulk-insert one notification per admin/developer
+  INSERT INTO public.notifications (user_id, type, title, message, is_read)
+  SELECT
+    p.id,
+    'system_alert',
+    'Password Reset Request',
+    v_first_name || ' ' || v_last_name || ' (' || v_email || ') has requested a password reset.',
+    false
+  FROM public.profiles p
+  WHERE p.role IN ('admin', 'developer');
+
+  GET DIAGNOSTICS v_count = ROW_COUNT;
+
+  IF v_count = 0 THEN
+    RETURN json_build_object('success', false, 'message', 'No administrators available');
   END IF;
 
-  -- Insert notifications for all admins and developers
-  FOR v_admin IN
-    SELECT id FROM profiles WHERE role IN ('admin', 'developer')
-  LOOP
-    INSERT INTO notifications (user_id, type, title, message, is_read)
-    VALUES (
-      v_admin.id,
-      'system_alert',
-      'Password Reset Request',
-      v_first_name || ' ' || v_last_name || ' (' || v_email || ') has requested a password reset.',
-      false
-    );
-    v_notification_count := v_notification_count + 1;
-  END LOOP;
+  RETURN json_build_object('success', true, 'message', 'Request sent to ' || v_count || ' administrator(s)');
 
-  IF v_notification_count = 0 THEN
-    RETURN json_build_object(
-      'success', false,
-      'message', 'No administrators available to process the request'
-    );
-  END IF;
-
-  RETURN json_build_object(
-    'success', true,
-    'message', 'Password reset request sent to ' || v_notification_count || ' administrator(s)'
-  );
+EXCEPTION
+  WHEN NO_DATA_FOUND THEN
+    RETURN json_build_object('success', false, 'message', 'No account found with that email address');
+  WHEN TOO_MANY_ROWS THEN
+    RETURN json_build_object('success', false, 'message', 'Multiple accounts found, contact support');
 END;
 $$;
 
