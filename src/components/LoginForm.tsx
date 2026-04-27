@@ -246,13 +246,13 @@ export default function LoginForm() {
 
       if (error) {
         console.error('Password reset error:', error)
-        showError('Error', 'Failed to process password reset request')
+        showError('Error', error.message || 'Failed to process password reset request')
         setForgotPasswordLoading(false)
         return
       }
 
-      if (!data.success) {
-        showError('Error', data.message || 'Failed to process password reset request')
+      if (!data?.success) {
+        showError('Error', data?.message || 'Failed to process password reset request')
         setForgotPasswordLoading(false)
         return
       }
