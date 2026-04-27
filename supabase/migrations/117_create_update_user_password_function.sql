@@ -1,17 +1,17 @@
 -- Admin function to update any user's password (no current password required)
--- Used by admins/developers in UserManagementPage
+-- Uses extensions.crypt/gen_salt to match how authenticate_user hashes passwords
 
 DO $outer$
 BEGIN
   EXECUTE $func$
     CREATE OR REPLACE FUNCTION public.update_user_password(
-      p_user_id    UUID,
+      p_user_id      UUID,
       p_new_password TEXT
     )
     RETURNS JSON
     LANGUAGE plpgsql
     SECURITY DEFINER
-    SET search_path = public
+    SET search_path = public, extensions
     AS $body$
     DECLARE
       v_new_hash TEXT;
@@ -20,12 +20,11 @@ BEGIN
         RETURN json_build_object('success', false, 'message', 'Password must be at least 6 characters');
       END IF;
 
-      -- Hash using pgcrypto
-      v_new_hash := crypt(p_new_password, gen_salt('bf'));
+      v_new_hash := extensions.crypt(p_new_password, extensions.gen_salt('bf'));
 
       UPDATE public.profiles
-      SET password_hash = v_new_hash,
-          updated_at    = NOW()
+      SET password   = v_new_hash,
+          updated_at = NOW()
       WHERE id = p_user_id;
 
       IF NOT FOUND THEN
