@@ -81,8 +81,8 @@ export default function LibraryPage() {
       if (!data || data.length === 0) { setLinks([]); return }
 
       // Fetch course and subject names
-      const courseIds = [...new Set(data.map((l: any) => l.course_id).filter(Boolean))]
-      const subjectIds = [...new Set(data.map((l: any) => l.subject_id).filter(Boolean))]
+      const courseIds = Array.from(new Set(data.map((l: any) => l.course_id).filter(Boolean)))
+      const subjectIds = Array.from(new Set(data.map((l: any) => l.subject_id).filter(Boolean)))
 
       const [{ data: courseData }, { data: subjectData }] = await Promise.all([
         courseIds.length > 0 ? supabase.from('courses').select('id, title').in('id', courseIds) : Promise.resolve({ data: [] }),
