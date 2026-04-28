@@ -24,10 +24,6 @@ interface Resource {
     course: {
       title: string
     }
-  }
-  creator: {
-    first_name: string
-    last_name: string
   } | null
 }
 
@@ -116,7 +112,7 @@ export default function LibraryPage() {
   const fetchResources = async () => {
     try {
       setLoading(true)
-      
+
       const { data, error } = await supabase
         .from('subject_resources')
         .select(`
@@ -124,21 +120,27 @@ export default function LibraryPage() {
           subject:subjects(
             title,
             course:courses(title)
-          ),
-          creator:profiles!subject_resources_created_by_fkey!left(first_name, last_name)
+          )
         `)
         .eq('status', 'active')
         .order('created_at', { ascending: false })
 
       if (error) {
-        console.error('Error fetching resources:', error)
+        console.error('Library query error:', JSON.stringify(error))
+        // Try a simpler query as fallback
+        const { data: simple, error: e2 } = await supabase
+          .from('subject_resources')
+          .select('*')
+          .eq('status', 'active')
+        console.log('[Library] simple fallback:', simple?.length, JSON.stringify(e2))
+        setResources(simple || [])
         return
       }
 
-      console.log('[Library] fetched resources:', data?.length, data)
+      console.log('[Library] fetched resources:', data?.length)
       setResources(data || [])
-    } catch (error) {
-      console.error('Error fetching resources:', error)
+    } catch (err) {
+      console.error('[Library] caught exception:', err)
     } finally {
       setLoading(false)
     }
@@ -158,8 +160,8 @@ export default function LibraryPage() {
       filtered = filtered.filter(r => 
         r.title.toLowerCase().includes(query) ||
         r.description?.toLowerCase().includes(query) ||
-        r.subject.title.toLowerCase().includes(query) ||
-        r.subject.course.title.toLowerCase().includes(query)
+        r.subject?.title?.toLowerCase().includes(query) ||
+        r.subject?.course?.title?.toLowerCase().includes(query)
       )
     }
 
@@ -424,8 +426,8 @@ export default function LibraryPage() {
                         </div>
                       </td>
                       <td className="px-4 md:px-6 py-4">
-                        <div className="text-sm text-gray-900">{resource.subject.course.title}</div>
-                        <div className="text-xs text-gray-500">{resource.subject.title}</div>
+                        <div className="text-sm text-gray-900">{resource.subject?.course?.title || '—'}</div>
+                        <div className="text-xs text-gray-500">{resource.subject?.title || '—'}</div>
                       </td>
                       <td className="px-4 md:px-6 py-4">
                         <Badge variant="leaf" size="sm">
@@ -433,7 +435,7 @@ export default function LibraryPage() {
                         </Badge>
                       </td>
                       <td className="px-4 md:px-6 py-4 text-sm text-gray-900">
-                        {resource.creator ? `${resource.creator.first_name} ${resource.creator.last_name}` : '—'}
+                        —
                       </td>
                       <td className="px-4 md:px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
                         {formatDate(resource.created_at)}
