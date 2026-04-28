@@ -125,7 +125,7 @@ export default function LibraryPage() {
             title,
             course:courses(title)
           ),
-          creator:profiles!subject_resources_created_by_fkey(first_name, last_name)
+          creator:profiles!subject_resources_created_by_fkey!left(first_name, last_name)
         `)
         .eq('status', 'active')
         .order('created_at', { ascending: false })
