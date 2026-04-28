@@ -4,486 +4,218 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
 import { Loading } from '@/components/ui/loading'
-import { Badge } from '@/components/ui/badge'
-import { NatureButton } from '@/components/ui/nature-button'
+import AutoLinkText from '@/components/ui/AutoLinkText'
 
-interface Resource {
+interface LibraryLink {
   id: string
-  subject_id: string
   title: string
-  resource_url: string
-  resource_type: 'link' | 'file' | 'document'
+  url: string
   description: string | null
-  file_size: number | null
-  file_type: string | null
-  order_index: number
-  status: 'active' | 'inactive'
+  course_id: string | null
+  subject_id: string | null
   created_at: string
-  subject: {
-    title: string
-    course: {
-      title: string
-    }
-  } | null
+  course_title?: string
+  subject_title?: string
 }
-
-type FilterType = 'all' | 'link' | 'file' | 'document'
 
 export default function LibraryPage() {
   const { user } = useAuth()
   const supabase = createClient()
-  const [resources, setResources] = useState<Resource[]>([])
-  const [filteredResources, setFilteredResources] = useState<Resource[]>([])
+  const [links, setLinks] = useState<LibraryLink[]>([])
+  const [filtered, setFiltered] = useState<LibraryLink[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [filterType, setFilterType] = useState<FilterType>('all')
   const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage] = useState(10)
+  const itemsPerPage = 10
 
-  // Link upload modal state
-  const [showLinkModal, setShowLinkModal] = useState(false)
-  const [linkForm, setLinkForm] = useState({ title: '', url: '', description: '', subject_id: '' })
-  const [subjects, setSubjects] = useState<{ id: string; title: string; course_title: string }[]>([])
-  const [savingLink, setSavingLink] = useState(false)
-  const [linkError, setLinkError] = useState('')
+  // Upload modal
+  const [showModal, setShowModal] = useState(false)
+  const [form, setForm] = useState({ title: '', url: '', description: '', course_id: '', subject_id: '' })
+  const [courses, setCourses] = useState<{ id: string; title: string }[]>([])
+  const [subjects, setSubjects] = useState<{ id: string; title: string }[]>([])
+  const [saving, setSaving] = useState(false)
+  const [formError, setFormError] = useState('')
 
   const role = user?.profile?.role || ''
   const canUpload = role === 'admin' || role === 'developer'
 
   useEffect(() => {
-    fetchResources()
-    if (canUpload) fetchSubjects()
+    fetchLinks()
+    if (canUpload) fetchCourses()
   }, [])
 
+  // Fetch subjects when course changes in form
   useEffect(() => {
-    filterResources()
-  }, [resources, searchQuery, filterType])
+    if (!form.course_id) { setSubjects([]); setForm(p => ({ ...p, subject_id: '' })); return }
+    supabase.from('subjects').select('id, title').eq('course_id', form.course_id).order('order_index', { ascending: true })
+      .then(({ data }) => setSubjects((data || []) as { id: string; title: string }[]))
+    setForm(p => ({ ...p, subject_id: '' }))
+  }, [form.course_id])
 
-  // Reset to first page when filters change
   useEffect(() => {
+    const q = searchQuery.toLowerCase()
+    setFiltered(q ? links.filter(l =>
+      l.title.toLowerCase().includes(q) ||
+      l.description?.toLowerCase().includes(q) ||
+      l.url.toLowerCase().includes(q) ||
+      l.course_title?.toLowerCase().includes(q) ||
+      l.subject_title?.toLowerCase().includes(q)
+    ) : links)
     setCurrentPage(1)
-  }, [searchQuery, filterType])
+  }, [links, searchQuery])
 
-  const fetchSubjects = async () => {
-    const { data } = await supabase
-      .from('subjects')
-      .select('id, title, course:courses(title)')
-      .order('title', { ascending: true })
-    setSubjects((data || []).map((s: any) => ({
-      id: s.id,
-      title: s.title,
-      course_title: s.course?.title || ''
-    })))
+  const fetchCourses = async () => {
+    const { data } = await supabase.from('courses').select('id, title').order('title', { ascending: true })
+    setCourses(data || [])
   }
 
-  const handleSaveLink = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLinkError('')
-    if (!linkForm.url.startsWith('http')) {
-      setLinkError('URL must start with http:// or https://')
-      return
-    }
-    if (!linkForm.subject_id) {
-      setLinkError('Please select a subject')
-      return
-    }
-    setSavingLink(true)
+  const fetchLinks = async () => {
+    setLoading(true)
     try {
-      const { error } = await supabase.from('subject_resources').insert({
-        subject_id: linkForm.subject_id,
-        title: linkForm.title.trim(),
-        resource_url: linkForm.url.trim(),
-        resource_type: 'link',
-        description: linkForm.description.trim() || null,
-        status: 'active',
-        order_index: 0,
-      })
-      if (error) { setLinkError(error.message); return }
-      setShowLinkModal(false)
-      setLinkForm({ title: '', url: '', description: '', subject_id: '' })
-      fetchResources()
-    } catch (err: any) {
-      setLinkError(err.message || 'Failed to save link')
-    } finally {
-      setSavingLink(false)
-    }
-  }
-
-  const fetchResources = async () => {
-    try {
-      setLoading(true)
-
-      // Fetch resources
-      const { data: resourceData, error: resourceError } = await supabase
-        .from('subject_resources')
-        .select('*')
-        .eq('status', 'active')
+      const { data, error } = await supabase
+        .from('library_links')
+        .select('id, title, url, description, course_id, subject_id, created_at')
         .order('created_at', { ascending: false })
 
-      if (resourceError) {
-        console.error('[Library] resource error:', resourceError.message)
-        setLoading(false)
-        return
-      }
+      if (error) { console.error('[Library]', error.message, error.code); setLinks([]); return }
+      if (!data || data.length === 0) { setLinks([]); return }
 
-      if (!resourceData || resourceData.length === 0) {
-        setResources([])
-        setLoading(false)
-        return
-      }
+      // Fetch course and subject names
+      const courseIds = [...new Set(data.map((l: any) => l.course_id).filter(Boolean))]
+      const subjectIds = [...new Set(data.map((l: any) => l.subject_id).filter(Boolean))]
 
-      // Fetch subjects for those resources
-      const subjectIds = [...new Set(resourceData.map((r: any) => r.subject_id).filter(Boolean))]
-      const { data: subjectData } = await supabase
-        .from('subjects')
-        .select('id, title, course_id')
-        .in('id', subjectIds)
+      const [{ data: courseData }, { data: subjectData }] = await Promise.all([
+        courseIds.length > 0 ? supabase.from('courses').select('id, title').in('id', courseIds) : Promise.resolve({ data: [] }),
+        subjectIds.length > 0 ? supabase.from('subjects').select('id, title').in('id', subjectIds) : Promise.resolve({ data: [] }),
+      ])
 
-      // Fetch courses
-      const courseIds = [...new Set((subjectData || []).map((s: any) => s.course_id).filter(Boolean))]
-      const { data: courseData } = await supabase
-        .from('courses')
-        .select('id, title')
-        .in('id', courseIds)
-
-      // Build lookup maps
       const courseMap: Record<string, string> = {}
       for (const c of (courseData || [])) courseMap[c.id] = c.title
+      const subjectMap: Record<string, string> = {}
+      for (const s of (subjectData || [])) subjectMap[s.id] = s.title
 
-      const subjectMap: Record<string, { title: string; course_title: string }> = {}
-      for (const s of (subjectData || [])) {
-        subjectMap[s.id] = { title: s.title, course_title: courseMap[s.course_id] || '' }
-      }
-
-      // Merge
-      const merged = resourceData.map((r: any) => ({
-        ...r,
-        subject: subjectMap[r.subject_id] ? {
-          title: subjectMap[r.subject_id].title,
-          course: { title: subjectMap[r.subject_id].course_title }
-        } : null
-      }))
-
-      console.log('[Library] fetched:', merged.length)
-      setResources(merged)
-    } catch (err) {
-      console.error('[Library] exception:', err)
+      setLinks(data.map((l: any) => ({
+        ...l,
+        course_title: l.course_id ? courseMap[l.course_id] || '' : '',
+        subject_title: l.subject_id ? subjectMap[l.subject_id] || '' : '',
+      })))
+    } catch (e) {
+      console.error('[Library] exception:', e)
     } finally {
       setLoading(false)
     }
   }
 
-  const filterResources = () => {
-    let filtered = resources
-
-    // Filter by type
-    if (filterType !== 'all') {
-      filtered = filtered.filter(r => r.resource_type === filterType)
-    }
-
-    // Filter by search query
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase()
-      filtered = filtered.filter(r => 
-        r.title.toLowerCase().includes(query) ||
-        r.description?.toLowerCase().includes(query) ||
-        r.subject?.title?.toLowerCase().includes(query) ||
-        r.subject?.course?.title?.toLowerCase().includes(query)
-      )
-    }
-
-    setFilteredResources(filtered)
-  }
-
-  const getResourceIcon = (type: string) => {
-    switch (type) {
-      case 'link':
-        return (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-          </svg>
-        )
-      case 'file':
-        return (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-          </svg>
-        )
-      case 'document':
-        return (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-        )
-      default:
-        return null
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setFormError('')
+    if (!form.url.startsWith('http')) { setFormError('URL must start with http:// or https://'); return }
+    setSaving(true)
+    try {
+      const { error } = await supabase.from('library_links').insert({
+        title: form.title.trim(),
+        url: form.url.trim(),
+        description: form.description.trim() || null,
+        course_id: form.course_id || null,
+        subject_id: form.subject_id || null,
+      })
+      if (error) { setFormError(error.message); return }
+      setShowModal(false)
+      setForm({ title: '', url: '', description: '', course_id: '', subject_id: '' })
+      fetchLinks()
+    } catch (err: any) {
+      setFormError(err.message || 'Failed to save')
+    } finally {
+      setSaving(false)
     }
   }
 
-  const getResourceTypeColor = (type: string) => {
-    switch (type) {
-      case 'link':
-        return 'bg-blue-100 text-blue-700'
-      case 'file':
-        return 'bg-green-100 text-green-700'
-      case 'document':
-        return 'bg-purple-100 text-purple-700'
-      default:
-        return 'bg-gray-100 text-gray-700'
-    }
-  }
-
-  const formatFileSize = (bytes: number | null) => {
-    if (!bytes) return null
-    const kb = bytes / 1024
-    const mb = kb / 1024
-    if (mb >= 1) return `${mb.toFixed(2)} MB`
-    return `${kb.toFixed(2)} KB`
-  }
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
-    })
-  }
-
-  // Pagination logic
-  const totalPages = Math.ceil(filteredResources.length / itemsPerPage)
+  const totalPages = Math.ceil(filtered.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
-  const endIndex = startIndex + itemsPerPage
-  const currentResources = filteredResources.slice(startIndex, endIndex)
+  const pageItems = filtered.slice(startIndex, startIndex + itemsPerPage)
 
-  const goToPage = (page: number) => {
-    setCurrentPage(page)
-  }
-
-  const goToPreviousPage = () => {
-    setCurrentPage(prev => Math.max(prev - 1, 1))
-  }
-
-  const goToNextPage = () => {
-    setCurrentPage(prev => Math.min(prev + 1, totalPages))
-  }
-
-  if (loading) {
-    return (
-      <div className="p-4 md:p-8">
-        <div className="flex items-center justify-center h-64">
-          <Loading size="lg" />
-        </div>
-      </div>
-    )
-  }
+  if (loading) return <div className="p-8 flex items-center justify-center h-64"><Loading size="lg" /></div>
 
   return (
     <div className="p-4 md:p-8">
       {/* Header */}
-      <div className="bg-white rounded-lg p-4 md:p-6 shadow-sm border border-gray-100 mb-4 md:mb-6">
+      <div className="bg-white rounded-lg p-4 md:p-6 shadow-sm border border-gray-100 mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1 md:mb-2">Library</h1>
-            <p className="text-sm md:text-base text-gray-600">Browse and access learning resources</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">Library</h1>
+            <p className="text-sm text-gray-600">Browse and access learning resources</p>
           </div>
-        <div className="flex items-center gap-3">
           {canUpload && (
-            <button
-              onClick={() => setShowLinkModal(true)}
+            <button onClick={() => setShowModal(true)}
               className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-xl transition-colors"
               style={{ backgroundColor: '#1f7a8c' }}
               onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#155f6e')}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#1f7a8c')}
-            >
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#1f7a8c')}>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
               </svg>
               Upload Link
             </button>
           )}
-          <div className="hidden md:block">
-            <svg className="w-16 h-16 text-fern-600 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-            </svg>
-          </div>
-        </div>
         </div>
       </div>
 
-      {/* Search and Filters */}
-      <div className="bg-white rounded-lg p-4 md:p-6 shadow-sm border border-gray-100 mb-4 md:mb-6">
-        <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-3 md:mb-4">
-          {/* Search */}
-          <div className="flex-1">
-            <div className="relative">
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search resources..."
-                className="w-full pl-10 pr-4 py-2.5 md:py-2 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-fern-500 focus:border-transparent"
-              />
-            </div>
-          </div>
-
-          {/* Type Filter */}
-          <div className="flex gap-2">
-            <button
-              onClick={() => setFilterType('all')}
-              className={`px-4 py-2.5 md:py-2 rounded-lg text-sm md:text-base font-medium transition-colors whitespace-nowrap min-h-[44px] md:min-h-0 ${
-                filterType === 'all'
-                  ? 'bg-fern-500 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              All
-            </button>
-            <button
-              onClick={() => setFilterType('link')}
-              className={`px-4 py-2.5 md:py-2 rounded-lg text-sm md:text-base font-medium transition-colors whitespace-nowrap min-h-[44px] md:min-h-0 ${
-                filterType === 'link'
-                  ? 'bg-primary-500 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Links
-            </button>
-            <button
-              onClick={() => setFilterType('file')}
-              className={`px-4 py-2.5 md:py-2 rounded-lg text-sm md:text-base font-medium transition-colors whitespace-nowrap min-h-[44px] md:min-h-0 ${
-                filterType === 'file'
-                  ? 'bg-primary-500 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Files
-            </button>
-            <button
-              onClick={() => setFilterType('document')}
-              className={`px-4 py-2.5 md:py-2 rounded-lg text-sm md:text-base font-medium transition-colors whitespace-nowrap min-h-[44px] md:min-h-0 ${
-                filterType === 'document'
-                  ? 'bg-primary-500 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Documents
-            </button>
-          </div>
+      {/* Search */}
+      <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100 mb-6">
+        <div className="relative">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Search by title, course, subject..."
+            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:border-transparent" />
         </div>
-
-        {/* Pagination info */}
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="text-xs md:text-sm text-gray-600">
-            {filteredResources.length === 0 ? (
-              <span>No resources found</span>
-            ) : (
-              <span>
-                Showing {startIndex + 1} to {Math.min(endIndex, filteredResources.length)} of {filteredResources.length} resources
-              </span>
-            )}
-          </div>
-        </div>
+        <p className="text-xs text-gray-500 mt-2">{filtered.length} resource{filtered.length !== 1 ? 's' : ''} found</p>
       </div>
 
-      {/* Resources Display - Table View Only */}
+      {/* Table */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        {filteredResources.length === 0 ? (
-          <div className="text-center py-8 md:py-12 px-4">
-            <svg className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-3 md:mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        {filtered.length === 0 ? (
+          <div className="text-center py-12 px-4">
+            <svg className="w-12 h-12 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
             </svg>
-            <h3 className="text-base md:text-lg font-medium text-gray-900 mb-1 md:mb-2">No resources found</h3>
-            <p className="text-sm md:text-base text-gray-600">
-              {searchQuery || filterType !== 'all' 
-                ? 'Try adjusting your search or filters' 
-                : 'No resources have been uploaded yet'}
-            </p>
+            <h3 className="text-base font-medium text-gray-900 mb-1">No links found</h3>
+            <p className="text-sm text-gray-500">{searchQuery ? 'Try adjusting your search' : 'No links have been uploaded yet'}</p>
           </div>
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[800px]">
+              <table className="w-full min-w-[600px]">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="px-4 md:px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      Resource
-                    </th>
-                    <th className="px-4 md:px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      Course / Subject
-                    </th>
-                    <th className="px-4 md:px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      Type
-                    </th>
-                    <th className="px-4 md:px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      Uploaded By
-                    </th>
-                    <th className="px-4 md:px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      Date
-                    </th>
-                    <th className="px-4 md:px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      Size
-                    </th>
-                    <th className="px-4 md:px-6 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      Action
-                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Title</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Course</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Subject</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">URL</th>
+                    <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {currentResources.map((resource) => (
-                    <tr key={resource.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 md:px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className={`flex-shrink-0 w-10 h-10 rounded-lg ${getResourceTypeColor(resource.resource_type)} flex items-center justify-center`}>
-                            {getResourceIcon(resource.resource_type)}
-                          </div>
-                          <div className="min-w-0">
-                            <div className="font-medium text-sm text-gray-900 truncate">
-                              {resource.title}
-                            </div>
-                            {resource.description && (
-                              <div className="text-xs text-gray-500 truncate max-w-xs">
-                                {resource.description}
-                              </div>
-                            )}
-                          </div>
-                        </div>
+                  {pageItems.map(link => (
+                    <tr key={link.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="font-medium text-sm text-gray-900">{link.title}</div>
+                        {link.description && <div className="text-xs text-gray-500 mt-0.5 max-w-xs truncate">{link.description}</div>}
                       </td>
-                      <td className="px-4 md:px-6 py-4">
-                        <div className="text-sm text-gray-900">{resource.subject?.course?.title || '—'}</div>
-                        <div className="text-xs text-gray-500">{resource.subject?.title || '—'}</div>
+                      <td className="px-6 py-4 text-sm text-gray-700">{link.course_title || '—'}</td>
+                      <td className="px-6 py-4 text-sm text-gray-700">{link.subject_title || '—'}</td>
+                      <td className="px-6 py-4 max-w-xs">
+                        <AutoLinkText text={link.url} className="text-xs truncate block" />
                       </td>
-                      <td className="px-4 md:px-6 py-4">
-                        <Badge variant="leaf" size="sm">
-                          {resource.resource_type}
-                        </Badge>
-                      </td>
-                      <td className="px-4 md:px-6 py-4 text-sm text-gray-900">
-                        —
-                      </td>
-                      <td className="px-4 md:px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                        {formatDate(resource.created_at)}
-                      </td>
-                      <td className="px-4 md:px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                        {formatFileSize(resource.file_size) || '-'}
-                      </td>
-                      <td className="px-4 md:px-6 py-4 text-right">
-                        <NatureButton
-                          size="sm"
-                          variant="leaf"
-                          onClick={() => window.open(resource.resource_url, '_blank')}
-                          icon={
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                            </svg>
-                          }
-                          iconPosition="right"
-                        >
+                      <td className="px-6 py-4 text-right">
+                        <button onClick={() => window.open(link.url, '_blank')}
+                          className="px-3 py-1.5 text-xs font-semibold text-white rounded-lg transition-colors"
+                          style={{ backgroundColor: '#1f7a8c' }}
+                          onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#155f6e')}
+                          onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#1f7a8c')}>
                           Open
-                        </NatureButton>
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -491,60 +223,14 @@ export default function LibraryPage() {
               </table>
             </div>
 
-            {/* Pagination Controls */}
             {totalPages > 1 && (
-              <div className="px-4 md:px-6 py-4 border-t border-gray-200 bg-gray-50">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-700">
-                    Page {currentPage} of {totalPages}
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={goToPreviousPage}
-                      disabled={currentPage === 1}
-                      className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Previous
-                    </button>
-                    
-                    {/* Page numbers */}
-                    <div className="flex items-center space-x-1">
-                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                        let pageNum
-                        if (totalPages <= 5) {
-                          pageNum = i + 1
-                        } else if (currentPage <= 3) {
-                          pageNum = i + 1
-                        } else if (currentPage >= totalPages - 2) {
-                          pageNum = totalPages - 4 + i
-                        } else {
-                          pageNum = currentPage - 2 + i
-                        }
-                        
-                        return (
-                          <button
-                            key={pageNum}
-                            onClick={() => goToPage(pageNum)}
-                            className={`px-3 py-2 text-sm font-medium rounded-md ${
-                              currentPage === pageNum
-                                ? 'bg-fern-500 text-white'
-                                : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
-                            }`}
-                          >
-                            {pageNum}
-                          </button>
-                        )
-                      })}
-                    </div>
-
-                    <button
-                      onClick={goToNextPage}
-                      disabled={currentPage === totalPages}
-                      className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Next
-                    </button>
-                  </div>
+              <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
+                <span className="text-sm text-gray-700">Page {currentPage} of {totalPages}</span>
+                <div className="flex gap-2">
+                  <button onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1}
+                    className="px-3 py-1.5 text-sm border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-50">Previous</button>
+                  <button onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages}
+                    className="px-3 py-1.5 text-sm border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-50">Next</button>
                 </div>
               </div>
             )}
@@ -552,58 +238,63 @@ export default function LibraryPage() {
         )}
       </div>
 
-      {/* Upload Link Modal */}
-      {showLinkModal && (
+      {/* Upload Modal */}
+      {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <h2 className="text-lg font-bold text-gray-900">Upload Link</h2>
-              <button onClick={() => { setShowLinkModal(false); setLinkError('') }}
-                className="text-gray-400 hover:text-gray-600 transition-colors">
+              <button onClick={() => { setShowModal(false); setFormError('') }} className="text-gray-400 hover:text-gray-600">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
                 </svg>
               </button>
             </div>
-            <form onSubmit={handleSaveLink} className="p-6 flex flex-col gap-4">
+            <form onSubmit={handleSave} className="p-6 flex flex-col gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Title <span className="text-red-500">*</span></label>
-                <input required value={linkForm.title} onChange={e => setLinkForm(p => ({ ...p, title: e.target.value }))}
+                <input required value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
                   placeholder="e.g. Google Meet Class Link"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:border-transparent" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">URL <span className="text-red-500">*</span></label>
-                <input required type="url" value={linkForm.url} onChange={e => setLinkForm(p => ({ ...p, url: e.target.value }))}
+                <input required type="url" value={form.url} onChange={e => setForm(p => ({ ...p, url: e.target.value }))}
                   placeholder="https://..."
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:border-transparent" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Subject <span className="text-red-500">*</span></label>
-                <select required value={linkForm.subject_id} onChange={e => setLinkForm(p => ({ ...p, subject_id: e.target.value }))}
+                <label className="block text-sm font-medium text-gray-700 mb-1">Course <span className="text-gray-400 font-normal">(optional)</span></label>
+                <select value={form.course_id} onChange={e => setForm(p => ({ ...p, course_id: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:border-transparent">
-                  <option value="">Select a subject</option>
-                  {subjects.map(s => (
-                    <option key={s.id} value={s.id}>{s.course_title} — {s.title}</option>
-                  ))}
+                  <option value="">— Select course —</option>
+                  {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
                 </select>
               </div>
+              {subjects.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Subject <span className="text-gray-400 font-normal">(optional)</span></label>
+                  <select value={form.subject_id} onChange={e => setForm(p => ({ ...p, subject_id: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:border-transparent">
+                    <option value="">— Select subject —</option>
+                    {subjects.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
+                  </select>
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Description <span className="text-gray-400 font-normal">(optional)</span></label>
-                <textarea value={linkForm.description} onChange={e => setLinkForm(p => ({ ...p, description: e.target.value }))}
-                  rows={2} placeholder="Brief description of this resource..."
+                <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+                  rows={2} placeholder="Brief description..."
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:border-transparent" />
               </div>
-              {linkError && <p className="text-sm text-red-500">{linkError}</p>}
-              <div className="flex gap-3 justify-end pt-1">
-                <button type="button" onClick={() => { setShowLinkModal(false); setLinkError('') }}
-                  className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                  Cancel
-                </button>
-                <button type="submit" disabled={savingLink}
-                  className="px-4 py-2 text-sm font-semibold text-white rounded-lg transition-colors disabled:opacity-50"
+              {formError && <p className="text-sm text-red-500">{formError}</p>}
+              <div className="flex gap-3 justify-end">
+                <button type="button" onClick={() => { setShowModal(false); setFormError('') }}
+                  className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                <button type="submit" disabled={saving}
+                  className="px-4 py-2 text-sm font-semibold text-white rounded-lg disabled:opacity-50"
                   style={{ backgroundColor: '#1f7a8c' }}>
-                  {savingLink ? 'Saving…' : 'Save Link'}
+                  {saving ? 'Saving…' : 'Save Link'}
                 </button>
               </div>
             </form>
