@@ -135,6 +135,7 @@ export default function LibraryPage() {
         return
       }
 
+      console.log('[Library] fetched resources:', data?.length, data)
       setResources(data || [])
     } catch (error) {
       console.error('Error fetching resources:', error)
