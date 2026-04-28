@@ -119,6 +119,12 @@ export default function Sidebar({ currentPage, onPageChange, hideHamburger = fal
           label: 'Schedule', 
           roles: ['admin', 'developer'] 
         },
+        { 
+          id: 'download-center' as PageType, 
+          icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17v3a1 1 0 001 1h16a1 1 0 001-1v-3" /></svg>, 
+          label: 'Download Center', 
+          roles: ['admin', 'developer'] 
+        },
       ]
     },
     {
@@ -247,6 +253,12 @@ export default function Sidebar({ currentPage, onPageChange, hideHamburger = fal
           label: 'Schedule', 
           roles: ['shs_student', 'jhs_student', 'college_student', 'scholar'] 
         },
+        { 
+          id: 'download-center' as PageType, 
+          icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17v3a1 1 0 001 1h16a1 1 0 001-1v-3" /></svg>, 
+          label: 'Download Center', 
+          roles: ['shs_student', 'jhs_student', 'college_student', 'scholar'] 
+        },
       ]
     },
     {
@@ -325,6 +337,12 @@ export default function Sidebar({ currentPage, onPageChange, hideHamburger = fal
           id: 'schedule' as PageType, 
           icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>, 
           label: 'Schedule', 
+          roles: ['instructor'] 
+        },
+        { 
+          id: 'download-center' as PageType, 
+          icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17v3a1 1 0 001 1h16a1 1 0 001-1v-3" /></svg>, 
+          label: 'Download Center', 
           roles: ['instructor'] 
         },
       ]
