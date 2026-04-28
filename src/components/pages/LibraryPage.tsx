@@ -101,8 +101,6 @@ export default function LibraryPage() {
         description: linkForm.description.trim() || null,
         status: 'active',
         order_index: 0,
-        created_by: user?.id,
-        updated_by: user?.id,
       })
       if (error) { setLinkError(error.message); return }
       setShowLinkModal(false)
