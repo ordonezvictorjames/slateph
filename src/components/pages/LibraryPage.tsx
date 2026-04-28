@@ -42,10 +42,21 @@ export default function LibraryPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterType, setFilterType] = useState<FilterType>('all')
   const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage] = useState(10) // 10 items per page
+  const [itemsPerPage] = useState(10)
+
+  // Link upload modal state
+  const [showLinkModal, setShowLinkModal] = useState(false)
+  const [linkForm, setLinkForm] = useState({ title: '', url: '', description: '', subject_id: '' })
+  const [subjects, setSubjects] = useState<{ id: string; title: string; course_title: string }[]>([])
+  const [savingLink, setSavingLink] = useState(false)
+  const [linkError, setLinkError] = useState('')
+
+  const role = user?.profile?.role || ''
+  const canUpload = role === 'admin' || role === 'developer' || role === 'instructor'
 
   useEffect(() => {
     fetchResources()
+    if (canUpload) fetchSubjects()
   }, [])
 
   useEffect(() => {
@@ -56,6 +67,53 @@ export default function LibraryPage() {
   useEffect(() => {
     setCurrentPage(1)
   }, [searchQuery, filterType])
+
+  const fetchSubjects = async () => {
+    const { data } = await supabase
+      .from('subjects')
+      .select('id, title, course:courses(title)')
+      .order('title', { ascending: true })
+    setSubjects((data || []).map((s: any) => ({
+      id: s.id,
+      title: s.title,
+      course_title: s.course?.title || ''
+    })))
+  }
+
+  const handleSaveLink = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLinkError('')
+    if (!linkForm.url.startsWith('http')) {
+      setLinkError('URL must start with http:// or https://')
+      return
+    }
+    if (!linkForm.subject_id) {
+      setLinkError('Please select a subject')
+      return
+    }
+    setSavingLink(true)
+    try {
+      const { error } = await supabase.from('subject_resources').insert({
+        subject_id: linkForm.subject_id,
+        title: linkForm.title.trim(),
+        resource_url: linkForm.url.trim(),
+        resource_type: 'link',
+        description: linkForm.description.trim() || null,
+        status: 'active',
+        order_index: 0,
+        created_by: user?.id,
+        updated_by: user?.id,
+      })
+      if (error) { setLinkError(error.message); return }
+      setShowLinkModal(false)
+      setLinkForm({ title: '', url: '', description: '', subject_id: '' })
+      fetchResources()
+    } catch (err: any) {
+      setLinkError(err.message || 'Failed to save link')
+    } finally {
+      setSavingLink(false)
+    }
+  }
 
   const fetchResources = async () => {
     try {
@@ -201,11 +259,27 @@ export default function LibraryPage() {
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1 md:mb-2">Library</h1>
             <p className="text-sm md:text-base text-gray-600">Browse and access learning resources</p>
           </div>
+        <div className="flex items-center gap-3">
+          {canUpload && (
+            <button
+              onClick={() => setShowLinkModal(true)}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-xl transition-colors"
+              style={{ backgroundColor: '#1f7a8c' }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#155f6e')}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#1f7a8c')}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              </svg>
+              Upload Link
+            </button>
+          )}
           <div className="hidden md:block">
             <svg className="w-16 h-16 text-fern-600 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
             </svg>
           </div>
+        </div>
         </div>
       </div>
 
@@ -450,5 +524,69 @@ export default function LibraryPage() {
         )}
       </div>
     </div>
+
+    {/* Upload Link Modal */}
+    {showLinkModal && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+            <h2 className="text-lg font-bold text-gray-900">Upload Link</h2>
+            <button onClick={() => { setShowLinkModal(false); setLinkError('') }}
+              className="text-gray-400 hover:text-gray-600 transition-colors">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+          <form onSubmit={handleSaveLink} className="p-6 flex flex-col gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Title <span className="text-red-500">*</span></label>
+              <input required value={linkForm.title} onChange={e => setLinkForm(p => ({ ...p, title: e.target.value }))}
+                placeholder="e.g. Google Meet Class Link"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:border-transparent"
+                style={{ '--tw-ring-color': '#1f7a8c' } as React.CSSProperties} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">URL <span className="text-red-500">*</span></label>
+              <input required type="url" value={linkForm.url} onChange={e => setLinkForm(p => ({ ...p, url: e.target.value }))}
+                placeholder="https://..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:border-transparent"
+                style={{ '--tw-ring-color': '#1f7a8c' } as React.CSSProperties} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Subject <span className="text-red-500">*</span></label>
+              <select required value={linkForm.subject_id} onChange={e => setLinkForm(p => ({ ...p, subject_id: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:border-transparent"
+                style={{ '--tw-ring-color': '#1f7a8c' } as React.CSSProperties}>
+                <option value="">Select a subject</option>
+                {subjects.map(s => (
+                  <option key={s.id} value={s.id}>{s.course_title} — {s.title}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Description <span className="text-gray-400 font-normal">(optional)</span></label>
+              <textarea value={linkForm.description} onChange={e => setLinkForm(p => ({ ...p, description: e.target.value }))}
+                rows={2} placeholder="Brief description of this resource..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:border-transparent"
+                style={{ '--tw-ring-color': '#1f7a8c' } as React.CSSProperties} />
+            </div>
+            {linkError && <p className="text-sm text-red-500">{linkError}</p>}
+            <div className="flex gap-3 justify-end pt-1">
+              <button type="button" onClick={() => { setShowLinkModal(false); setLinkError('') }}
+                className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                Cancel
+              </button>
+              <button type="submit" disabled={savingLink}
+                className="px-4 py-2 text-sm font-semibold text-white rounded-lg transition-colors disabled:opacity-50"
+                style={{ backgroundColor: '#1f7a8c' }}>
+                {savingLink ? 'Saving…' : 'Save Link'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )}
+  </div>
   )
 }
