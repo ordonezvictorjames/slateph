@@ -28,7 +28,7 @@ interface Resource {
   creator: {
     first_name: string
     last_name: string
-  }
+  } | null
 }
 
 type FilterType = 'all' | 'link' | 'file' | 'document'
@@ -432,7 +432,7 @@ export default function LibraryPage() {
                         </Badge>
                       </td>
                       <td className="px-4 md:px-6 py-4 text-sm text-gray-900">
-                        {resource.creator.first_name} {resource.creator.last_name}
+                        {resource.creator ? `${resource.creator.first_name} ${resource.creator.last_name}` : '—'}
                       </td>
                       <td className="px-4 md:px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
                         {formatDate(resource.created_at)}
