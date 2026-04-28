@@ -29,7 +29,6 @@ const CodeGeneratorPage   = dynamic(() => import('@/components/pages/CodeGenerat
 const FeatureRequestsPage = dynamic(() => import('@/components/pages/FeatureRequestsPage'), { loading: loader })
 const TasksPage           = dynamic(() => import('@/components/pages/TasksPage'),           { loading: loader })
 const AIAssistantPage     = dynamic(() => import('@/components/pages/AIAssistantPage'),     { loading: loader })
-const LibraryPage         = dynamic(() => import('@/components/pages/LibraryPage'),         { loading: loader })
 const BadgesPage          = dynamic(() => import('@/components/pages/BadgesPage'),          { loading: loader })
 const GradesPage          = dynamic(() => import('@/components/pages/GradesPage'),          { loading: loader })
 const CoursesPage         = dynamic(() => import('@/components/pages/CoursesPage'),         { loading: loader })
@@ -37,7 +36,7 @@ const ActivitiesPage      = dynamic(() => import('@/components/pages/ActivitiesP
 const WhatsNewPage        = dynamic(() => import('@/components/pages/WhatsNewPage'),        { loading: loader })
 const SettingsPage        = dynamic(() => import('@/components/pages/SettingsPage'),        { loading: loader })
 
-export type PageType = 'dashboard' | 'user-management' | 'course-management' | 'my-courses' | 'courses' | 'activities' | 'whats-new' | 'schedule' | 'analytics' | 'profile' | 'settings' | 'system-tracker' | 'code-generator' | 'feature-requests' | 'tasks' | 'games' | 'activity' | 'ai-assistant' | 'library' | 'badges' | 'grades'
+export type PageType = 'dashboard' | 'user-management' | 'course-management' | 'my-courses' | 'courses' | 'activities' | 'whats-new' | 'schedule' | 'analytics' | 'profile' | 'settings' | 'system-tracker' | 'code-generator' | 'feature-requests' | 'tasks' | 'games' | 'activity' | 'ai-assistant' | 'badges' | 'grades'
 
 const SPOTIFY_LS_KEY = 'slate_spotify_url'
 
@@ -167,7 +166,7 @@ export default function Dashboard() {
   const [currentPage, setCurrentPage] = useState<PageType>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('currentPage') as PageType
-      const validPages: PageType[] = ['dashboard','user-management','course-management','my-courses','courses','activities','whats-new','schedule','analytics','profile','settings','system-tracker','code-generator','feature-requests','tasks','games','activity','ai-assistant','library','badges','grades']
+      const validPages: PageType[] = ['dashboard','user-management','course-management','my-courses','courses','activities','whats-new','schedule','analytics','profile','settings','system-tracker','code-generator','feature-requests','tasks','games','activity','ai-assistant','badges','grades']
       if (saved && validPages.includes(saved)) return saved
       localStorage.removeItem('currentPage')
     }
@@ -239,7 +238,6 @@ export default function Dashboard() {
       case 'feature-requests': return <FeatureRequestsPage key={refreshKey} />
       case 'tasks': return <TasksPage key={refreshKey} />
       case 'ai-assistant': return <AIAssistantPage key={refreshKey} />
-      case 'library': return <LibraryPage key={refreshKey} />
       case 'badges': return <BadgesPage key={refreshKey} />
       case 'grades': return <GradesPage key={refreshKey} />
       default: return <DashboardHome key={refreshKey} onNavigate={setCurrentPage} />
