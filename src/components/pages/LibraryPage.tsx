@@ -48,7 +48,7 @@ export default function LibraryPage() {
   useEffect(() => {
     if (!form.course_id) { setSubjects([]); setForm(p => ({ ...p, subject_id: '' })); return }
     supabase.from('subjects').select('id, title').eq('course_id', form.course_id).order('order_index', { ascending: true })
-      .then(({ data }) => setSubjects((data || []) as { id: string; title: string }[]))
+      .then(({ data }: { data: { id: string; title: string }[] | null }) => setSubjects(data || []))
     setForm(p => ({ ...p, subject_id: '' }))
   }, [form.course_id])
 
