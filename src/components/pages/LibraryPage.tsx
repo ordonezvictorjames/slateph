@@ -48,7 +48,7 @@ export default function LibraryPage() {
   const [linkError, setLinkError] = useState('')
 
   const role = user?.profile?.role || ''
-  const canUpload = role === 'admin' || role === 'developer' || role === 'instructor'
+  const canUpload = role === 'admin' || role === 'developer'
 
   useEffect(() => {
     fetchResources()
@@ -113,34 +113,61 @@ export default function LibraryPage() {
     try {
       setLoading(true)
 
-      const { data, error } = await supabase
+      // Fetch resources
+      const { data: resourceData, error: resourceError } = await supabase
         .from('subject_resources')
-        .select(`
-          *,
-          subject:subjects(
-            title,
-            course:courses(title)
-          )
-        `)
+        .select('*')
         .eq('status', 'active')
         .order('created_at', { ascending: false })
 
-      if (error) {
-        console.error('Library query error:', JSON.stringify(error))
-        // Try a simpler query as fallback
-        const { data: simple, error: e2 } = await supabase
-          .from('subject_resources')
-          .select('*')
-          .eq('status', 'active')
-        console.log('[Library] simple fallback:', simple?.length, JSON.stringify(e2))
-        setResources(simple || [])
+      if (resourceError) {
+        console.error('[Library] resource error:', resourceError.message)
+        setLoading(false)
         return
       }
 
-      console.log('[Library] fetched resources:', data?.length)
-      setResources(data || [])
+      if (!resourceData || resourceData.length === 0) {
+        setResources([])
+        setLoading(false)
+        return
+      }
+
+      // Fetch subjects for those resources
+      const subjectIds = [...new Set(resourceData.map((r: any) => r.subject_id).filter(Boolean))]
+      const { data: subjectData } = await supabase
+        .from('subjects')
+        .select('id, title, course_id')
+        .in('id', subjectIds)
+
+      // Fetch courses
+      const courseIds = [...new Set((subjectData || []).map((s: any) => s.course_id).filter(Boolean))]
+      const { data: courseData } = await supabase
+        .from('courses')
+        .select('id, title')
+        .in('id', courseIds)
+
+      // Build lookup maps
+      const courseMap: Record<string, string> = {}
+      for (const c of (courseData || [])) courseMap[c.id] = c.title
+
+      const subjectMap: Record<string, { title: string; course_title: string }> = {}
+      for (const s of (subjectData || [])) {
+        subjectMap[s.id] = { title: s.title, course_title: courseMap[s.course_id] || '' }
+      }
+
+      // Merge
+      const merged = resourceData.map((r: any) => ({
+        ...r,
+        subject: subjectMap[r.subject_id] ? {
+          title: subjectMap[r.subject_id].title,
+          course: { title: subjectMap[r.subject_id].course_title }
+        } : null
+      }))
+
+      console.log('[Library] fetched:', merged.length)
+      setResources(merged)
     } catch (err) {
-      console.error('[Library] caught exception:', err)
+      console.error('[Library] exception:', err)
     } finally {
       setLoading(false)
     }
