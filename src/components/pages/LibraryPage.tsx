@@ -523,70 +523,65 @@ export default function LibraryPage() {
           </>
         )}
       </div>
-    </div>
 
-    {/* Upload Link Modal */}
-    {showLinkModal && (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-            <h2 className="text-lg font-bold text-gray-900">Upload Link</h2>
-            <button onClick={() => { setShowLinkModal(false); setLinkError('') }}
-              className="text-gray-400 hover:text-gray-600 transition-colors">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
-              </svg>
-            </button>
+      {/* Upload Link Modal */}
+      {showLinkModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <h2 className="text-lg font-bold text-gray-900">Upload Link</h2>
+              <button onClick={() => { setShowLinkModal(false); setLinkError('') }}
+                className="text-gray-400 hover:text-gray-600 transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+            <form onSubmit={handleSaveLink} className="p-6 flex flex-col gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Title <span className="text-red-500">*</span></label>
+                <input required value={linkForm.title} onChange={e => setLinkForm(p => ({ ...p, title: e.target.value }))}
+                  placeholder="e.g. Google Meet Class Link"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:border-transparent" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">URL <span className="text-red-500">*</span></label>
+                <input required type="url" value={linkForm.url} onChange={e => setLinkForm(p => ({ ...p, url: e.target.value }))}
+                  placeholder="https://..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:border-transparent" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Subject <span className="text-red-500">*</span></label>
+                <select required value={linkForm.subject_id} onChange={e => setLinkForm(p => ({ ...p, subject_id: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:border-transparent">
+                  <option value="">Select a subject</option>
+                  {subjects.map(s => (
+                    <option key={s.id} value={s.id}>{s.course_title} — {s.title}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description <span className="text-gray-400 font-normal">(optional)</span></label>
+                <textarea value={linkForm.description} onChange={e => setLinkForm(p => ({ ...p, description: e.target.value }))}
+                  rows={2} placeholder="Brief description of this resource..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:border-transparent" />
+              </div>
+              {linkError && <p className="text-sm text-red-500">{linkError}</p>}
+              <div className="flex gap-3 justify-end pt-1">
+                <button type="button" onClick={() => { setShowLinkModal(false); setLinkError('') }}
+                  className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                  Cancel
+                </button>
+                <button type="submit" disabled={savingLink}
+                  className="px-4 py-2 text-sm font-semibold text-white rounded-lg transition-colors disabled:opacity-50"
+                  style={{ backgroundColor: '#1f7a8c' }}>
+                  {savingLink ? 'Saving…' : 'Save Link'}
+                </button>
+              </div>
+            </form>
           </div>
-          <form onSubmit={handleSaveLink} className="p-6 flex flex-col gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Title <span className="text-red-500">*</span></label>
-              <input required value={linkForm.title} onChange={e => setLinkForm(p => ({ ...p, title: e.target.value }))}
-                placeholder="e.g. Google Meet Class Link"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:border-transparent"
-                style={{ '--tw-ring-color': '#1f7a8c' } as React.CSSProperties} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">URL <span className="text-red-500">*</span></label>
-              <input required type="url" value={linkForm.url} onChange={e => setLinkForm(p => ({ ...p, url: e.target.value }))}
-                placeholder="https://..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:border-transparent"
-                style={{ '--tw-ring-color': '#1f7a8c' } as React.CSSProperties} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Subject <span className="text-red-500">*</span></label>
-              <select required value={linkForm.subject_id} onChange={e => setLinkForm(p => ({ ...p, subject_id: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:border-transparent"
-                style={{ '--tw-ring-color': '#1f7a8c' } as React.CSSProperties}>
-                <option value="">Select a subject</option>
-                {subjects.map(s => (
-                  <option key={s.id} value={s.id}>{s.course_title} — {s.title}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description <span className="text-gray-400 font-normal">(optional)</span></label>
-              <textarea value={linkForm.description} onChange={e => setLinkForm(p => ({ ...p, description: e.target.value }))}
-                rows={2} placeholder="Brief description of this resource..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:border-transparent"
-                style={{ '--tw-ring-color': '#1f7a8c' } as React.CSSProperties} />
-            </div>
-            {linkError && <p className="text-sm text-red-500">{linkError}</p>}
-            <div className="flex gap-3 justify-end pt-1">
-              <button type="button" onClick={() => { setShowLinkModal(false); setLinkError('') }}
-                className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                Cancel
-              </button>
-              <button type="submit" disabled={savingLink}
-                className="px-4 py-2 text-sm font-semibold text-white rounded-lg transition-colors disabled:opacity-50"
-                style={{ backgroundColor: '#1f7a8c' }}>
-                {savingLink ? 'Saving…' : 'Save Link'}
-              </button>
-            </div>
-          </form>
         </div>
-      </div>
-    )}
-  </div>
+      )}
+    </div>
   )
 }
